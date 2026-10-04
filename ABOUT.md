@@ -102,11 +102,10 @@ contact_note: Email is the fastest way to reach me.
 # GitHub repositories shown under Projects, in order. Each needs a share image
 # at public/media/projects/<name>.jpg (the repository's social preview).
 featured:
+  - terminal-portfolio
   - open-wallpaper-engine-mac
   - AutoExpress
-  - 3t-chatbot
   - sd-parsers
-  - TAES2
   - Polar-Image-Inspector
 
 # Files in public/media/ that `view` can show, with their alt text.

@@ -116,7 +116,7 @@ export function formatProject(project: Project, detailed = false): string {
 }
 
 async function showProjects(ctx: ShellContext, name?: string) {
-  ctx.print([muted(name ? `fetching ${name} from ${linkLabel(profile.github)} ...` : `fetching public repositories from ${linkLabel(profile.github)} ...`)])
+  ctx.print([muted(name ? `fetching ${name} from ${linkLabel(profile.github)} ...` : `fetching featured repositories from ${linkLabel(profile.github)} ...`)])
   try {
     const projects = await ctx.projects()
     if (name) {
@@ -126,7 +126,7 @@ async function showProjects(ctx: ShellContext, name?: string) {
       ctx.print([err(`cat: projects/${name}: No such file or directory`), ...didYouMean(guess, `cat projects/${guess}`)])
       return
     }
-    ctx.print([{ type: 'projects', text: projects.map((project) => formatProject(project)).join('\n\n'), projects }, muted(`${projects.length} public repositories. Try \`cat projects/<name>\` or \`open <name>\`.`)])
+    ctx.print([{ type: 'projects', text: projects.map((project) => formatProject(project)).join('\n\n'), projects }, muted(`Top ${projects.length} of my public repositories. See the rest on GitHub: [${linkLabel(profile.github)}](${profile.github}). Try \`cat projects/<name>\` or \`open <name>\`.`)])
   } catch (error) {
     ctx.print([err(`projects: ${error instanceof Error ? error.message : 'GitHub is unreachable right now'}`), muted(`Browse them directly at ${profile.github}`)])
   }
