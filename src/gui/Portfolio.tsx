@@ -346,7 +346,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
       <Section id="projects" index={next()} title={title} wide {...sectionProps}>
         {(sections.projects ?? []).filter((line) => line.trim()).map((line) => <p key={line} className="pf-lede"><Md inline>{line}</Md></p>)}
         {prerender ? <div className="pf-grid pf-projects pf-projects-static" dangerouslySetInnerHTML={{ __html: '<!--projects-->' }} /> : <Projects />}
-        <p className="pf-more"><a href={profile.github} {...linkAttrs(profile.github)}>All repositories on GitHub <ArrowUpRight size={15} aria-hidden="true" /></a></p>
+        <p className="pf-more"><a href={profile.github} {...linkAttrs(profile.github)}>See the rest of my projects on GitHub <ArrowUpRight size={15} aria-hidden="true" /></a></p>
       </Section>
     ),
     skills: (title: string) => (
