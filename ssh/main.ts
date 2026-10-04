@@ -106,7 +106,8 @@ const server = new ssh2.Server({ hostKeys: [hostKey()], ident: `${profile.handle
       const channel = accept()
       let pty: { cols: number; rows: number; term: string } | null = null
       const env: Record<string, string> = {}
-      channel.on('pty', (ok, _reject, request) => { pty = { cols: request.cols, rows: request.rows, term: request.term }; ok?.() })
+      // The client picks TERM; keep it short so it can't bloat the detector's work.
+      channel.on('pty', (ok, _reject, request) => { pty = { cols: request.cols, rows: request.rows, term: String(request.term ?? '').slice(0, 64) }; ok?.() })
       channel.on('env', (ok, reject, request) => {
         if (Object.keys(env).length < 16 && /^(LC_TERMINAL|LC_TERMINAL_VERSION|TERM_PROGRAM|COLORTERM|LANG)$/.test(request.key) && request.val.length < 100) { env[request.key] = request.val; ok?.() } else reject?.()
       })
@@ -139,5 +140,10 @@ const server = new ssh2.Server({ hostKeys: [hostKey()], ident: `${profile.handle
   })
 })
 
-server.on('error', (error: Error) => console.error(`ssh server error: ${error.message}`))
-server.listen(port, '::', () => console.log(`portfolio SSH server listening on ${port}, API ${apiBase}`))
+// Hosts without IPv6 (some CI and dev containers) fall back to IPv4 only.
+server.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EAFNOSUPPORT' && !server.listening) { server.listen(port, '0.0.0.0'); return }
+  console.error(`ssh server error: ${error.message}`)
+})
+server.on('listening', () => console.log(`portfolio SSH server listening on ${port}, API ${apiBase}`))
+server.listen(port, '::')
