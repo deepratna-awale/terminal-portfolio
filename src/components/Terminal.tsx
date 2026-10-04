@@ -8,6 +8,7 @@ import { initialCommand, pipeSplit, unshareable } from '../shell/deeplink'
 import { filterNames, filters, toPlainText } from '../shell/pipes'
 import { closest, looksLikeCommand } from '../shell/typo'
 import { commonPrefix, complete, suggestion as suggest } from '../shell/completion'
+import { FitPre } from './FitPre'
 import { ProjectCards, SectionView } from './SectionView'
 import { applyEdit, bindingFor, expandHistory, reverseSearch, type LineState } from '../shell/lineEditor'
 import { themeNames, themes, type ThemeName } from '../themes'
@@ -149,9 +150,11 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
       if (errors.length) print(errors)
     } })
     let lines = captured.flatMap((line) => (line.type === 'neofetch' ? [line.text, ...(line.info ?? [])] : toPlainText(line.text).split('\n')))
+    let art = false
     for (const stage of rest) {
       const [filter = '', ...filterArgs] = tokenize(stage)
       if (filter === 'cowthink' || filter === 'cowsay') {
+        art = true
         try { lines = (await fetchCowthink(lines.join(' ').replace(/\s+/g, ' ').slice(0, 280))).split('\n') } catch (error) { print([{ type: 'error', text: error instanceof Error ? error.message : 'cowthink is unavailable' }]); return }
         continue
       }
@@ -162,7 +165,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
       if (!Array.isArray(result)) { print([{ type: 'error', text: result.error }]); return }
       lines = result
     }
-    print([{ type: 'plain', text: lines.join('\n') || '(no output)' }])
+    print([art ? { type: 'output', text: `\`\`\`text\n${lines.join('\n')}\n\`\`\`` } : { type: 'plain', text: lines.join('\n') || '(no output)' }])
   }, [context, print])
 
   const runSingle = useCallback(async (raw: string) => {
@@ -242,7 +245,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
   }, []) // oxlint-disable-line react-hooks/exhaustive-deps -- boot once on mount
 
   // The input row is hidden while booting or running, so focus once it is visible again.
-  useEffect(() => { if (!booting && !busy) inputRef.current?.focus({ preventScroll: true }) }, [booting, busy])
+  useEffect(() => { if (!booting && !busy && !suspendedRef.current) inputRef.current?.focus({ preventScroll: true }) }, [booting, busy])
 
   // Typing anywhere on the page goes to the prompt, like a real terminal window.
   useEffect(() => {
@@ -316,7 +319,8 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
   }
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (booting) { event.preventDefault(); return }
+    // Games, vim and Chrome own the keyboard while they are open.
+    if (booting || suspendedRef.current) { event.preventDefault(); return }
     const key = event.key
     const ctrl = event.ctrlKey && !event.metaKey && !event.altKey
 
@@ -385,14 +389,14 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
       return <div key={item.id} className="terminal-line media-line"><span>{item.text}</span>{item.media.href ? <a href={item.media.href} target="_blank" rel="noreferrer noopener">{image}</a> : image}</div>
     }
     if (item.type === 'command') return <div key={item.id} className="terminal-line command">{item.text}</div>
-    if (item.type === 'ascii') return <pre key={item.id} className="terminal-line ascii">{item.text}</pre>
+    if (item.type === 'ascii') return <FitPre key={item.id} className="terminal-line ascii">{item.text}</FitPre>
     if (item.type === 'section' && item.section) return <div key={item.id} className="terminal-line rich"><SectionView name={item.section} renderLink={renderLink} /></div>
     if (item.type === 'projects' && item.projects) return <div key={item.id} className="terminal-line rich"><ProjectCards projects={item.projects} detailed={item.detailed} renderLink={renderLink} /></div>
     if (item.type === 'plain') return <pre key={item.id} className="terminal-line plain">{item.text}</pre>
     if (item.type === 'neofetch') return <Neofetch key={item.id} title={item.text} info={item.info ?? []} theme={theme} />
     return (
       <div key={item.id} className={`terminal-line ${item.type}`}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]} urlTransform={(url) => (url.startsWith('cmd:') ? url : defaultUrlTransform(url))} components={{ a: renderLink }}>{item.text}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} urlTransform={(url) => (url.startsWith('cmd:') ? url : defaultUrlTransform(url))} components={{ a: renderLink, pre: ({ children }) => <FitPre>{children}</FitPre> }}>{item.text}</ReactMarkdown>
       </div>
     )
   }
