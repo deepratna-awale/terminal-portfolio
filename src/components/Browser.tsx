@@ -220,7 +220,7 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront }: 
       onPointerDownCapture={() => onFront?.(true)}
       onFocusCapture={() => { focused.current = true }}
     >
-      <div className="cb-titlebar" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onDoubleClick={(event) => { if (event.target === event.currentTarget) toggleMax() }}>
+      <div className="cb-titlebar" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onDoubleClick={(event) => { if (!(event.target as HTMLElement).closest('button, input, a, [role="tab"]')) toggleMax() }}>
         <div className="cb-lights">
           <button type="button" className="cb-light close" aria-label="Close browser" title="Close" onClick={onClose} />
           <button type="button" className="cb-light min" aria-label="Minimize browser" title="Minimize" onClick={minimize} />
