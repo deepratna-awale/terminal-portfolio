@@ -3,6 +3,33 @@
 # personal data, and topics the assistant has no business answering.
 
 locals {
+  address_patterns = {
+    StreetAddress = {
+      description = "House number, capitalised street name and street type. Short forms (St, Dr) only count before a comma, so St. John's is not a street."
+      pattern     = "\\b\\d{1,6}[A-Za-z]?,?\\s+(?:[A-Z][A-Za-z'-]*\\.?\\s+){1,4}(?:(?:Street|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Lane|Court|Crescent|Cres|Place|Way|Terrace|Highway|Hwy|Parkway|Circle|Square)\\b|(?:St|Dr|Ln|Ct|Pl),)"
+    }
+    UnitNumber = {
+      description = "Apartment, unit, suite or floor numbers."
+      pattern     = "\\b(?:[Aa]pt|[Aa]partment|[Uu]nit|[Ss]uite|[Ff]loor)\\.?\\s*#?\\s*\\d+[A-Za-z]?\\b"
+    }
+    POBox = {
+      description = "Post office boxes."
+      pattern     = "\\b[Pp]\\.?\\s?[Oo]\\.?\\s*[Bb][Oo][Xx]\\s*\\d+"
+    }
+    CanadianPostalCode = {
+      description = "Canadian postal codes such as A1B 2C3."
+      pattern     = "\\b[ABCEGHJ-NPRSTVXYabceghj-nprstvxy]\\d[A-Za-z][ -]?\\d[A-Za-z]\\d\\b"
+    }
+    USZipCode = {
+      description = "US ZIP+4 codes."
+      pattern     = "\\b\\d{5}-\\d{4}\\b"
+    }
+    Coordinates = {
+      description = "Latitude and longitude pairs."
+      pattern     = "-?\\d{1,3}\\.\\d{3,}\\s*,\\s*-?\\d{1,3}\\.\\d{3,}"
+    }
+  }
+
   guardrail_blocked = "I can only help with questions about Deep's work, projects and experience. Try `help` for the built-in commands."
 }
 
@@ -39,11 +66,23 @@ resource "aws_bedrock_guardrail" "portfolio" {
       }
     }
 
-    # Deep's phone number must never appear in answers. ADDRESS is left out
-    # because it also masks his public city ("St. John's, NL").
+    # Deep's phone number must never appear in answers.
     pii_entities_config {
       type   = "PHONE"
       action = "ANONYMIZE"
+    }
+
+    # The managed ADDRESS entity also masks a bare city ("St. John's, NL"), so
+    # addresses are matched by pattern instead: city, province and country pass,
+    # anything more precise is blocked.
+    dynamic "regexes_config" {
+      for_each = local.address_patterns
+      content {
+        name        = regexes_config.key
+        description = regexes_config.value.description
+        pattern     = regexes_config.value.pattern
+        action      = "BLOCK"
+      }
     }
   }
 
@@ -89,6 +128,8 @@ resource "aws_bedrock_guardrail" "portfolio" {
 resource "aws_bedrock_guardrail_version" "portfolio" {
   guardrail_arn = aws_bedrock_guardrail.portfolio.guardrail_arn
   description   = "Published by Terraform"
+  # Keep old versions so the running container keeps working until it is redeployed.
+  skip_destroy = true
 
   lifecycle {
     replace_triggered_by = [aws_bedrock_guardrail.portfolio]
