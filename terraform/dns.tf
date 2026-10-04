@@ -8,15 +8,20 @@ locals {
   container_host = regex("^https://([^/]+)/?$", aws_lightsail_container_service.portfolio.url)[0]
 }
 
-resource "aws_lightsail_domain_entry" "certificate_validation" {
-  for_each = {
+locals {
+  # Keyed by the static domain list so for_each keys are known at plan time.
+  validation_records = {
     for option in aws_lightsail_certificate.portfolio.domain_validation_options : option.domain_name => option
   }
+}
+
+resource "aws_lightsail_domain_entry" "certificate_validation" {
+  for_each = toset(local.custom_domains)
 
   domain_name = aws_lightsail_domain.portfolio.domain_name
-  name        = trimsuffix(trimsuffix(each.value.resource_record_name, "."), ".${var.domain_name}")
-  type        = each.value.resource_record_type
-  target      = trimsuffix(each.value.resource_record_value, ".")
+  name        = trimsuffix(trimsuffix(local.validation_records[each.key].resource_record_name, "."), ".${var.domain_name}")
+  type        = local.validation_records[each.key].resource_record_type
+  target      = trimsuffix(local.validation_records[each.key].resource_record_value, ".")
 }
 
 resource "aws_lightsail_domain_entry" "apex" {
