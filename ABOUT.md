@@ -128,7 +128,7 @@ ascii_logo: |
 
 I like turning research-grade models into reliable, fast, observable systems: data pipelines, prompt engineering, evaluation, and the cloud infrastructure that lets other engineers ship agents safely.
 
-**Certification:** AWS Certified Machine Learning Engineer, Associate
+**Certification:** [AWS Certified Machine Learning Engineer, Associate](https://www.credly.com/badges/6fd9a8eb-59ac-4c84-82d1-410b573d7611)
 **Education:** MASc Computer Engineering, Memorial University of Newfoundland
 
 Try [`projects`](cmd:projects), [`experience`](cmd:experience), or just ask me something in plain English.
@@ -185,9 +185,9 @@ IJSRP, 2022. NLP system for automated scoring of theory answers with plagiarism 
   Thesis: [Theoretical Answer Evaluation System (T.A.E.S)](https://github.com/deepratna-awale/TAES2), automated scoring of theory answers.
 
 Certifications
-  AWS Certified Machine Learning Engineer, Associate (2025)
+  [AWS Certified Machine Learning Engineer, Associate](https://www.credly.com/badges/6fd9a8eb-59ac-4c84-82d1-410b573d7611) (2025)
   [IBM Data Science Professional Specialization](https://www.credly.com/badges/a3630bd3-b2cd-4e08-b5cb-bd8701a9792f) (2019)
-  IIT Madras Programming and DSA Using Python (2019)
+  [IIT Madras Programming and DSA Using Python](https://nptel.ac.in/noc/E_Certificate/noc19-cs08/NPTEL19CS08S11620060191025941.jpg) (2019)
 
 # Now
 <!-- help: what I'm up to right now -->

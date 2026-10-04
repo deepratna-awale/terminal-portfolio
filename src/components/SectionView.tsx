@@ -53,7 +53,7 @@ function About({ renderLink }: { renderLink: LinkRenderer }) {
       {prose.map((part) => <p key={part} className="about-text"><Inline text={part} renderLink={renderLink} /></p>)}
       {facts.length > 0 && <dl className="kv">{facts.map((fact) => {
         const [, key = '', value = ''] = /^\*\*(.+?):\*\*\s*(.*)$/.exec(fact) ?? []
-        return <div key={fact}><dt>{key}</dt><dd>{value}</dd></div>
+        return <div key={fact}><dt>{key}</dt><dd><Inline text={value} renderLink={renderLink} /></dd></div>
       })}</dl>}
     </Box>
   )
