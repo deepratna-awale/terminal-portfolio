@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { ArrowLeft, ArrowRight, CircleUserRound, EllipsisVertical, ExternalLink, Globe, Lock, Plus, RotateCw, Search, SquareTerminal, Star, X } from 'lucide-react'
-import { profile } from '../content'
+import { linksFor, profile } from '../content'
 import { HOME, NEWTAB, pageHash, pageTitle, resolveAddress } from '../gui/address'
 import { Portfolio } from '../gui/Portfolio'
 import './Browser.css'
@@ -23,14 +23,6 @@ const samePage = (a: string, b: string) => a.split('#')[0] === b.split('#')[0]
 const hostLabel = (url: string) => { try { const parsed = new URL(url); return parsed.protocol === 'mailto:' ? 'your mail app' : parsed.host.replace(/^www\./, '') } catch { return 'a new tab' } }
 const modifier = (event: { metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; altKey: boolean }) => event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
 
-const shortcuts = [
-  { label: 'Portfolio', url: '/gui', icon: 'pf' },
-  { label: 'GitHub', url: profile.github, icon: 'gh' },
-  { label: 'LinkedIn', url: profile.linkedin, icon: 'in' },
-  { label: 'Resume', url: profile.resume, icon: 'cv' },
-  { label: 'Source code', url: profile.source, icon: 'src' },
-]
-
 let nextId = 1
 
 function NewTabPage({ onGo }: { onGo: (input: string) => void }) {
@@ -44,11 +36,11 @@ function NewTabPage({ onGo }: { onGo: (input: string) => void }) {
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search Google or type a URL" aria-label="Search Google or type a URL" />
       </form>
       <ul className="cb-tiles">
-        {shortcuts.map((shortcut) => (
-          <li key={shortcut.label}>
+        {linksFor('newtab').map((shortcut, index) => (
+          <li key={`${shortcut.name}-${index}`}>
             <a href={shortcut.url} onClick={(event) => { if (modifier(event)) return; event.preventDefault(); onGo(shortcut.url) }}>
-              <span className={`cb-tile-icon ${shortcut.icon}`}>{shortcut.icon === 'pf' ? <img src="/favicon.svg" alt="" width={24} height={24} /> : shortcut.icon === 'gh' ? <img src="/icons/github.svg" alt="" width={24} height={24} /> : shortcut.icon === 'in' ? <img src="/icons/linkedin.png" alt="" width={28} height={28} /> : shortcut.icon === 'cv' ? 'CV' : '</>'}</span>
-              <span className="cb-tile-label">{shortcut.label}</span>
+              <span className={`cb-tile-icon${shortcut.image ? ' image' : ''}`} style={!shortcut.image && shortcut.color ? { background: shortcut.color } : undefined}>{shortcut.image ? <img src={shortcut.icon} alt="" width={24} height={24} /> : shortcut.icon}</span>
+              <span className="cb-tile-label">{shortcut.name}</span>
             </a>
           </li>
         ))}

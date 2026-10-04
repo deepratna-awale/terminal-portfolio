@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assistantFacts, parseAboutMarkdown, parseFrontmatter, siteProfile } from '../../shared/about.js'
-import { sectionList } from '../content'
+import { links, linksFor, sectionList } from '../content'
 import { commands, directories } from './commands'
 import { complete } from './completion'
 
@@ -39,6 +39,7 @@ describe('ABOUT.md parsing', () => {
   it('reads the frontmatter subset', () => {
     const meta = parseFrontmatter('a: 1\nlist:\n  - x\n  - "y"\nmap:\n  k: v: w\ninline: [p, q]\nblock: |\n  one\n    two\n')
     expect(meta).toEqual({ a: '1', list: ['x', 'y'], map: { k: 'v: w' }, inline: ['p', 'q'], block: 'one\n  two' })
+    expect(parseFrontmatter('links:\n  # dock\n  - id: gh\n    color: "#fff"\n    show: [dock, newtab]\n  - name: Mail\n    url: mailto:a@b.c\n')).toEqual({ links: [{ id: 'gh', color: '#fff', show: ['dock', 'newtab'] }, { name: 'Mail', url: 'mailto:a@b.c' }] })
   })
 
   it('turns each heading into a section and keeps the assistant notes private', () => {
@@ -65,5 +66,14 @@ describe('sections from ABOUT.md', () => {
     for (const section of sectionList) expect(commands[section.id]?.summary).toBe(section.help)
     expect(directories).toEqual([...sectionList.map((section) => section.id).filter((id) => id !== 'now' && id !== 'guestbook'), 'media'])
     expect(complete('cd ed', '~', [], []).candidates).toEqual(['education/'])
+  })
+})
+
+describe('links from ABOUT.md', () => {
+  it('places each link where it asks to be and makes ids open targets', () => {
+    expect(linksFor('dock').map((link) => link.name)).toEqual(links.filter((link) => link.show.includes('dock')).map((link) => link.name))
+    for (const link of links.filter((item) => item.image)) expect(link.icon).toMatch(/^(\/|https?:)/)
+    const targets = complete('open ', '~', [], []).candidates
+    for (const link of links.filter((item) => item.id)) expect(targets).toContain(link.id.toLowerCase())
   })
 })

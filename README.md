@@ -23,6 +23,8 @@ MIT licensed. Fork it and make it yours: see [Deploy your own](#deploy-your-own)
 
 ## Local development
 
+Working on the code with an AI agent (or new to it)? Start with [AGENTS.md](AGENTS.md).
+
 Requires Node 22.
 
 ```bash
@@ -292,7 +294,7 @@ images in `public/media/`. Edit it, run `npm run dev` to preview, and push.
 | `seo` | Meta description and link-preview text for `/` and `/gui` |
 | `os`, `os_version`, `motd`, `neofetch`, `ascii_logo` | The fake OS, login banner, `neofetch` rows and boot logo |
 | `example_question` | The assistant example shown by `help` |
-| `links` | Extra `open <name>` targets |
+| `links` | Dock icons, desktop icons, Chrome new-tab shortcuts and `open <id>` targets (see below) |
 | `focus_dirs`, `contact_heading`, `contact_note` | Standard-site hero card and contact block |
 | `featured` | GitHub repositories shown under Projects, in order |
 | `media` | Files in `public/media/` that `view` can show, with alt text |
@@ -329,6 +331,24 @@ ABOUT.md: `about` (`**Label:** value` lines become facts), `experience`
 certificates), `contact` (`label     value` rows), `projects` (live from GitHub;
 the body is the intro line on `/gui`), `now` (an `Updated: <when>` line and
 bullets) and `guestbook`. Any other heading renders as plain markdown.
+
+**Links and icons.** Every dock icon, desktop icon and new-tab shortcut is an
+entry under `links`; nothing about them lives in code:
+
+```yaml
+links:
+  - id: github                 # optional; makes `open github` work
+    name: GitHub               # label and tooltip
+    url: https://github.com/you
+    icon: github.svg           # a file in public/icons/, a /path, or short text like CV
+    tile: true                 # optional: white dock tile behind a transparent logo
+    color: "#d93025"           # optional: background for a text icon
+    show: [dock, desktop, newtab]
+```
+
+Drop the image into `public/icons/` and add the entry. Links to pages of this
+site (`/gui`) open in the in-site Chrome; mail links open the mail app; anything
+else opens a new tab.
 
 **Assistant.** The `# Assistant` section never appears on the site. Its
 `## Rules` list is added to the assistant's rules, and anything else in it is

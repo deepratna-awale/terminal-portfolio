@@ -7,7 +7,8 @@ import { MenuBar, type Menu } from './components/MenuBar'
 import { Terminal, type TerminalHandle } from './components/Terminal'
 import { TrafficLights } from './components/TrafficLights'
 import { Vim } from './components/Vim'
-import { os, profile } from './content'
+import { linksFor, os, profile, type SiteLink } from './content'
+import { resolveAddress } from './gui/address'
 import { openExternal, readFile, type ShellContext } from './shell/commands'
 import { readTheme, saveTheme, onThemeChange, terminalTheme } from './themeStore'
 import { themeNames, themes, type ThemeName } from './themes'
@@ -47,11 +48,18 @@ function App() {
   const openBrowser = useCallback((url = '/gui') => { setBrowser({ url, stamp: Date.now() }); setFront('browser') }, [])
   const closeBrowser = useCallback(() => { setBrowser(null); setFront('terminal'); setTimeout(() => terminal.current?.focus(), 30) }, [])
   const browserFront = useCallback((isFront: boolean) => setFront(isFront ? 'browser' : 'terminal'), [])
-  const clickBrowser = (event: MouseEvent) => {
+  const clickBrowser = (event: MouseEvent, url = '/gui') => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
     event.preventDefault()
-    openBrowser('/gui')
+    openBrowser(url)
   }
+  // Pages of this site open in the in-site Chrome, mail links in the mail app, everything else in a new tab.
+  const linkProps = (link: SiteLink) => {
+    if (link.url.startsWith('mailto:')) return { href: link.url }
+    if (resolveAddress(link.url, location.origin)?.kind === 'page') return { href: link.url, onClick: (event: MouseEvent) => clickBrowser(event, link.url) }
+    return { href: link.url, target: '_blank', rel: 'noreferrer noopener' }
+  }
+  const glyph = (link: SiteLink, className: string) => (link.image ? <img className={className} src={link.icon} alt="" /> : <span className={`${className} link-glyph`} style={link.color ? { background: link.color } : undefined}>{link.icon}</span>)
 
   const setTheme = useCallback((name: ThemeName) => { setThemeState(name); saveTheme(name) }, [])
   // The standard site can change the theme too (in the in-site Chrome or another tab).
@@ -210,10 +218,14 @@ function App() {
   return (
     <div className={`desktop theme-${theme}${crt ? ' crt' : ''}${melting ? ' meltdown' : ''}${browser && front === 'terminal' ? ' terminal-front' : ''}`} style={style}>
       <MenuBar menus={browser && front === 'browser' ? chromeMenus : menus} status={status} />
-      <a className="desktop-icon" href="/gui" title="Open the standard portfolio website" onClick={clickBrowser}>
-        <img className="desktop-chrome" src="/icons/chrome.svg" alt="" />
-        <span className="desktop-icon-label">Portfolio</span>
-      </a>
+      <div className="desktop-icons">
+        {linksFor('desktop').map((link, index) => (
+          <a key={`${link.name}-${index}`} className="desktop-icon" title={link.name} {...linkProps(link)}>
+            {glyph(link, 'desktop-chrome')}
+            <span className="desktop-icon-label">{link.name}</span>
+          </a>
+        ))}
+      </div>
       <main className={`app-shell ${mode}`}>
         {mode !== 'closed' && (
           <section className="terminal-window" aria-label="Terminal" hidden={mode === 'minimized'} onPointerDown={() => setFront('terminal')}>
@@ -237,9 +249,9 @@ function App() {
         <button type="button" className={`dock-item${visible ? ' running' : ''}`} onClick={mode === 'closed' ? reconnect : restore} title="Terminal">
           <span className="dock-icon app"><img src="/icons/terminal.svg" alt="" /></span>
         </button>
-        <a className="dock-item" href={profile.github} target="_blank" rel="noreferrer noopener" title="GitHub" aria-label="GitHub"><span className="dock-icon app tile"><img src="/icons/github.svg" alt="" /></span></a>
-        <a className="dock-item" href={profile.linkedin} target="_blank" rel="noreferrer noopener" title="LinkedIn" aria-label="LinkedIn"><span className="dock-icon app"><img src="/icons/linkedin.png" alt="" /></span></a>
-        <a className="dock-item" href={`mailto:${profile.email}`} title="Email" aria-label="Email"><span className="dock-icon app tile"><img src="/icons/gmail.svg" alt="" /></span></a>
+        {linksFor('dock').map((link, index) => (
+          <a key={`${link.name}-${index}`} className="dock-item" title={link.name} aria-label={link.name} {...linkProps(link)}><span className={`dock-icon app${link.tile ? ' tile' : ''}`}>{glyph(link, '')}</span></a>
+        ))}
         {browser && <>
           <span className="dock-separator" aria-hidden="true" />
           <a className="dock-item running" href="/gui" title="Chrome" aria-label="Chrome" onClick={clickBrowser}><span className="dock-icon app tile"><img src="/icons/chrome.svg" alt="" /></span></a>

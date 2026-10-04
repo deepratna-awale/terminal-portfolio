@@ -41,9 +41,56 @@ neofetch:
 # Shown by `help` as an example of a question for the assistant.
 example_question: what are you working on at Nasdaq?
 
-# Extra `open <name>` targets (github, linkedin, source and email are built in).
+# Links, icons and shortcuts. Each entry appears wherever `show` lists:
+#   dock     the dock at the bottom of the desktop
+#   desktop  an icon on the desktop
+#   newtab   a shortcut tile on the in-site Chrome's new tab page
+# Every entry with an `id` is also a terminal `open <id>` target.
+# icon: an image in public/icons/ (or a path starting with /), or short text
+#   such as CV for a lettered tile, coloured with `color`.
+# tile: true puts the icon on a white dock tile (for logos with transparency).
+# Site links (/gui, /media/...) open in the in-site Chrome; others in a new tab.
 links:
-  verafin: https://verafin.com/product/agentic-ai-workforce/
+  - name: Portfolio
+    url: /gui
+    icon: chrome.svg
+    show: [desktop]
+  - name: Portfolio
+    url: /gui
+    icon: /favicon.svg
+    show: [newtab]
+  - id: github
+    name: GitHub
+    url: https://github.com/deepratna-awale
+    icon: github.svg
+    tile: true
+    show: [dock, newtab]
+  - id: linkedin
+    name: LinkedIn
+    url: https://www.linkedin.com/in/deepratna-awale
+    icon: linkedin.png
+    show: [dock, newtab]
+  - id: email
+    name: Email
+    url: mailto:awale.deep@gmail.com
+    icon: gmail.svg
+    tile: true
+    show: [dock]
+  - id: resume
+    name: Resume
+    url: /media/Resume-Awale-Deepratna.pdf
+    icon: CV
+    color: "#d93025"
+    show: [newtab]
+  - id: source
+    name: Source code
+    url: https://github.com/deepratna-awale/terminal-portfolio
+    icon: </>
+    color: "#188038"
+    show: [newtab]
+  - id: verafin
+    name: Verafin
+    url: https://verafin.com/product/agentic-ai-workforce/
 
 # Standard site (/gui) extras.
 focus_dirs: [agentic-ai, evals, aws, ml-infra]

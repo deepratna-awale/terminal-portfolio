@@ -30,7 +30,26 @@ export const os = { name: text(meta.os) || 'PortfolioOS', version: text(meta.os_
 export const motd = list(meta.motd)
 export const neofetchRows = map(meta.neofetch)
 export const exampleQuestion = text(meta.example_question) || 'what are you working on?'
-export const extraLinks = map(meta.links)
+
+// Links from ABOUT.md: dock, desktop and new-tab entries, and `open` targets.
+export type Placement = 'dock' | 'desktop' | 'newtab'
+export type SiteLink = { id: string; name: string; url: string; icon: string; image: boolean; tile: boolean; color: string; show: Placement[] }
+const imageFile = /\.(svg|png|jpe?g|webp|gif|ico)$/i
+export const links: SiteLink[] = (Array.isArray(meta.links) ? meta.links : []).filter((item): item is Record<string, string | string[]> => Boolean(item) && typeof item === 'object' && !Array.isArray(item)).map((item) => {
+  const icon = text(item.icon)
+  const image = imageFile.test(icon)
+  return {
+    id: text(item.id),
+    name: text(item.name) || text(item.id),
+    url: text(item.url),
+    icon: image && !icon.startsWith('/') && !/^https?:/.test(icon) ? `/icons/${icon}` : icon,
+    image,
+    tile: text(item.tile) === 'true',
+    color: text(item.color),
+    show: list(item.show).filter((place): place is Placement => ['dock', 'desktop', 'newtab'].includes(place)),
+  }
+}).filter((link) => link.url)
+export const linksFor = (place: Placement) => links.filter((link) => link.show.includes(place))
 export const focusDirs = list(meta.focus_dirs)
 export const contactCopy = { heading: text(meta.contact_heading), note: text(meta.contact_note) }
 

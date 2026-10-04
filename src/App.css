@@ -102,8 +102,9 @@
 .neofetch-swatches { display: flex; gap: 0; margin-top: 8px; } .neofetch-swatches span { width: 2.2ch; height: 1.1em; }
 .terminal-line.plain { margin: 4px 0; font: inherit; white-space: pre-wrap; overflow-x: auto; }
 
-/* Desktop icon that opens the standard website */
-.desktop-icon { position: fixed; z-index: 10; top: calc(var(--menubar-h) + 18px); right: 22px; width: 84px; display: grid; justify-items: center; gap: 6px; padding: 8px 4px; border-radius: 8px; color: #fff; text-decoration: none; font: 12px -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+/* Desktop icons (links with show: [desktop] in ABOUT.md), stacked down the right edge */
+.desktop-icons { position: fixed; z-index: 10; top: calc(var(--menubar-h) + 18px); right: 22px; display: flex; flex-direction: column; gap: 10px; }
+.desktop-icon { width: 84px; display: grid; justify-items: center; gap: 6px; padding: 8px 4px; border-radius: 8px; color: #fff; text-decoration: none; font: 12px -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
 .desktop-icon:hover, .desktop-icon:focus-visible { outline: 0; background: rgba(255,255,255,.14); }
 .desktop-icon .browser-icon { width: 52px; height: 52px; }
 .desktop-icon-label { padding: 1px 6px; border-radius: 4px; }
@@ -120,6 +121,8 @@
 .dock-separator { width: 1px; margin: 4px 2px; background: rgba(255,255,255,.3); }
 .desktop-chrome { width: 54px; height: 54px; filter: drop-shadow(0 3px 8px rgba(0,0,0,.4)); }
 .desktop-chrome svg { width: 100%; height: 100%; }
+.link-glyph { display: grid; place-items: center; width: 100%; height: 100%; border-radius: inherit; color: #fff; background: #3a3f47; font: 700 15px ui-monospace, monospace; text-shadow: none; }
+.desktop-chrome.link-glyph { border-radius: 12px; }
 .dock-icon.browser { background: linear-gradient(160deg, #f4f5f7, #d9dce1); border-color: rgba(255,255,255,.5); }
 
 /* rm -rf / */
@@ -147,11 +150,11 @@
   .traffic-lights { width: auto; } .window-actions { display: none; } .window-title { font-size: 11px; }
   .terminal-footer > span:nth-child(-n+3) { display: none; }
   .dock { display: none; }
-  .desktop-icon { display: none; }
+  .desktop-icons { display: none; }
   .menu-dropdown { position: fixed; left: 8px; right: 8px; top: calc(var(--menubar-h) + 2px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
 }
-.desktop:has(.app-shell.maximized) .desktop-icon { display: none; }
+.desktop:has(.app-shell.maximized) .desktop-icons { display: none; }
