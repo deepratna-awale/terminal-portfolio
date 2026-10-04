@@ -245,7 +245,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
   }, []) // oxlint-disable-line react-hooks/exhaustive-deps -- boot once on mount
 
   // The input row is hidden while booting or running, so focus once it is visible again.
-  useEffect(() => { if (!booting && !busy) inputRef.current?.focus({ preventScroll: true }) }, [booting, busy])
+  useEffect(() => { if (!booting && !busy && !suspendedRef.current) inputRef.current?.focus({ preventScroll: true }) }, [booting, busy])
 
   // Typing anywhere on the page goes to the prompt, like a real terminal window.
   useEffect(() => {
@@ -319,7 +319,8 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
   }
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (booting) { event.preventDefault(); return }
+    // Games, vim and Chrome own the keyboard while they are open.
+    if (booting || suspendedRef.current) { event.preventDefault(); return }
     const key = event.key
     const ctrl = event.ctrlKey && !event.metaKey && !event.altKey
 

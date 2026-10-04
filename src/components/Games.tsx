@@ -116,7 +116,7 @@ function SnakeGame({ report }: { report: (score: number) => void }) {
       const dir = dirKeys[key]
       if (dir) dispatch({ type: 'turn', dir })
       else if (key === ' ' || key === 'p') dispatch({ type: 'pause' })
-      else if (key === 'r') { if (!game.alive) dispatch({ type: 'restart', roll: Math.random() }) }
+      else if (key === 'r') dispatch({ type: 'restart', roll: Math.random() })
       else return
       event.preventDefault()
     }
