@@ -115,3 +115,26 @@ describe('session', () => {
     expect(terminal.closed()).toBe(true)
   })
 })
+
+describe('project images', () => {
+  it('draws a thumbnail above each project in the list', async () => {
+    const { mkdtempSync, writeFileSync } = await import('node:fs')
+    const { tmpdir } = await import('node:os')
+    const { join } = await import('node:path')
+    const { setImageDirectory } = await import('./images')
+    const dir = mkdtempSync(join(tmpdir(), 'ssh-images-'))
+    writeFileSync(join(dir, 'manifest.json'), JSON.stringify({ '/media/projects/demo.jpg': { png: 'demo.png', width: 4, height: 2, sixel: 'demo.six', grid: { file: 'demo.rgb', width: 4, height: 2 } } }))
+    writeFileSync(join(dir, 'demo.rgb'), Buffer.alloc(24, 200))
+    setImageDirectory(dir)
+    let output = ''
+    const session = new Session({ ip: '198.51.100.1', columns: 80, rows: 24, term: 'xterm-256color', env: {}, probeMs: 10_000, io: { write: (data) => { output += data }, close: () => {} } })
+    output = ''
+    const project = { name: 'demo', description: 'A demo', language: 'Go', stars: 0, url: 'https://github.com/x/demo', homepage: null, image: '/media/projects/demo.jpg', pushedAt: new Date().toISOString(), bullets: ['Does a thing'] }
+    session.print([{ type: 'projects', text: '', projects: [project, { ...project, name: 'other', image: null }] }])
+    const text = stripAnsi(output)
+    expect(text.indexOf('▀')).toBeLessThan(text.indexOf('demo'))
+    expect(text).toContain('other')
+    session.close()
+    setImageDirectory('')
+  })
+})

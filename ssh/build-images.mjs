@@ -13,6 +13,8 @@ const out = join(root, 'ssh', 'dist', 'images')
 const background = '#14151a'
 const pngWidth = 960
 const sixelWidth = 560
+// Thumbnails for lists such as `projects`.
+const sixelThumbWidth = 280
 const gridWidth = 160
 
 // The media files ABOUT.md lists, plus every project share image.
@@ -66,11 +68,13 @@ async function prerender(path) {
   const name = slug(path)
   const png = await base().resize({ width: pngWidth, withoutEnlargement: true }).png({ palette: true, compressionLevel: 9 }).toBuffer({ resolveWithObject: true })
   writeFileSync(join(out, `${name}.png`), png.data)
-  const quantized = await sharp(await base().resize({ width: sixelWidth }).png({ palette: true, colors: 128, dither: 0.8 }).toBuffer()).raw().toBuffer({ resolveWithObject: true })
-  writeFileSync(join(out, `${name}.six`), sixel(quantized.data, quantized.info.width, quantized.info.height, quantized.info.channels))
+  for (const [suffix, size] of [['', sixelWidth], ['.thumb', sixelThumbWidth]]) {
+    const quantized = await sharp(await base().resize({ width: size }).png({ palette: true, colors: 128, dither: 0.8 }).toBuffer()).raw().toBuffer({ resolveWithObject: true })
+    writeFileSync(join(out, `${name}${suffix}.six`), sixel(quantized.data, quantized.info.width, quantized.info.height, quantized.info.channels))
+  }
   const grid = await base().resize({ width: gridWidth }).removeAlpha().raw().toBuffer({ resolveWithObject: true })
   writeFileSync(join(out, `${name}.rgb`), grid.data)
-  return [path, { png: `${name}.png`, width: png.info.width, height: png.info.height, sixel: `${name}.six`, grid: { file: `${name}.rgb`, width: grid.info.width, height: grid.info.height } }]
+  return [path, { png: `${name}.png`, width: png.info.width, height: png.info.height, sixel: `${name}.six`, sixelThumb: `${name}.thumb.six`, grid: { file: `${name}.rgb`, width: grid.info.width, height: grid.info.height } }]
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
