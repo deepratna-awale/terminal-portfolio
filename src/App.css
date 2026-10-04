@@ -27,15 +27,8 @@
 .app-shell.maximized ~ .dock { opacity: 0; pointer-events: none; transform: translate(-50%, 20px); }
 .window-chrome { flex: none; height: 40px; display: flex; align-items: center; padding: 0 14px; color: #b8b8c5; background: var(--chrome-bg); border-bottom: 1px solid var(--border); font: 12px -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; user-select: none; }
 .traffic-lights { display: flex; gap: 8px; width: 25%; }
-.light { width: 12px; height: 12px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; position: relative; }
-.light.close { background: #ee6a5f; } .light.minimize { background: #f5bd4f; } .light.maximize { background: #61c454; }
-.traffic-lights:hover .light::after { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(0,0,0,.6); font: 700 9px/12px sans-serif; }
-.traffic-lights:hover .light.close::after { content: '×'; } .traffic-lights:hover .light.minimize::after { content: '−'; } .traffic-lights:hover .light.maximize::after { content: '+'; }
-.light:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .window-title { flex: 1; overflow: hidden; text-align: center; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .window-actions { width: 25%; text-align: right; }
-.window-actions button { padding: 2px 6px; border: 0; border-radius: 4px; color: #9a9aa8; background: transparent; cursor: pointer; font-size: 15px; }
-.window-actions button:hover { color: var(--fg); background: rgba(255,255,255,.08); }
 
 /* Terminal body */
 .terminal-body { flex: 1; min-height: 0; overflow-y: auto; padding: 22px 28px 28px; color: var(--fg); font: var(--font-size)/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; text-shadow: var(--glow); scrollbar-color: color-mix(in srgb, var(--accent) 35%, transparent) transparent; cursor: text; }

@@ -4,6 +4,7 @@ import { profile } from '../content'
 import { HOME, NEWTAB, pageHash, pageTitle, resolveAddress } from '../gui/address'
 import { Portfolio } from '../gui/Portfolio'
 import './Browser.css'
+import { TrafficLights } from './TrafficLights'
 
 type Tab = { id: number; history: string[]; index: number; reload: number; loading: boolean }
 type Mode = 'normal' | 'maximized' | 'minimized'
@@ -221,11 +222,7 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront }: 
       onFocusCapture={() => { focused.current = true }}
     >
       <div className="cb-titlebar" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onDoubleClick={(event) => { if (!(event.target as HTMLElement).closest('button, input, a, [role="tab"]')) toggleMax() }}>
-        <div className="cb-lights">
-          <button type="button" className="cb-light close" aria-label="Close browser" title="Close" onClick={onClose} />
-          <button type="button" className="cb-light min" aria-label="Minimize browser" title="Minimize" onClick={minimize} />
-          <button type="button" className="cb-light max" aria-label={mode === 'maximized' ? 'Restore browser size' : 'Maximize browser'} title={mode === 'maximized' ? 'Restore' : 'Maximize'} onClick={toggleMax} />
-        </div>
+        <div className="cb-lights"><TrafficLights name="browser" maximized={mode === 'maximized'} onClose={onClose} onMinimize={minimize} onMaximize={toggleMax} /></div>
         <div className="cb-tabs" role="tablist" aria-label="Tabs">
           {tabs.map((tab) => {
             const page = current(tab)

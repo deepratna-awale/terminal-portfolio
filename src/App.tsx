@@ -5,6 +5,7 @@ import { GameOverlay, type GameName } from './components/Games'
 import { MatrixRain } from './components/MatrixRain'
 import { MenuBar, type Menu } from './components/MenuBar'
 import { Terminal, type TerminalHandle } from './components/Terminal'
+import { TrafficLights } from './components/TrafficLights'
 import { Vim } from './components/Vim'
 import { profile } from './content'
 import { openExternal, readFile, type ShellContext } from './shell/commands'
@@ -174,13 +175,9 @@ function App() {
         {mode !== 'closed' && (
           <section className="terminal-window" aria-label="Terminal" hidden={mode === 'minimized'} onPointerDown={() => setFront('terminal')}>
             <header className="window-chrome" onDoubleClick={(event) => { if (!(event.target as HTMLElement).closest('button')) toggleMaximize() }}>
-              <div className="traffic-lights">
-                <button type="button" className="light close" aria-label="Close session" title="Close" onClick={() => setMode('closed')} />
-                <button type="button" className="light minimize" aria-label="Minimize" title="Minimize" onClick={() => setMode('minimized')} />
-                <button type="button" className="light maximize" aria-label={mode === 'maximized' ? 'Restore' : 'Maximize'} title={mode === 'maximized' ? 'Restore' : 'Maximize'} onClick={toggleMaximize} />
-              </div>
+              <div className="traffic-lights"><TrafficLights name="terminal" maximized={mode === 'maximized'} onClose={() => setMode('closed')} onMinimize={() => setMode('minimized')} onMaximize={toggleMaximize} /></div>
               <div className="window-title">guest@{profile.host}: ~ — ssh — zsh</div>
-              <div className="window-actions"><button type="button" onClick={toggleMaximize} aria-label="Toggle maximize">{mode === 'maximized' ? '⤡' : '⤢'}</button></div>
+              <div className="window-actions" aria-hidden="true" />
             </header>
             <Terminal key={sessionKey} ref={terminal} theme={theme} ui={ui} onStatus={setStatus} suspended={Boolean(game || vim || matrix || (browser && front === 'browser'))} />
             <footer className="terminal-footer"><span>zsh</span><span>UTF-8</span><span>{themes[theme].label}</span><span className="footer-status">{status || `● ssh guest@${profile.host}`}</span></footer>
