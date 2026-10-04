@@ -62,7 +62,7 @@
 .cb-omnibox input::placeholder { color: var(--cb-text-2); opacity: .8; }
 .cb .cb-omnibox input:focus-visible { outline: 0; }
 .cb-star { flex: none; color: var(--cb-icon); opacity: .8; }
-.cb-avatar { flex: none; width: 26px; height: 26px; margin: 0 4px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: linear-gradient(135deg, #1a73e8, #0f9d58); font: 600 12px sans-serif; }
+.cb-avatar { flex: none; width: 26px; height: 26px; margin: 0 4px; display: grid; place-items: center; border-radius: 50%; color: #e8eaed; background: #5f6368; }
 .cb-menu-wrap { position: relative; }
 .cb-menu { position: absolute; z-index: 5; top: 38px; right: 0; min-width: 240px; padding: 6px 0; border-radius: 10px; background: var(--cb-menu); box-shadow: 0 8px 28px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.08); }
 .cb-menu button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px 16px; border: 0; background: transparent; text-align: left; cursor: pointer; font-size: 13.5px; }
@@ -90,7 +90,7 @@
 .cb-tiles a { width: 104px; display: grid; justify-items: center; gap: 10px; padding: 14px 6px 12px; border-radius: 8px; color: var(--cb-text); text-decoration: none; }
 .cb-tiles a:hover { background: var(--cb-hover); }
 .cb-tile-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--cb-omni); font: 700 14px sans-serif; }
-.cb-tile-icon.gh { background: #24292f; } .cb-tile-icon.in { background: #0a66c2; font-family: Georgia, serif; font-size: 19px; } .cb-tile-icon.cv { background: #d93025; } .cb-tile-icon.src { background: #188038; font-family: ui-monospace, monospace; font-size: 13px; }
+.cb-tile-icon.gh { background: #fff; } .cb-tile-icon.in { background: #fff; } .cb-tile-icon.cv { background: #d93025; } .cb-tile-icon.src { background: #188038; font-family: ui-monospace, monospace; font-size: 13px; }
 .cb-tile-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
 
 /* Stacking with the terminal window: the clicked window comes to the front. */

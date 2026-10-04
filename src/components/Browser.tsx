@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { ArrowLeft, ArrowRight, EllipsisVertical, ExternalLink, Globe, Lock, Plus, RotateCw, Search, SquareTerminal, Star, X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState, type RefObject, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { ArrowLeft, ArrowRight, CircleUserRound, EllipsisVertical, ExternalLink, Globe, Lock, Plus, RotateCw, Search, SquareTerminal, Star, X } from 'lucide-react'
 import { profile } from '../content'
 import { HOME, NEWTAB, pageHash, pageTitle, resolveAddress } from '../gui/address'
 import { Portfolio } from '../gui/Portfolio'
@@ -47,7 +47,7 @@ function NewTabPage({ onGo }: { onGo: (input: string) => void }) {
         {shortcuts.map((shortcut) => (
           <li key={shortcut.label}>
             <a href={shortcut.url} onClick={(event) => { if (modifier(event)) return; event.preventDefault(); onGo(shortcut.url) }}>
-              <span className={`cb-tile-icon ${shortcut.icon}`}>{shortcut.icon === 'pf' ? <img src="/favicon.svg" alt="" width={24} height={24} /> : shortcut.icon === 'gh' ? 'GH' : shortcut.icon === 'in' ? 'in' : shortcut.icon === 'cv' ? 'CV' : '</>'}</span>
+              <span className={`cb-tile-icon ${shortcut.icon}`}>{shortcut.icon === 'pf' ? <img src="/favicon.svg" alt="" width={24} height={24} /> : shortcut.icon === 'gh' ? <img src="/icons/github.svg" alt="" width={24} height={24} /> : shortcut.icon === 'in' ? <img src="/icons/linkedin.png" alt="" width={28} height={28} /> : shortcut.icon === 'cv' ? 'CV' : '</>'}</span>
               <span className="cb-tile-label">{shortcut.label}</span>
             </a>
           </li>
@@ -57,7 +57,10 @@ function NewTabPage({ onGo }: { onGo: (input: string) => void }) {
   )
 }
 
-export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront }: Props) {
+// What the desktop menu bar can do to the browser while it is the active app.
+export type BrowserControls = { newTab: () => void; closeTab: () => void; back: () => void; forward: () => void; reload: () => void; home: () => void; focusAddress: () => void; openReal: () => void; minimize: () => void; toggleMax: () => void; toTerminal: () => void }
+
+export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, controls }: Props & { controls?: RefObject<BrowserControls | null> }) {
   const [tabs, setTabs] = useState<Tab[]>(() => [{ id: nextId++, history: [pageFor(url)], index: 0, reload: 0, loading: true }])
   const [activeId, setActiveId] = useState(() => tabs[0]!.id)
   const [mode, setMode] = useState<Mode>('normal')
@@ -209,6 +212,14 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront }: 
   const tabKeys = (event: ReactKeyboardEvent<HTMLDivElement>, id: number) => {
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setActiveId(id) }
   }
+  useEffect(() => {
+    if (!controls) return
+    controls.current = {
+      newTab, closeTab: () => closeTab(activeId), back: () => go(-1), forward: () => go(1), reload, home: () => navigate(HOME),
+      focusAddress: () => addressInput.current?.focus(), openReal: () => openReal(activeUrl === NEWTAB ? `${origin()}/gui` : `${origin()}/gui${pageHash(activeUrl) ? `#${pageHash(activeUrl)}` : ''}`),
+      minimize, toggleMax, toTerminal,
+    }
+  })
   const auxClose = (event: ReactMouseEvent, id: number) => { if (event.button === 1) { event.preventDefault(); closeTab(id) } }
 
   return (
@@ -270,7 +281,7 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront }: 
           />
           <Star size={16} className="cb-star" aria-hidden="true" />
         </form>
-        <span className="cb-avatar" aria-hidden="true">G</span>
+        <span className="cb-avatar" title="Guest (you're browsing as a guest)" aria-label="Guest profile"><CircleUserRound size={18} /></span>
         <div className="cb-menu-wrap">
           <button type="button" className="cb-tool" aria-label="Browser menu" aria-haspopup="menu" aria-expanded={menu} title="Customize and control" onClick={() => setMenu((open) => !open)}><EllipsisVertical size={18} /></button>
           {menu && (
