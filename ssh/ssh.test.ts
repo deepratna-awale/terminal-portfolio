@@ -61,6 +61,8 @@ describe('terminal input and detection', () => {
     expect(applyProbe(base, '\x1b[?62;4;22c').images).toBe('sixel')
     expect(applyProbe(base, '\x1bP>|WezTerm 2024\x1b\\\x1b[?62;4c').images).toBe('iterm')
     expect(applyProbe(base, '\x1bP>|tmux 3.4\x1b\\\x1b[?62;4c').images).toBe('blocks')
+    expect(applyProbe(base, '\x1bP>|iTerm2 3.7.3\x1b\\\x1b[?62;4c')).toMatchObject({ images: 'iterm', multipart: true })
+    expect(detect('xterm-256color', { LC_TERMINAL: 'iTerm2', LC_TERMINAL_VERSION: '3.4.19' }).multipart).toBe(false)
   })
 })
 

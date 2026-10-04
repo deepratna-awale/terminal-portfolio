@@ -39,6 +39,8 @@ export class Session {
   private probeBuffer = ''
   private line: LineState = { value: '', cursor: 0, killRing: '' }
   private cursorRow = 0
+  // The prompt already on screen, so a one-row edit can skip redrawing it.
+  private drawnPrompt = ''
   private path = '~'
   private previousPath = '~'
   private history: string[] = []
@@ -109,7 +111,7 @@ export class Session {
 
   private showImage(src: string, alt: string, href?: string) {
     const url = `${profile.website}${src}`
-    const image = hasImage(src) ? renderImage(src, this.graphics.images, this.columns, this.graphics.color) : null
+    const image = hasImage(src) ? renderImage(src, this.graphics.images, this.columns, this.graphics.color, this.graphics.multipart) : null
     if (image) this.write(image)
     else this.writeLines(this.markdown(`*${alt}*`, this.colors.muted))
     const link = href ?? url
@@ -168,7 +170,13 @@ export class Session {
     const promptWidth = width(prompt)
     const columns = Math.max(10, this.columns)
     const end = promptWidth + width(value) + width(ghost)
-    let output = (this.cursorRow > 0 ? `\x1b[${this.cursorRow}A` : '') + '\r\x1b[J' + prompt + value + (ghost ? `${this.colors.muted}${ghost}${RESET}` : '')
+    const tail = value + (ghost ? `${this.colors.muted}${ghost}${RESET}` : '')
+    const cursorAt = this.search ? promptWidth + width(value) : promptWidth + width(this.line.value.slice(0, this.line.cursor))
+    if (this.cursorRow === 0 && this.drawnPrompt === prompt && end < columns) {
+      this.write(`\r\x1b[${promptWidth}C${tail}\x1b[K\r\x1b[${cursorAt}C`)
+      return
+    }
+    let output = (this.cursorRow > 0 ? `\x1b[${this.cursorRow}A` : '') + '\r\x1b[J' + prompt + tail
     if (end > 0 && end % columns === 0) output += '\r\n'
     const endRow = Math.floor(end / columns)
     const cursor = this.search ? promptWidth + width(value) : promptWidth + width(this.line.value.slice(0, this.line.cursor))
@@ -177,13 +185,14 @@ export class Session {
     if (endRow > cursorRow) output += `\x1b[${endRow - cursorRow}A`
     output += `\r${cursorColumn ? `\x1b[${cursorColumn}C` : ''}`
     this.cursorRow = cursorRow
+    this.drawnPrompt = prompt
     this.write(output)
   }
 
   private showPrompt() {
     this.mode = 'line'
     this.line = { value: '', cursor: 0, killRing: this.line.killRing }
-    this.cursorRow = 0
+    this.cursorRow = 0; this.drawnPrompt = ''
     this.historyIndex = -1
     this.refresh()
   }
@@ -195,7 +204,7 @@ export class Session {
     this.refresh(false)
     this.line = cursor
     this.write('\r\n')
-    this.cursorRow = 0
+    this.cursorRow = 0; this.drawnPrompt = ''
   }
 
   private setLine(value: string, cursor = value.length) {
@@ -208,7 +217,16 @@ export class Session {
     const clean = text.replace(/\r\n?|\n|\t/g, ' ').replace(/[\x00-\x1f\x7f]/g, '')
     if (!clean) return
     const { value, cursor } = this.line
-    this.setLine(value.slice(0, cursor) + clean + value.slice(cursor), cursor + clean.length)
+    const next = value.slice(0, cursor) + clean + value.slice(cursor)
+    // Typing at the end of the line just echoes, unless a suggestion or a wrap needs a redraw.
+    const echo = this.mode === 'line' && !this.search && cursor === value.length && next.length <= maxLine && !this.ghost() && !/[^\x20-\x7e]/.test(clean)
+    if (echo) {
+      this.line = { ...this.line, value: next, cursor: next.length }
+      const end = width(this.promptText()) + next.length
+      if (!this.ghost() && Math.floor((end - 1) / this.columns) === Math.floor((end - clean.length) / this.columns) && end % this.columns !== 0) { this.write(clean); return }
+      this.line = { ...this.line, value, cursor }
+    }
+    this.setLine(next, cursor + clean.length)
   }
 
   private walkHistory(direction: 1 | -1) {
@@ -233,7 +251,7 @@ export class Session {
       const rows: string[] = []
       for (let index = 0; index < candidates.length; index += perRow) rows.push(candidates.slice(index, index + perRow).map((item) => item.padEnd(cell)).join('').trimEnd())
       this.writeLines(rows)
-      this.cursorRow = 0
+      this.cursorRow = 0; this.drawnPrompt = ''
       this.refresh()
     } else this.write('\x07')
     this.lastTab = now
@@ -269,7 +287,7 @@ export class Session {
           if (!value) { if (this.mode === 'question') { this.commitLine(); this.answer(null) } else { this.commitLine(); this.close('logout') } return }
           this.setLine(value.slice(0, cursor) + value.slice(cursor + 1), cursor)
           return
-        case 'l': this.clear(); this.cursorRow = 0; this.refresh(); return
+        case 'l': this.clear(); this.cursorRow = 0; this.drawnPrompt = ''; this.refresh(); return
         case 'r': if (this.mode === 'line') { this.search = { query: '', skip: 0 }; this.refresh() } return
         case 'p': this.walkHistory(1); return
         case 'n': this.walkHistory(-1); return
@@ -349,7 +367,8 @@ export class Session {
     this.abort = controller
     let frame = 0
     this.write(`${this.colors.muted}${frames[0]} thinking ...${RESET}`)
-    const spinner = setInterval(() => this.write(`\r${this.colors.muted}${frames[++frame % frames.length]} thinking ...${RESET}`), 90)
+    // Only the spinner glyph changes, a few times a second, to keep terminal triggers cheap.
+    const spinner = setInterval(() => this.write(`\r${this.colors.muted}${frames[++frame % frames.length]}${RESET}`), 150)
     try {
       const turns: ChatTurn[] = [...this.chat.slice(-6), { role: 'user', content: question }]
       const reply = await askAssistant(turns, controller.signal)
@@ -399,7 +418,7 @@ export class Session {
         this.question = { label, resolve }
         this.mode = 'question'
         this.line = { value: '', cursor: 0, killRing: this.line.killRing }
-        this.cursorRow = 0
+        this.cursorRow = 0; this.drawnPrompt = ''
         this.refresh()
       }),
       ui: {

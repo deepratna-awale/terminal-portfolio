@@ -2,8 +2,13 @@
 import type { ColorDepth } from './ansi'
 
 export type ImageMode = 'kitty' | 'iterm' | 'sixel' | 'blocks' | 'ascii'
-export type Graphics = { images: ImageMode; color: ColorDepth; hyperlinks: boolean }
+export type Graphics = { images: ImageMode; color: ColorDepth; hyperlinks: boolean; multipart?: boolean }
 export const imageModes: ImageMode[] = ['kitty', 'iterm', 'sixel', 'blocks', 'ascii']
+
+const newer = (version: string | undefined, major: number, minor: number) => {
+  const [a = 0, b = 0] = (version ?? '').split('.').map(Number)
+  return a > major || (a === major && b >= minor)
+}
 
 // A first guess from TERM and the variables OpenSSH forwards (macOS sends LC_*,
 // so iTerm2's LC_TERMINAL arrives; TERM_PROGRAM and COLORTERM only with SendEnv).
@@ -14,7 +19,7 @@ export function detect(term: string, env: Record<string, string>): Graphics {
   let images: ImageMode = color === '16' ? 'ascii' : 'blocks'
   if (/iterm|wezterm/.test(program)) images = 'iterm'
   else if (name === 'xterm-kitty' || name === 'xterm-ghostty' || /ghostty|kitty/.test(program)) images = 'kitty'
-  return { images, color, hyperlinks: name !== 'linux' && name !== 'dumb' }
+  return { images, color, hyperlinks: name !== 'linux' && name !== 'dumb', multipart: /iterm/.test(program) && newer(env.LC_TERMINAL_VERSION, 3, 5) }
 }
 
 // Asked once at login: kitty graphics support, the terminal's name (XTVERSION)
@@ -29,7 +34,7 @@ export function applyProbe(graphics: Graphics, replies: string): Graphics {
   const attributes = /\x1b\[\?([\d;]*)c/.exec(replies)?.[1]?.split(';') ?? []
   // tmux and screen swallow image escapes unless configured to pass them through.
   if (/tmux|screen/.test(version)) return { ...graphics, images: graphics.color === '16' ? 'ascii' : 'blocks' }
-  if (/iterm|wezterm/.test(version)) return { ...graphics, images: 'iterm', color: 'truecolor' }
+  if (/iterm|wezterm/.test(version)) return { ...graphics, images: 'iterm', color: 'truecolor', multipart: /iterm2 /.test(version) && newer(/iterm2 ([\d.]+)/.exec(version)?.[1], 3, 5) }
   if (/\x1b_Gi=31;OK/.test(replies)) return { ...graphics, images: 'kitty', color: 'truecolor' }
   if (attributes.includes('4')) return { ...graphics, images: 'sixel' }
   if (/kitty|ghostty|foot|alacritty|contour/.test(version)) return { ...graphics, color: 'truecolor' }
