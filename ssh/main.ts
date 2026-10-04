@@ -69,7 +69,7 @@ function admit(key: string): string | null {
 }
 setInterval(() => { const now = Date.now(); for (const [key, times] of recent) if (times.every((time) => now - time > 60_000)) recent.delete(key) }, 60_000).unref()
 
-const server = new ssh2.Server({ hostKeys: [hostKey()], ident: `SSH-2.0-${profile.handle}-portfolio` }, (client, info) => {
+const server = new ssh2.Server({ hostKeys: [hostKey()], ident: `${profile.handle}-portfolio` }, (client, info) => {
   const ip = info.ip.replace(/^::ffff:/i, '')
   const key = clientKey(ip)
   const refusal = admit(key)
