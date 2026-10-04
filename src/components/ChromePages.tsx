@@ -10,25 +10,31 @@ const BEST = 'dino-best'
 const readBest = () => { try { return Number(localStorage.getItem(BEST)) || 0 } catch { return 0 } }
 const saveBest = (value: number) => { try { localStorage.setItem(BEST, String(value)) } catch { /* storage unavailable */ } }
 
-// 20x22 T-rex, two running frames for the legs.
+// 19x21 T-rex: body, then legs standing or in one of two running frames.
 const BODY = [
-  '           ########',
-  '          ##.#######',
-  '          ##########',
-  '          ##########',
-  '          #####',
   '          ########',
-  '#        #####',
-  '#       #######',
-  '##     #########',
-  '###   ##########  #',
-  '##############',
+  '         ##.#######',
+  '         ##########',
+  '         ##########',
+  '         ##########',
+  '         #####',
+  '         ########',
+  '#       #####',
+  '#      #######',
+  '##    #########',
+  '###  ############',
+  '#############   #',
   '#############',
-  ' ###########',
-  '  #########',
-  '   #######',
+  ' ############',
+  '  ##########',
+  '   ########',
+  '    ######',
 ]
-const LEGS = [['    ###  ##', '    ##    #', '    #     ##'], ['    ##   ##', '    ###   #', '          ##']]
+const LEGS = [
+  ['    ###  ##', '    ##    #', '    #     #', '    ##    ##'],
+  ['    ###  ##', '    ##   ###', '    #', '    ##'],
+  ['    ###  ##', '   ###    #', '          #', '          ##'],
+]
 const PX = 2
 
 function drawRex(ctx: CanvasRenderingContext2D, x: number, top: number, frame: number, dead: boolean) {
@@ -82,7 +88,7 @@ export function DinoPage() {
       ctx.fillRect(0, GROUND - 1, DINO_WIDTH, 1)
       for (let x = -current.distance % 60; x < DINO_WIDTH; x += 60) ctx.fillRect(x + 60, GROUND + 6, 3, 1)
       current.cacti.forEach((cactus) => drawCacti(ctx, cactus.x, cactus.width, cactus.height))
-      const legs = current.y > 0 || !game.current ? 0 : Math.floor(current.distance / 30) % 2
+      const legs = current.y > 0 || !current.alive || !game.current ? 0 : 1 + (Math.floor(current.distance / 30) % 2)
       drawRex(ctx, DINO_X, GROUND - REX.height - current.y + 1, legs, !current.alive)
       ctx.font = '12px ui-monospace, monospace'
       ctx.textAlign = 'right'
