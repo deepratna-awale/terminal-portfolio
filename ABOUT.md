@@ -81,9 +81,9 @@ links:
   - id: resume
     name: Resume
     url: /media/Resume-Awale-Deepratna.pdf
-    icon: CV
-    color: "#d93025"
-    show: [newtab]
+    icon: pdf.svg
+    tile: true
+    show: [dock, newtab]
   - id: source
     name: Source code
     url: https://github.com/deepratna-awale/terminal-portfolio
