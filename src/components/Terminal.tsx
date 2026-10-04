@@ -450,9 +450,9 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
 
 const neofetchArt = `    ____     ___
    / __ \\   /   |
-  / / / /  / /| |
- / /_/ /  / ___ |
-/_____/  /_/  |_|`
+  / / / /  / /| |  ██
+ / /_/ /  / ___ |  ██
+/_____/  /_/  |_|  ██`
 
 function Neofetch({ title, info, theme }: { title: string; info: string[]; theme: ThemeName }) {
   const swatches = ['--error', '--success', '--accent', '--link', '--command', '--accent-2', '--muted', '--fg']
