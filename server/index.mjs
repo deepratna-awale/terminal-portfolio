@@ -4,6 +4,8 @@ import { createServer } from 'node:http'
 import { extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { converse } from './bedrock.mjs'
+import { getContributions } from './contributions.mjs'
+import { addEntry, listEntries, validate } from './guestbook.mjs'
 import { getProjects, projectDigest } from './projects.mjs'
 import { clientIp, createLimiter } from './rateLimit.mjs'
 
@@ -15,6 +17,12 @@ const chatLimit = createLimiter({
   perMinute: Number(process.env.CHAT_PER_MINUTE ?? 6),
   perDay: Number(process.env.CHAT_PER_DAY ?? 60),
   globalPerDay: Number(process.env.CHAT_GLOBAL_PER_DAY ?? 1500),
+})
+const guestbookLimit = createLimiter({
+  perMinute: 1,
+  perDay: Number(process.env.GUESTBOOK_PER_DAY ?? 3),
+  globalPerDay: Number(process.env.GUESTBOOK_GLOBAL_PER_DAY ?? 300),
+  messages: { global: 'the guestbook is full for today, try again tomorrow', day: "you've signed enough for today, thank you!", minute: 'one note a minute, please' },
 })
 const mimeTypes = { '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.pdf': 'application/pdf', '.txt': 'text/plain', '.woff2': 'font/woff2' }
 const securityHeaders = {
@@ -97,6 +105,55 @@ async function handleChat(request, response) {
   }
 }
 
+async function handleGuestbook(request, response) {
+  if (request.method === 'GET') {
+    try { return sendJson(response, 200, await listEntries()) } catch (error) { console.error(`guestbook read failed: ${error.message}`); return sendJson(response, 503, { error: 'the guestbook is unavailable right now' }) }
+  }
+  if (request.method !== 'POST') return send(response, 405, 'method not allowed', 'text/plain', { Allow: 'GET, POST' })
+  const origin = request.headers.origin
+  if (origin && !allowedOrigins.has(origin)) return sendJson(response, 403, { error: 'origin not allowed' })
+  if (!/^application\/json\b/.test(request.headers['content-type'] ?? '')) return sendJson(response, 415, { error: 'send JSON' })
+  const limit = guestbookLimit(clientIp(request))
+  if (!limit.ok) return sendJson(response, 429, { error: limit.reason }, { 'Retry-After': String(limit.retryAfter) })
+  try {
+    const { entry, error } = validate(await readJson(request, 2048))
+    if (error) return sendJson(response, 400, { error })
+    sendJson(response, 201, await addEntry(entry))
+  } catch (error) {
+    if (error.status) return sendJson(response, error.status, { error: error.message })
+    console.error(`guestbook write failed: ${error.message}`)
+    sendJson(response, 503, { error: 'the guestbook is unavailable right now' })
+  }
+}
+
+async function handleContributions(response) {
+  try {
+    sendJson(response, 200, await getContributions(), { 'Cache-Control': 'public, max-age=1800' })
+  } catch (error) {
+    console.error(`contributions failed: ${error.message}`)
+    sendJson(response, 502, { error: 'GitHub is unreachable right now' })
+  }
+}
+
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char])
+
+// The prerendered standard site, with live projects filled in for no-JS visitors and crawlers.
+async function handleGui(response) {
+  const file = join(root, 'gui.html')
+  if (!existsSync(file)) return serveStatic('/', response)
+  let projects = []
+  try { projects = await Promise.race([getProjects(), new Promise((resolve) => setTimeout(() => resolve([]), 1500))]) } catch { /* render without them */ }
+  const link = (href, text, extra = '') => `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer"${extra}>${text}</a>`
+  const cards = projects.map((project) => {
+    const meta = [project.language ? `<span class="pf-lang"><span class="pf-lang-dot"></span>${escapeHtml(project.language)}</span>` : '', project.stars ? `<span>★ ${Number(project.stars)}</span>` : ''].join('')
+    const bullets = (project.bullets.length ? project.bullets : [project.description]).filter(Boolean).map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join('')
+    const image = `https://opengraph.githubassets.com/1/deepratna-awale/${encodeURIComponent(project.name)}`
+    return `<article class="pf-card pf-project">${link(project.url, `<img src="${image}" alt="" width="1200" height="600" loading="lazy">`, ' class="pf-project-image" tabindex="-1" aria-hidden="true"')}<div class="pf-project-body"><h3>${link(project.url, escapeHtml(project.name))}</h3><p class="pf-project-meta">${meta}</p><ul class="pf-bullets">${bullets}</ul><div class="pf-card-links">${link(project.url, 'Code')}${project.homepage && /^https?:\/\//.test(project.homepage) ? link(project.homepage, 'Live') : ''}</div></div></article>`
+  }).join('')
+  const html = readFileSync(file, 'utf8').replace('<!--projects-->', cards || '<p>Projects load from <a href="https://github.com/deepratna-awale">GitHub</a>.</p>')
+  send(response, 200, html, 'text/html', { 'Cache-Control': 'no-cache' })
+}
+
 async function handleProjects(response) {
   try {
     sendJson(response, 200, await getProjects(), { 'Cache-Control': 'public, max-age=600' })
@@ -146,6 +203,9 @@ createServer((request, response) => {
   if (pathname === '/health') return send(response, 200, 'ok')
   if (pathname === '/api/chat') return request.method === 'POST' ? handleChat(request, response) : send(response, 405, 'method not allowed', 'text/plain', { Allow: 'POST' })
   if (pathname === '/api/projects' && request.method === 'GET') return handleProjects(response)
+  if (pathname === '/api/contributions' && request.method === 'GET') return handleContributions(response)
+  if (pathname === '/api/guestbook') return handleGuestbook(request, response)
+  if ((pathname === '/gui' || pathname === '/gui/') && (request.method === 'GET' || request.method === 'HEAD')) return handleGui(response)
   if (pathname === '/api/fortune' && request.method === 'GET') return runGame(response, 'fortune', ['-s'])
   if (pathname === '/api/cowthink' && request.method === 'GET') return runGame(response, 'cowthink', ['-f', 'tux', '--', cowthinkText(requestUrl.searchParams.get('text'))])
   if (pathname.startsWith('/api/')) return send(response, 404, 'not found')

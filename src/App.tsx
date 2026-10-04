@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 import './App.css'
+import { BrowserWindow } from './components/Browser'
+import { ChromeIcon, GitHubIcon, GmailIcon, LinkedInIcon } from './components/BrandIcons'
+import { GameOverlay, type GameName } from './components/Games'
 import { MatrixRain } from './components/MatrixRain'
 import { MenuBar, type Menu } from './components/MenuBar'
 import { Terminal, type TerminalHandle } from './components/Terminal'
+import { Vim } from './components/Vim'
 import { profile } from './content'
-import { openExternal, type ShellContext } from './shell/commands'
+import { openExternal, readFile, type ShellContext } from './shell/commands'
 import { isThemeName, themeNames, themes, type ThemeName } from './themes'
 
 type WindowMode = 'normal' | 'maximized' | 'minimized' | 'closed'
@@ -23,9 +27,29 @@ function App() {
   const [fontSize, setFontSize] = useState(() => Number(stored('portfolio.font', '15', (value) => /^\d+$/.test(value))))
   const [crt, setCrt] = useState(() => stored('portfolio.crt', 'on', (value) => value === 'on' || value === 'off') === 'on')
   const [matrix, setMatrix] = useState(false)
+  const [game, setGame] = useState<GameName | null>(null)
+  const [vim, setVim] = useState<{ file: string; text: string } | null>(null)
+  const [melting, setMelting] = useState(false)
+  const [browser, setBrowser] = useState<{ url: string; stamp: number } | null>(null)
+  const [front, setFront] = useState<'terminal' | 'browser'>('terminal')
   const [status, setStatus] = useState('')
   const [sessionKey, setSessionKey] = useState(0)
   const stopMatrix = useCallback(() => setMatrix(false), [])
+  const setCrtMode = useCallback((on: boolean) => { setCrt(on); save('portfolio.crt', on ? 'on' : 'off') }, [])
+  const closeOverlay = useCallback((message: string) => {
+    setGame(null); setVim(null)
+    terminal.current?.print([{ type: 'success', text: message }])
+    setTimeout(() => terminal.current?.focus(), 30)
+  }, [])
+  const openFile = useCallback((file: string) => readFile(file), [])
+  const openBrowser = useCallback((url = '/gui') => { setBrowser({ url, stamp: Date.now() }); setFront('browser') }, [])
+  const closeBrowser = useCallback(() => { setBrowser(null); setFront('terminal'); setTimeout(() => terminal.current?.focus(), 30) }, [])
+  const browserFront = useCallback((isFront: boolean) => setFront(isFront ? 'browser' : 'terminal'), [])
+  const clickBrowser = (event: MouseEvent) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    event.preventDefault()
+    openBrowser('/gui')
+  }
 
   const setTheme = useCallback((name: ThemeName) => { setThemeState(name); save('portfolio.theme', name) }, [])
   const toggleMaximize = useCallback(() => setMode((current) => { const next = current === 'maximized' ? 'normal' : 'maximized'; save('portfolio.window', next); return next }), [])
@@ -44,7 +68,25 @@ function App() {
     exit: () => setMode('closed'),
     matrix: () => setMatrix(true),
     replayBoot: () => terminal.current?.replayBoot(),
-  }), [setTheme, toggleFullscreen, toggleMaximize])
+    setCrt: setCrtMode,
+    crt,
+    game: (name) => setGame(name),
+    vim: (file, text) => setVim({ file, text }),
+    meltdown: () => { setMelting(true); setTimeout(() => setMelting(false), 1900) },
+    openBrowser,
+  }), [crt, openBrowser, setCrtMode, setTheme, toggleFullscreen, toggleMaximize])
+
+  // ↑ ↑ ↓ ↓ ← → ← → b a
+  useEffect(() => {
+    const code = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a']
+    let position = 0
+    const handler = (event: KeyboardEvent) => {
+      position = event.key === code[position] ? position + 1 : event.key === code[0] ? 1 : 0
+      if (position === code.length) { position = 0; terminal.current?.print([{ type: 'success', text: '↑↑↓↓←→←→BA  +30 lives. Also: matrix mode.' }]); setMatrix(true) }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -64,7 +106,7 @@ function App() {
 
   const menus: Menu[] = [
     { label: 'Terminal', items: [
-      { label: 'About this portfolio', action: () => run('neofetch') },
+      { label: 'About DeepOS 26.10 LTS', action: () => run('neofetch') },
       { label: 'View source on GitHub', action: () => openExternal(profile.source) },
       { separator: true },
       { label: 'Email Deepratna', action: () => openExternal(`mailto:${profile.email}`) },
@@ -93,12 +135,19 @@ function App() {
       { separator: true },
       ...themeNames.map((name) => ({ label: themes[name].label, checked: theme === name, action: () => setTheme(name) })),
       { separator: true },
-      { label: 'CRT scanlines', checked: crt, action: () => setCrt((on) => { save('portfolio.crt', on ? 'off' : 'on'); return !on }) },
+      { label: 'CRT scanlines', checked: crt, action: () => setCrtMode(!crt) },
+      { separator: true },
+      { label: 'Standard website (GUI)', action: () => openBrowser('/gui') },
     ] },
     { label: 'Go', items: [
       ...['about', 'experience', 'projects', 'publications', 'skills', 'education', 'contact', 'resume'].map((command) => ({ label: command[0]!.toUpperCase() + command.slice(1), action: () => run(command) })),
       { separator: true },
       { label: 'Architecture diagram', action: () => run('view architecture.svg') },
+      { label: 'Now', action: () => run('now') },
+      { label: 'Guestbook', action: () => run('guestbook') },
+      { separator: true },
+      { label: 'Play snake', action: () => run('snake') },
+      { label: 'Play 2048', action: () => run('2048') },
     ] },
     { label: 'Window', items: [
       { label: 'Minimize', shortcut: '⌘M', action: () => setMode('minimized') },
@@ -116,11 +165,15 @@ function App() {
   const visible = mode === 'normal' || mode === 'maximized'
 
   return (
-    <div className={`desktop theme-${theme}${crt ? ' crt' : ''}`} style={style}>
+    <div className={`desktop theme-${theme}${crt ? ' crt' : ''}${melting ? ' meltdown' : ''}${browser && front === 'terminal' ? ' terminal-front' : ''}`} style={style}>
       <MenuBar menus={menus} status={status} />
+      <a className="desktop-icon" href="/gui" title="Open the standard portfolio website" onClick={clickBrowser}>
+        <span className="desktop-chrome" aria-hidden="true"><ChromeIcon /></span>
+        <span className="desktop-icon-label">Portfolio</span>
+      </a>
       <main className={`app-shell ${mode}`}>
         {mode !== 'closed' && (
-          <section className="terminal-window" aria-label="Terminal" hidden={mode === 'minimized'}>
+          <section className="terminal-window" aria-label="Terminal" hidden={mode === 'minimized'} onPointerDown={() => setFront('terminal')}>
             <header className="window-chrome" onDoubleClick={toggleMaximize}>
               <div className="traffic-lights">
                 <button type="button" className="light close" aria-label="Close session" title="Close" onClick={() => setMode('closed')} />
@@ -130,7 +183,7 @@ function App() {
               <div className="window-title">guest@{profile.host}: ~ — ssh — zsh</div>
               <div className="window-actions"><button type="button" onClick={toggleMaximize} aria-label="Toggle maximize">{mode === 'maximized' ? '⤡' : '⤢'}</button></div>
             </header>
-            <Terminal key={sessionKey} ref={terminal} theme={theme} ui={ui} onStatus={setStatus} />
+            <Terminal key={sessionKey} ref={terminal} theme={theme} ui={ui} onStatus={setStatus} suspended={Boolean(game || vim || matrix || (browser && front === 'browser'))} />
             <footer className="terminal-footer"><span>zsh</span><span>UTF-8</span><span>{themes[theme].label}</span><span className="footer-status">{status || `● ssh guest@${profile.host}`}</span></footer>
           </section>
         )}
@@ -145,10 +198,17 @@ function App() {
         <button type="button" className={`dock-item${visible ? ' running' : ''}`} onClick={mode === 'closed' ? reconnect : restore} title="Terminal">
           <span className="dock-icon">&gt;_</span>
         </button>
-        <a className="dock-item" href={profile.github} target="_blank" rel="noreferrer noopener" title="GitHub"><span className="dock-icon gh">GH</span></a>
-        <a className="dock-item" href={profile.linkedin} target="_blank" rel="noreferrer noopener" title="LinkedIn"><span className="dock-icon in">in</span></a>
-        <a className="dock-item" href={`mailto:${profile.email}`} title="Email"><span className="dock-icon mail">@</span></a>
+        <a className="dock-item" href={profile.github} target="_blank" rel="noreferrer noopener" title="GitHub" aria-label="GitHub"><span className="dock-icon brand gh"><GitHubIcon /></span></a>
+        <a className="dock-item" href={profile.linkedin} target="_blank" rel="noreferrer noopener" title="LinkedIn" aria-label="LinkedIn"><span className="dock-icon brand in"><LinkedInIcon /></span></a>
+        <a className="dock-item" href={`mailto:${profile.email}`} title="Email" aria-label="Email"><span className="dock-icon brand mail"><GmailIcon /></span></a>
+        {browser && <>
+          <span className="dock-separator" aria-hidden="true" />
+          <a className="dock-item running" href="/gui" title="Chrome" aria-label="Chrome" onClick={clickBrowser}><span className="dock-icon brand chrome"><ChromeIcon /></span></a>
+        </>}
       </nav>
+      {browser && <BrowserWindow url={browser.url} stamp={browser.stamp} onClose={closeBrowser} onFront={browserFront} onOpenTerminal={() => { setFront('terminal'); restore() }} />}
+      {game && <GameOverlay game={game} onExit={closeOverlay} />}
+      {vim && <Vim file={vim.file} text={vim.text} onExit={closeOverlay} open={openFile} />}
       {matrix && <MatrixRain onDone={stopMatrix} />}
     </div>
   )

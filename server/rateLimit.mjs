@@ -4,7 +4,13 @@
 const MINUTE = 60_000
 const DAY = 24 * 60 * MINUTE
 
-export function createLimiter({ perMinute, perDay, globalPerDay }) {
+const chatMessages = {
+  global: 'the assistant has hit its daily budget, try again tomorrow',
+  day: "you've reached today's question limit, try again tomorrow",
+  minute: 'slow down a little, try again in a minute',
+}
+
+export function createLimiter({ perMinute, perDay, globalPerDay, messages = chatMessages }) {
   const clients = new Map()
   let global = { count: 0, resetAt: Date.now() + DAY }
 
@@ -21,9 +27,9 @@ export function createLimiter({ perMinute, perDay, globalPerDay }) {
     client.minute = client.minute.filter((time) => now - time < MINUTE)
     clients.set(key, client)
 
-    if (global.count >= globalPerDay) return { ok: false, retryAfter: Math.ceil((global.resetAt - now) / 1000), reason: 'the assistant has hit its daily budget, try again tomorrow' }
-    if (client.day >= perDay) return { ok: false, retryAfter: Math.ceil((client.dayResetAt - now) / 1000), reason: "you've reached today's question limit, try again tomorrow" }
-    if (client.minute.length >= perMinute) return { ok: false, retryAfter: Math.ceil((MINUTE - (now - client.minute[0])) / 1000), reason: 'slow down a little, try again in a minute' }
+    if (global.count >= globalPerDay) return { ok: false, retryAfter: Math.ceil((global.resetAt - now) / 1000), reason: messages.global }
+    if (client.day >= perDay) return { ok: false, retryAfter: Math.ceil((client.dayResetAt - now) / 1000), reason: messages.day }
+    if (client.minute.length >= perMinute) return { ok: false, retryAfter: Math.ceil((MINUTE - (now - client.minute[0])) / 1000), reason: messages.minute }
 
     client.minute.push(now)
     client.day++

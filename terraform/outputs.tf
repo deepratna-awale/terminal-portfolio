@@ -22,3 +22,7 @@ output "nameservers_command" {
   description = "Run this to get the nameservers to set at GoDaddy."
   value       = "aws lightsail get-domain --region us-east-1 --domain-name ${var.domain_name} --query \"domain.domainEntries[?type=='NS'].target\" --output text"
 }
+
+output "guestbook_bucket" {
+  value = aws_lightsail_bucket.guestbook.name
+}
