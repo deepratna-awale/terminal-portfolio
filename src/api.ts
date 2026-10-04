@@ -5,6 +5,7 @@ export type Project = {
   stars: number
   url: string
   homepage: string | null
+  image: string | null
   pushedAt: string
   bullets: string[]
 }

@@ -172,6 +172,7 @@ export function ProjectCards({ projects, detailed = false, renderLink }: { proje
     <div className={`project-grid${detailed ? ' detailed' : ''}`}>
       {projects.map((project) => (
         <article key={project.name} className="project-card">
+          {project.image && <a className="project-thumb" href={project.url} target="_blank" rel="noopener noreferrer" tabIndex={-1} aria-hidden="true"><img src={project.image} alt="" width={1280} height={640} loading="lazy" decoding="async" /></a>}
           <header className="project-head">
             <span className="project-name">{renderLink({ href: `cmd:${encodeURIComponent(`cat projects/${project.name}`)}`, children: project.name })}</span>
             {project.stars > 0 && <span className="project-stars">★ {project.stars}</span>}

@@ -161,7 +161,8 @@ async function viewMedia(ctx: ShellContext, target = 'architecture.svg') {
   try {
     const project = (await ctx.projects()).find((item) => item.name.toLowerCase() === repo.toLowerCase())
     if (!project) { ctx.print([err(`view: ${target}: Media asset not found. Try \`ls media\`.`)]); return }
-    ctx.print([{ type: 'media', text: `screenshots/${project.name}.png`, media: { src: `https://opengraph.githubassets.com/1/deepratna-awale/${project.name}`, alt: `GitHub preview card for ${project.name}`, href: project.url } }])
+    if (!project.image) { ctx.print([err(`view: ${target}: No preview image for ${project.name}.`)]); return }
+    ctx.print([{ type: 'media', text: `screenshots/${project.name}.png`, media: { src: project.image, alt: `Preview card for ${project.name}`, href: project.url } }])
   } catch { ctx.print([err('view: GitHub is unreachable right now')]) }
 }
 

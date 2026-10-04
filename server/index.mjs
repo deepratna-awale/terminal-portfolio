@@ -26,8 +26,7 @@ const guestbookLimit = createLimiter({
 })
 const mimeTypes = { '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.pdf': 'application/pdf', '.txt': 'text/plain', '.woff2': 'font/woff2' }
 const securityHeaders = {
-  // GitHub's Open Graph cards are the only third-party images (project screenshots).
-  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https://opengraph.githubassets.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
@@ -153,8 +152,7 @@ async function handleGui(response) {
   const cards = projects.map((project) => {
     const meta = [project.language ? `<span class="pf-lang"><span class="pf-lang-dot"></span>${escapeHtml(project.language)}</span>` : '', project.stars ? `<span>★ ${Number(project.stars)}</span>` : ''].join('')
     const bullets = (project.bullets.length ? project.bullets : [project.description]).filter(Boolean).map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join('')
-    const image = `https://opengraph.githubassets.com/1/deepratna-awale/${encodeURIComponent(project.name)}`
-    return `<article class="pf-card pf-project">${link(project.url, `<img src="${image}" alt="" width="1200" height="600" loading="lazy">`, ' class="pf-project-image" tabindex="-1" aria-hidden="true"')}<div class="pf-project-body"><h3>${link(project.url, escapeHtml(project.name))}</h3><p class="pf-project-meta">${meta}</p><ul class="pf-bullets">${bullets}</ul><div class="pf-card-links">${link(project.url, 'Code')}${project.homepage && /^https?:\/\//.test(project.homepage) ? link(project.homepage, 'Live') : ''}</div></div></article>`
+    return `<article class="pf-card pf-project">${(project.image ? link(project.url, `<img src="${escapeHtml(project.image)}" alt="" width="1280" height="640" loading="lazy">`, ' class="pf-project-image" tabindex="-1" aria-hidden="true"') : '')}<div class="pf-project-body"><h3>${link(project.url, escapeHtml(project.name))}</h3><p class="pf-project-meta">${meta}</p><ul class="pf-bullets">${bullets}</ul><div class="pf-card-links">${link(project.url, 'Code')}${project.homepage && /^https?:\/\//.test(project.homepage) ? link(project.homepage, 'Live') : ''}</div></div></article>`
   }).join('')
   const html = readFileSync(file, 'utf8').replace('<!--projects-->', cards || '<p>Projects load from <a href="https://github.com/deepratna-awale">GitHub</a>.</p>')
   send(response, 200, html, 'text/html', { 'Cache-Control': 'no-cache' })
