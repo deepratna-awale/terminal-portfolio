@@ -36,7 +36,7 @@
 .terminal-line.command { margin-top: 14px; color: var(--command); }
 .terminal-line.output, .terminal-line.assistant { color: var(--fg); } .terminal-line.muted { color: var(--muted); } .terminal-line.success { color: var(--success); } .terminal-line.error { color: var(--error); }
 .terminal-line.assistant { padding-left: 12px; border-left: 2px solid var(--accent); }
-.terminal-line.ascii { margin: 10px 0 6px; color: var(--accent); font: inherit; font-size: calc(var(--font-size) * .78); line-height: 1.1; white-space: pre; overflow-x: auto; }
+.terminal-line.ascii { margin: 10px 0 6px; color: var(--accent); font: inherit; font-size: calc(var(--font-size) * .78); line-height: 1.1; white-space: pre; overflow: hidden; }
 .terminal-line.output, .terminal-line.assistant, .terminal-line.success, .terminal-line.muted, .terminal-line.error { white-space: normal; }
 .terminal-line p { margin: 0; white-space: pre-wrap; }
 .terminal-line h1, .terminal-line h2, .terminal-line h3 { margin: 12px 0 2px; color: var(--accent); font-size: 1em; font-weight: 600; }
@@ -46,8 +46,8 @@
 .terminal-line strong { color: var(--accent); font-weight: 500; }
 .terminal-line em { color: var(--accent-2); font-style: normal; }
 .terminal-line code { padding: 1px 5px; border-radius: 3px; color: var(--accent-2); background: var(--code-bg); }
-.terminal-line pre { margin: 4px 0; overflow-x: auto; }
-.terminal-line pre code { display: block; padding: 0; color: var(--fg); background: transparent; white-space: pre; }
+.terminal-line pre { margin: 4px 0; overflow: hidden; }
+.terminal-line pre code { display: block; padding: 0; color: var(--fg); background: transparent; white-space: inherit; font-size: inherit; }
 .terminal-line a { color: var(--link); text-decoration: underline; text-underline-offset: 3px; }
 .terminal-line a.cmd-link { color: var(--accent); text-decoration-style: dotted; }
 .terminal-line a.cmd-link code { color: inherit; }
@@ -143,7 +143,6 @@
   .app-shell, .app-shell.maximized { padding: var(--menubar-h) 0 0; place-items: stretch; }
   .terminal-window, .app-shell.maximized .terminal-window { width: 100%; height: calc(100svh - var(--menubar-h)); min-height: 0; border-radius: 0; border-width: 0; }
   .terminal-body { padding: 14px 14px 20px; font-size: min(var(--font-size), 13px); }
-  .terminal-line.ascii { font-size: 5.5px; }
   .input-shell input { font-size: 16px; }
   .traffic-lights { width: auto; } .window-actions { display: none; } .window-title { font-size: 11px; }
   .terminal-footer > span:nth-child(-n+3) { display: none; }
