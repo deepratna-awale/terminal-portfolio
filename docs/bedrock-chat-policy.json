@@ -1,0 +1,32 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InvokeViaInferenceProfile",
+      "Effect": "Allow",
+      "Action": "bedrock:InvokeModel",
+      "Resource": "arn:aws:bedrock:us-east-1:888577021874:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    },
+    {
+      "Sid": "InvokeUnderlyingModel",
+      "Effect": "Allow",
+      "Action": "bedrock:InvokeModel",
+      "Resource": [
+        "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
+        "arn:aws:bedrock:us-east-2::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
+        "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "bedrock:InferenceProfileArn": "arn:aws:bedrock:us-east-1:888577021874:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        }
+      }
+    },
+    {
+      "Sid": "UseBedrockApiKey",
+      "Effect": "Allow",
+      "Action": "bedrock:CallWithBearerToken",
+      "Resource": "*"
+    }
+  ]
+}

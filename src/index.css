@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
 
-:root { --mono: 'DM Mono', 'SFMono-Regular', Consolas, monospace; --display: 'Space Grotesk', 'Helvetica Neue', sans-serif; color: #d8d6cd; background: #171815; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+:root { --mono: 'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace; color: #d8d6cd; background: #0b0d0b; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
 * { box-sizing: border-box; }
-html { min-width: 320px; background: #171815; }
-body { min-width: 320px; min-height: 100vh; margin: 0; background: linear-gradient(rgba(9,10,20,.36), rgba(9,10,20,.52)), url('/media/golden-dark.jpg') center / cover fixed; }
+html { min-width: 320px; background: #0b0d0b; }
+body { min-width: 320px; min-height: 100svh; margin: 0; background: linear-gradient(rgba(6,9,8,.35), rgba(6,9,8,.6)), url('/media/golden-dark.jpg') center / cover fixed, #0b0d0b; }
 button, input { font: inherit; }
