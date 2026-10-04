@@ -1,32 +1,41 @@
-# React + TypeScript + Vite
+# terminal-portfolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Terminal-style portfolio for [deepratna-awale.dev](https://deepratna-awale.dev), built with React + Vite and served by a small Node server on AWS Lightsail.
 
-Currently, two official plugins are available:
+## Local development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev        # Vite on :5173, proxies /api to :8787
+npm run build && npm run api   # production build served by the Node server on :8787
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+`fortune` and `cowthink` call the real binaries, so they only work locally if those are installed (`brew install fortune cowsay`) or inside the container:
+
+```bash
+docker build --platform linux/amd64 -t terminal-portfolio .
+docker run --rm -p 8080:80 terminal-portfolio
+```
+
+## Infrastructure
+
+Everything lives in `terraform/`:
+
+| Resource | Purpose |
+| --- | --- |
+| Lightsail container service (nano) | Runs the container, ~$7/month |
+| ECR repository | Private image registry the service pulls from |
+| Lightsail certificate | TLS for the apex and `www` |
+| Lightsail DNS zone | Free DNS that can alias the apex to the container service |
+| GitHub OIDC role | Lets the Deploy workflow push and deploy without stored keys |
+
+State is kept in S3 (`terraform/bootstrap` creates the bucket once).
+
+### First-time setup
+
+1. `cd terraform/bootstrap && terraform init && terraform apply` creates the state bucket.
+2. `cd terraform && terraform init && terraform apply` creates the stack with the domain not yet attached.
+3. Run the command from the `nameservers_command` output and set those nameservers on the domain at GoDaddy.
+4. Wait until `aws lightsail get-certificates --certificate-name terminal-portfolio-cert --query 'certificates[0].certificateDetail.status'` shows `ISSUED`.
+5. `terraform apply -var attach_custom_domain=true` attaches the domain and creates the apex/`www` records (then set the variable's default to `true`).
+6. Set the GitHub repository variable `DEPLOY_ENABLED=true`. Every push to `main` now builds, pushes and deploys.
