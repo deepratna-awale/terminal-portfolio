@@ -371,7 +371,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
           <ul className="pf-card pf-certs" aria-label="Certifications">
             {education.certifications.map((cert) => {
               const { name, year: certYear } = splitYear(cert)
-              return <li key={cert}><Award size={18} className="pf-card-icon" aria-hidden="true" /><span>{name}</span>{certYear && <span className="pf-date">{certYear}</span>}</li>
+              return <li key={cert}><Award size={18} className="pf-card-icon" aria-hidden="true" /><span><Md inline>{name}</Md></span>{certYear && <span className="pf-date">{certYear}</span>}</li>
             })}
           </ul>
         </div>
