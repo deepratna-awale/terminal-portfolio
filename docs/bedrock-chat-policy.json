@@ -23,6 +23,12 @@
       }
     },
     {
+      "Sid": "ApplyPortfolioGuardrail",
+      "Effect": "Allow",
+      "Action": "bedrock:ApplyGuardrail",
+      "Resource": "arn:aws:bedrock:us-east-1:888577021874:guardrail/ta1wl9ipbs1x"
+    },
+    {
       "Sid": "UseBedrockApiKey",
       "Effect": "Allow",
       "Action": "bedrock:CallWithBearerToken",
