@@ -34,6 +34,8 @@ configuration. Please do not run automated scanners against the live site.
   and apply one guardrail, nothing else. Every request goes through a Bedrock
   Guardrail that blocks prompt attacks, secrets and personal data.
 - The guestbook writes to one Lightsail bucket with a bucket-scoped access key.
+  Each note gets a random delete key that only its author receives; the bucket
+  stores just a SHA-256 hash of it, so nobody else can remove a note.
 - Secrets live only in GitHub Actions secrets and the container's environment,
   never in the repository or Terraform state.
 

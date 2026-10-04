@@ -68,3 +68,22 @@ describe('every command over SSH', () => {
     expect(Math.max(...output.split('\n').filter((line) => /[░▒▓█·]/.test(line)).map((line) => line.length))).toBeLessThanOrEqual(100)
   })
 })
+
+describe('guestbook delete keys over SSH', () => {
+  it('shows the delete key once and deletes with it', async () => {
+    const key = 'abcdef012345.' + 'k'.repeat(32)
+    const calls: string[] = []
+    const mocked = globalThis.fetch
+    globalThis.fetch = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+      calls.push(`${init?.method ?? 'GET'} ${String(init?.body ?? '')}`)
+      if (init?.method === 'POST') return new Response(JSON.stringify({ id: 'abcdef012345', name: 'Ada', message: 'hello there', at: new Date().toISOString(), key }), { status: 201 })
+      return new Response(JSON.stringify({ deleted: true }), { status: 200 })
+    }) as typeof fetch
+    try {
+      expect(await run('guestbook sign --name Ada hello there')).toContain(`guestbook delete ${key}`)
+      expect(await run(`guestbook delete ${key}`)).toContain('Deleted your note')
+      expect(calls.at(-1)).toBe(`DELETE ${JSON.stringify({ key })}`)
+      expect(await run('guestbook delete')).toContain('usage: guestbook delete <key>')
+    } finally { globalThis.fetch = mocked }
+  })
+})

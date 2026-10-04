@@ -3,6 +3,7 @@ import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { askAssistant, fetchProjects, type ChatTurn, type Project } from '../api'
 import { asciiLogo, motd, os, profile } from '../content'
+import { browserNoteKeys } from '../shell/noteKeys'
 import { commands, neofetchInfo, sshHint, openExternal, resolveAlias, tokenize, type Line, type NewLine, type ShellContext } from '../shell/commands'
 import { runInput } from '../shell/runner'
 import { initialCommand, unshareable } from '../shell/deeplink'
@@ -17,6 +18,7 @@ export type TerminalHandle = { run: (command: string) => void; print: (lines: Ne
 type Props = { theme: ThemeName; ui: ShellContext['ui']; onStatus: (status: string) => void; suspended?: boolean }
 
 const HISTORY_KEY = 'portfolio.history'
+const noteKeys = browserNoteKeys()
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -140,7 +142,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
 
   const context = useCallback((): ShellContext => ({
     path: pathRef.current, previousPath: previousPathRef.current, history: historyRef.current, theme,
-    setPath, print, clear: () => setTranscript([]), projects, ask, ui,
+    setPath, print, clear: () => setTranscript([]), projects, ask, ui, notes: noteKeys,
     prompt: (label) => new Promise<string | null>((resolve) => { setLine((current) => ({ ...current, value: '', cursor: 0 })); setQuestion({ label, resolve }) }),
   }), [ask, print, projects, setPath, theme, ui])
 

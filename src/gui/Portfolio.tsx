@@ -2,10 +2,11 @@ import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties,
 import ReactMarkdown, { defaultUrlTransform, type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ArrowUpRight, Award, BookOpen, Check, Copy, FileText, GraduationCap, Mail, MapPin, Menu, Palette, RotateCw, Send, SquareTerminal, Star, X } from 'lucide-react'
-import { fetchActivity, fetchContributions, fetchGuestbook, fetchProjects, signGuestbook, type Activity, type Contributions, type GuestbookEntry, type Project } from '../api'
+import { deleteGuestbookNote, fetchActivity, fetchContributions, fetchGuestbook, fetchProjects, signGuestbook, type Activity, type Contributions, type GuestbookEntry, type Project } from '../api'
 import { contactCopy, focusDirs, linkLabel, nowItems, profile, sectionList, sections, sshHost } from '../content'
 import { parseAbout, parseEducation, parseExperience, parsePublications, parseSkills, splitYear } from './parse'
 import { saveMode } from '../modeStore'
+import { browserNoteKeys, noteId } from '../shell/noteKeys'
 import { onThemeChange, readTheme, saveTheme, siteThemes, type SiteTheme } from '../themeStore'
 import { themes } from '../themes'
 import { TechIcon } from '../components/TechIcon'
@@ -199,6 +200,12 @@ function Guestbook({ live }: { live: boolean }) {
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null)
   const [sending, setSending] = useState(false)
+  const [notes] = useState(() => (live ? browserNoteKeys() : null))
+  // Delete keys for the notes signed in this browser, by note id.
+  const readMine = () => new Map((notes?.list() ?? []).map((note) => [noteId(note.key), note.key]))
+  const [mine, setMine] = useState(readMine)
+  const [deleting, setDeleting] = useState('')
+  const refreshMine = () => setMine(readMine())
   useEffect(() => {
     if (!live) return
     let cancelled = false
@@ -211,9 +218,22 @@ function Guestbook({ live }: { live: boolean }) {
     if (sending || message.trim().length < 2) return
     setSending(true); setStatus(null)
     signGuestbook(name.trim(), message.trim())
-      .then((entry) => { setEntries((list) => [entry, ...(list ?? [])]); setMessage(''); setStatus({ ok: true, text: 'Signed. Thank you for stopping by!' }) })
+      .then(({ key, ...entry }) => {
+        notes?.add({ key, message: entry.message, at: entry.at }); refreshMine()
+        setEntries((list) => [entry, ...(list ?? [])]); setMessage('')
+        setStatus({ ok: true, text: notes?.persistent ? 'Signed. Thank you for stopping by! You can delete your note from this browser.' : 'Signed. Thank you for stopping by!' })
+      })
       .catch((reason: unknown) => { const text = reason instanceof Error ? reason.message : 'could not sign the guestbook'; setStatus({ ok: false, text: text[0]!.toUpperCase() + text.slice(1) }) })
       .finally(() => setSending(false))
+  }
+
+  const remove = (id: string, key: string) => {
+    if (deleting || !window.confirm('Delete your note from the guestbook?')) return
+    setDeleting(id); setStatus(null)
+    deleteGuestbookNote(key)
+      .then(() => { setEntries((list) => list?.filter((entry) => entry.id !== id) ?? null); setStatus({ ok: true, text: 'Your note was deleted.' }) })
+      .catch((reason: unknown) => { const text = reason instanceof Error ? reason.message : 'could not delete the note'; setStatus({ ok: false, text: text[0]!.toUpperCase() + text.slice(1) }); if (!/no note matches/.test(text)) return; notes?.remove(key); refreshMine() })
+      .finally(() => setDeleting(''))
   }
 
   if (!live) return <p className="pf-muted">Leave a note: the guestbook needs JavaScript, or sign it from the <a href="/">terminal</a> with <code>guestbook sign</code>.</p>
@@ -237,7 +257,9 @@ function Guestbook({ live }: { live: boolean }) {
             {entries.slice(0, 12).map((entry, index) => (
               <li key={`${entry.at}-${index}`} className="pf-entry">
                 <p className="pf-entry-message">{entry.message}</p>
-                <p className="pf-entry-meta"><span>{entry.name || 'guest'}</span> · <time dateTime={entry.at}>{formatMonth(entry.at)}</time></p>
+                <p className="pf-entry-meta"><span>{entry.name || 'guest'}</span> · <time dateTime={entry.at}>{formatMonth(entry.at)}</time>
+                  {entry.id && mine.has(entry.id) && <> · <button type="button" className="pf-entry-delete" disabled={deleting === entry.id} onClick={() => remove(entry.id!, mine.get(entry.id!)!)}>{deleting === entry.id ? 'deleting…' : 'delete'}</button></>}
+                </p>
               </li>
             ))}
           </ul>

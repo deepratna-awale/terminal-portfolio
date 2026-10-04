@@ -1,6 +1,11 @@
 // Guestbook entries live in one JSON object in a Lightsail bucket (or a local
 // file in development). The service is a single container, so an in-memory
 // copy plus serialized writes is enough.
+//
+// There are no accounts, so each note gets a delete key when it is posted:
+// `<id>.<secret>`. Only a hash of the secret is stored, the key goes back to
+// the author once, and only that key can remove the note.
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -28,9 +33,14 @@ async function load() {
   if (!store) throw new Error('guestbook storage is not configured')
   const text = await store.get()
   const parsed = text ? JSON.parse(text) : []
-  entries = Array.isArray(parsed) ? parsed : []
+  // Notes without a delete key predate self-delete and are cleared out.
+  entries = Array.isArray(parsed) ? parsed.filter((entry) => entry?.id && entry.secretHash) : []
+  if (Array.isArray(parsed) && entries.length !== parsed.length) await store.put(JSON.stringify(entries)).catch((error) => console.error(`guestbook cleanup failed: ${error.message}`))
   return entries
 }
+
+const hash = (secret) => createHash('sha256').update(secret).digest()
+const publicEntry = ({ id, name, message, at }) => ({ id, name, message, at })
 
 // Plain text only: HTML tags, control and bidi-override characters go, and
 // whitespace collapses to single spaces.
@@ -78,16 +88,41 @@ export async function isDuplicate(message) {
 }
 
 export async function listEntries(limit = 50) {
-  return (await load()).slice(0, limit)
+  return (await load()).slice(0, limit).map(publicEntry)
 }
 
-export function addEntry(entry) {
+function serialized(change) {
   const task = queue.then(async () => {
     const current = await load()
-    entries = [entry, ...current].slice(0, MAX_ENTRIES)
+    const { next, result } = change(current)
+    if (next === current) return result
+    entries = next
     try { await store.put(JSON.stringify(entries)) } catch (error) { entries = current; throw error }
-    return entry
+    return result
   })
   queue = task.catch(() => {})
   return task
+}
+
+// Resolves to the public entry plus its delete key, which is never shown again.
+export function addEntry(entry) {
+  const id = randomBytes(6).toString('hex')
+  const secret = randomBytes(24).toString('base64url')
+  const stored = { id, ...entry, secretHash: hash(secret).toString('hex') }
+  return serialized((current) => ({ next: [stored, ...current].slice(0, MAX_ENTRIES), result: { ...publicEntry(stored), key: `${id}.${secret}` } }))
+}
+
+export const KEY = /^([0-9a-f]{12})\.([A-Za-z0-9_-]{32})$/
+
+// Resolves to true when the key matched a note and it was removed.
+export function deleteEntry(key) {
+  const match = typeof key === 'string' ? key.trim().match(KEY) : null
+  if (!match) return Promise.resolve(false)
+  const [, id, secret] = match
+  return serialized((current) => {
+    const index = current.findIndex((entry) => entry.id === id)
+    const stored = index >= 0 ? Buffer.from(current[index].secretHash, 'hex') : null
+    if (!stored || stored.length !== 32 || !timingSafeEqual(stored, hash(secret))) return { next: current, result: false }
+    return { next: current.filter((_, position) => position !== index), result: true }
+  })
 }
