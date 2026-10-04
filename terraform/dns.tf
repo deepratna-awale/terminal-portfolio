@@ -43,3 +43,19 @@ resource "aws_lightsail_domain_entry" "www" {
   target      = local.container_host
   is_alias    = true
 }
+
+# The domain sends no mail: publish SPF/DMARC records that tell receivers to
+# reject anything claiming to come from it.
+resource "aws_lightsail_domain_entry" "spf" {
+  domain_name = aws_lightsail_domain.portfolio.domain_name
+  name        = ""
+  type        = "TXT"
+  target      = "\"v=spf1 -all\""
+}
+
+resource "aws_lightsail_domain_entry" "dmarc" {
+  domain_name = aws_lightsail_domain.portfolio.domain_name
+  name        = "_dmarc"
+  type        = "TXT"
+  target      = "\"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s\""
+}
