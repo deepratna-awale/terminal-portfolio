@@ -122,6 +122,20 @@ export function parseAboutMarkdown(source) {
   return { meta, sections: visible, assistant }
 }
 
+// "## <repository>" headings under # Projects, each followed by "- bullet"
+// lines, replace the generated summary for that featured repository.
+export function projectBullets(sections) {
+  const lines = sections.find((section) => section.id === 'projects')?.lines ?? []
+  const bullets = new Map()
+  let current = null
+  for (const line of lines) {
+    const heading = /^## (.+?)\s*$/.exec(line)
+    if (heading) bullets.set(current = heading[1].toLowerCase(), [])
+    else if (current && line.startsWith('- ')) bullets.get(current).push(line.slice(2).trim())
+  }
+  return bullets
+}
+
 // Values every consumer needs, with the derived ones filled in.
 export function siteProfile(meta) {
   const required = ['name', 'domain', 'email', 'github']

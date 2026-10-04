@@ -165,6 +165,11 @@ if it needs a custom layout: add a renderer for its id in
 `src/components/SectionView.tsx` (terminal) and in the `renderers` map in
 `src/gui/Portfolio.tsx` (`/gui`).
 
+**Feature a project.** Add the repository name under `featured` in ABOUT.md,
+its share image at `public/media/projects/<name>.jpg`, and `## <repository>`
+with 2 or 3 `- bullet` lines under `# Projects`. Without bullets the card shows
+the GitHub description. `/gui` shows the first three. No code change.
+
 **Add a dock icon, desktop icon or Chrome shortcut.** Put the image in
 `public/icons/` and add an entry under `links` in ABOUT.md with
 `show: [dock]`, `[desktop]` and/or `[newtab]`. Give it an `id` to make

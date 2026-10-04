@@ -15,7 +15,7 @@ conventional portfolio page one click away. Live at
   prerendered for search engines and visitors without JavaScript.
 - **SSH edition**: `ssh ssh.deepratna-awale.dev` opens the same terminal in your
   own terminal, with inline images where it supports them (see [SSH edition](#ssh-edition)).
-- **Live data**: public GitHub repositories with README summaries, a GitHub
+- **Live data**: featured GitHub repositories with hand-written bullets, a GitHub
   contributions graph, and a guestbook whose authors can delete their own notes.
 - **Hosting**: one Docker container on AWS Lightsail (about $7 a month plus $1
   for the guestbook bucket), provisioned with Terraform and deployed by GitHub
@@ -59,10 +59,9 @@ docker build --platform linux/amd64 -t terminal-portfolio .
 docker run --rm -p 8080:8080 terminal-portfolio
 ```
 
-Without Bedrock credentials the assistant reports that it is offline and project
-summaries fall back to the repository description. Without a guestbook bucket the
-guestbook stores entries in a temporary file in development and is disabled in
-production.
+Without Bedrock credentials the assistant reports that it is offline. Without a
+guestbook bucket the guestbook stores entries in a temporary file in development
+and is disabled in production.
 
 ### Server environment variables
 
@@ -90,7 +89,7 @@ All optional; the deploy workflow sets the ones marked *deploy*.
 Browser ──HTTPS──▶ Lightsail DNS ──▶ Lightsail container service (nano)
                                       └─ Node server (server/index.mjs)
                                          ├─ static client + prerendered /gui (dist/)
-                                         ├─ /api/projects ─▶ GitHub API, Bedrock summaries (6 h cache)
+                                         ├─ /api/projects ─▶ GitHub API (6 h cache), bullets from ABOUT.md
                                          ├─ /api/contributions ─▶ GitHub
                                          ├─ /api/chat ─▶ Bedrock Converse + Guardrail
                                          ├─ /api/guestbook ─▶ Lightsail bucket (SigV4 signed in server/s3.mjs)
@@ -396,7 +395,8 @@ ABOUT.md: `about` (`**Label:** value` lines become facts), `experience`
 `publications` (`## Title`, a `Venue, year.` line, then links), `education`
 (`**Degree**  School, year`, then a `Certifications` line and indented
 certificates), `contact` (`label     value` rows), `projects` (live from GitHub;
-the body is the intro line on `/gui`), `now` (an `Updated: <when>` line and
+the body is the intro line on `/gui`, then a `## <repository>` heading with
+`- bullets` for each featured repository; without one, its GitHub description), `now` (an `Updated: <when>` line and
 bullets) and `guestbook`. Any other heading renders as plain markdown.
 
 **Links and icons.** Every dock icon, desktop icon and new-tab shortcut is an

@@ -1,4 +1,4 @@
-# Guardrail applied to every portfolio assistant call (chat and README summaries).
+# Guardrail applied to every portfolio assistant call and guestbook note.
 # Denied topics also run on the assistant's output, so avoid a topic that
 # overlaps with your own work (an AML topic blocked normal answers about an AML
 # job); MISCONDUCT already catches evasion requests and the system prompt

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assistantFacts, parseAboutMarkdown, parseFrontmatter, siteProfile } from '../../shared/about.js'
+import { assistantFacts, parseAboutMarkdown, parseFrontmatter, projectBullets, siteProfile } from '../../shared/about.js'
 import { links, linksFor, sectionList } from '../content'
 import { commands, directories } from './commands'
 import { complete } from './completion'
@@ -75,5 +75,12 @@ describe('links from ABOUT.md', () => {
     for (const link of links.filter((item) => item.image)) expect(link.icon).toMatch(/^(\/|https?:)/)
     const targets = complete('open ', '~', [], []).candidates
     for (const link of links.filter((item) => item.id)) expect(targets).toContain(link.id.toLowerCase())
+  })
+
+  it('reads hand-written project bullets from ## headings under Projects', () => {
+    const { sections } = parseAboutMarkdown('# Projects\nPulled live.\n\n## My-Repo\n- First, with a comma.\n- Second.\n\n# Skills\n## Not-A-Repo\n- ignored\n')
+    const bullets = projectBullets(sections)
+    expect([...bullets.keys()]).toEqual(['my-repo'])
+    expect(bullets.get('my-repo')).toEqual(['First, with a comma.', 'Second.'])
   })
 })

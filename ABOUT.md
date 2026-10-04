@@ -157,6 +157,31 @@ Product: [Verafin Agentic AI Workforce](https://verafin.com/product/agentic-ai-w
 
 Pulled live from GitHub. Each card links to the code and, where there is one, a live demo.
 
+## terminal-portfolio
+- This site: a zsh-style terminal on a macOS-style desktop, a standard /gui page, and an SSH edition with inline images.
+- Questions go to Claude Haiku on Amazon Bedrock behind a Guardrail; also a guestbook, live GitHub data and drop-in themes.
+- One ABOUT.md drives all content; Terraform runs it on AWS Lightsail, deployed by GitHub Actions through OIDC.
+
+## open-wallpaper-engine-mac
+- Free, open-source macOS player for Wallpaper Engine scene, video and web wallpapers.
+- Native Metal renderer with effects, particles, 3D models, lighting, SceneScript and audio-reactive visuals.
+- Translates Wallpaper Engine's GLSL shaders to Metal on the fly and browses the Steam Workshop through SteamCMD.
+
+## AutoExpress
+- Generates 28 facial expressions from one image through the Automatic1111 Stable Diffusion WebUI API.
+- Inpaints each face with the After Detailer extension, for anime and realistic styles.
+- Ships as pre-built releases and a Docker image.
+
+## sd-parsers
+- TypeScript library and CLI that reads prompts and generation settings embedded in Stable Diffusion images.
+- Supports Automatic1111, Fooocus, ComfyUI, InvokeAI and NovelAI.
+- A typed, async port of the Python sd-parsers, published on npm.
+
+## Polar-Image-Inspector
+- Desktop app that opens WaMoS II polar radar images (.pol), shows their metadata and renders them as cartesian images.
+- Handles 16-bit data, with a standalone Python parser that saves images with their metadata.
+- Built for my Master's capstone, which predicts ocean wave height with a hybrid CNN and MLP.
+
 # Skills
 <!-- help: tools and stacks -->
 
