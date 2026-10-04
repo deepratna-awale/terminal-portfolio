@@ -4,8 +4,10 @@
 import { bedrockConfigured, converse } from './bedrock.mjs'
 
 const owner = process.env.GITHUB_OWNER ?? 'deepratna-awale'
-const featuredForks = new Set(['open-wallpaper-engine-mac'])
-const excluded = new Set([owner])
+// Only these repositories appear on the site, in this order. Each has a share
+// image at public/media/projects/<name>.jpg (the repo's GitHub social preview).
+const featured = ['open-wallpaper-engine-mac', 'AutoExpress', '3t-chatbot', 'sd-parsers', 'TAES2', 'Polar-Image-Inspector']
+const rank = new Map(featured.map((name, index) => [name.toLowerCase(), index]))
 const REFRESH_MS = 6 * 60 * 60 * 1000
 
 let cache = { projects: null, fetchedAt: 0 }
@@ -67,8 +69,8 @@ async function refresh() {
   const response = await fetch(`https://api.github.com/users/${owner}/repos?per_page=100&sort=pushed`, { headers: githubHeaders(), signal: AbortSignal.timeout(10_000) })
   if (!response.ok) throw new Error(`GitHub returned ${response.status}`)
   const repos = (await response.json())
-    .filter((repo) => !repo.private && !repo.archived && !excluded.has(repo.name) && (!repo.fork || featuredForks.has(repo.name)))
-    .sort((a, b) => b.stargazers_count - a.stargazers_count || Date.parse(b.pushed_at) - Date.parse(a.pushed_at))
+    .filter((repo) => !repo.private && rank.has(repo.name.toLowerCase()))
+    .sort((a, b) => rank.get(a.name.toLowerCase()) - rank.get(b.name.toLowerCase()))
   const bullets = await mapLimit(repos, 3, summarise)
   cache = {
     fetchedAt: Date.now(),
@@ -79,6 +81,7 @@ async function refresh() {
       stars: repo.stargazers_count,
       url: repo.html_url,
       homepage: repo.homepage || null,
+      image: `/media/projects/${featured[rank.get(repo.name.toLowerCase())]}.jpg`,
       pushedAt: repo.pushed_at,
       bullets: bullets[index],
     })),

@@ -84,9 +84,9 @@ function ProjectCard({ project }: { project: Project }) {
   const bullets = project.bullets.length ? project.bullets : [project.description || 'No description yet.']
   return (
     <article className="pf-card pf-project">
-      {imageOk && (
+      {imageOk && project.image && (
         <a className="pf-project-image" href={project.url} {...linkAttrs(project.url)} tabIndex={-1} aria-hidden="true">
-          <img src={`https://opengraph.githubassets.com/1/deepratna-awale/${encodeURIComponent(project.name)}`} alt="" width={1200} height={600} loading="lazy" decoding="async" onError={() => setImageOk(false)} />
+          <img src={project.image} alt="" width={1280} height={640} loading="lazy" decoding="async" onError={() => setImageOk(false)} />
         </a>
       )}
       <div className="pf-project-body">
