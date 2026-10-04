@@ -1,0 +1,8 @@
+.mobile-keys { position: fixed; z-index: 35; left: 0; right: 0; height: 44px; display: flex; align-items: center; gap: 6px; padding: 0 6px; border-top: 1px solid var(--border); background: var(--chrome-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); font: 13px var(--mono); }
+.mobile-chips { flex: 1; min-width: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.mobile-chips::-webkit-scrollbar { display: none; }
+.mobile-chip { flex: none; height: 30px; padding: 0 10px; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 15px; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); font: inherit; white-space: nowrap; }
+.mobile-special { flex: none; display: flex; gap: 4px; padding-left: 6px; border-left: 1px solid var(--border); }
+.mobile-special button { min-width: 34px; height: 32px; padding: 0 6px; border: 1px solid var(--border); border-radius: 7px; color: var(--fg); background: color-mix(in srgb, var(--fg) 6%, transparent); font: inherit; }
+.mobile-special button.armed { color: var(--term-solid, #000); background: var(--accent); border-color: var(--accent); }
+.mobile-chip:active, .mobile-special button:active { filter: brightness(1.4); }

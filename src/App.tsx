@@ -47,7 +47,8 @@ function App() {
     setTimeout(() => terminal.current?.focus(), 30)
   }, [])
   const openFile = useCallback((file: string) => readFile(file), [])
-  const openBrowser = useCallback((url = '/gui') => { setBrowser({ url, stamp: Date.now() }); setFront('browser') }, [])
+  // Phones have no desktop, so the standard site opens as the page itself.
+  const openBrowser = useCallback((url = '/gui') => { if (narrow()) { window.location.assign(url); return } setBrowser({ url, stamp: Date.now() }); setFront('browser') }, [])
   const closeBrowser = useCallback(() => { setBrowser(null); setFront('terminal'); setTimeout(() => terminal.current?.focus(), 30) }, [])
   const browserFront = useCallback((isFront: boolean) => setFront(isFront ? 'browser' : 'terminal'), [])
   const clickBrowser = (event: MouseEvent, url = '/gui') => {
