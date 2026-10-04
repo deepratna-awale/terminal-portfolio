@@ -95,8 +95,8 @@ async function handleChat(request, response) {
     const body = await readJson(request)
     const messages = validMessages(body?.messages)
     if (!messages) return sendJson(response, 400, { error: 'questions must be under 500 characters' })
-    const { text } = await converse({ system: systemPrompt(), messages, maxTokens: 350 })
-    sendJson(response, 200, { reply: text || "I don't have an answer for that one. Try `help`." })
+    const { text, blocked } = await converse({ system: systemPrompt(), messages, maxTokens: 350 })
+    sendJson(response, 200, { reply: text || "I don't have an answer for that one. Try `help`.", blocked })
   } catch (error) {
     sendJson(response, error.status ?? 500, { error: error.status ? error.message : 'the assistant is unavailable right now' })
   }
