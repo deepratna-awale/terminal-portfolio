@@ -1,5 +1,7 @@
-# Weekly dependency updates. Dependabot pull requests run CI like any other
-# pull request: read-only token, no deploy secrets.
+# Dependency updates, batched so each ecosystem opens at most two pull
+# requests a week: one for minor/patch updates and one for major updates.
+# Dependabot pull requests run CI like any other pull request: read-only
+# token, no deploy secrets.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -10,15 +12,27 @@ updates:
       npm:
         patterns: ["*"]
         update-types: [minor, patch]
+      npm-major:
+        patterns: ["*"]
+        update-types: [major]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
+    groups:
+      docker:
+        patterns: ["*"]
   - package-ecosystem: terraform
     directory: /terraform
     schedule:
       interval: weekly
+    groups:
+      terraform:
+        patterns: ["*"]
