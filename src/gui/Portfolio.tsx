@@ -30,6 +30,9 @@ const experience = parseExperience(sections.experience ?? [])
 const skills = parseSkills(sections.skills ?? [])
 const papers = parsePublications(sections.publications ?? [])
 const education = parseEducation(sections.education ?? [])
+// The intro above the cards; "## <repo>" blocks below it are bullet overrides for the server.
+const projectsIntro = sections.projects ?? []
+const projectsLede = (projectsIntro.some((line) => line.startsWith('## ')) ? projectsIntro.slice(0, projectsIntro.findIndex((line) => line.startsWith('## '))) : projectsIntro).filter((line) => line.trim())
 
 
 const opensElsewhere = (href: string) => /^(https?:|mailto:)/i.test(href) || href.startsWith('/media/')
@@ -344,7 +347,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
     ),
     projects: (title: string) => (
       <Section id="projects" index={next()} title={title} wide {...sectionProps}>
-        {(sections.projects ?? []).filter((line) => line.trim()).map((line) => <p key={line} className="pf-lede"><Md inline>{line}</Md></p>)}
+        {projectsLede.map((line) => <p key={line} className="pf-lede"><Md inline>{line}</Md></p>)}
         {prerender ? <div className="pf-grid pf-projects pf-projects-static" dangerouslySetInnerHTML={{ __html: '<!--projects-->' }} /> : <Projects />}
         <p className="pf-more"><a href={profile.github} {...linkAttrs(profile.github)}>See the rest of my projects on GitHub <ArrowUpRight size={15} aria-hidden="true" /></a></p>
       </Section>

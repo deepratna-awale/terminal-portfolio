@@ -1,7 +1,7 @@
 // Public GitHub repositories, summarised into bullets by Bedrock and cached in
 // memory. READMEs come from raw.githubusercontent.com, which does not count
 // against the 60 requests/hour unauthenticated REST limit.
-import { featured, profile } from './about.mjs'
+import { featured, featuredBullets, profile } from './about.mjs'
 import { bedrockConfigured, converse } from './bedrock.mjs'
 
 const owner = process.env.GITHUB_OWNER ?? profile.githubUser
@@ -34,6 +34,8 @@ function fallbackBullets(repo) {
 }
 
 async function summarise(repo) {
+  const written = featuredBullets.get(repo.name.toLowerCase())
+  if (written?.length) return written
   const known = summaries.get(repo.name)
   if (known && known.pushedAt === repo.pushed_at) return known.bullets
   if (!bedrockConfigured()) return fallbackBullets(repo)

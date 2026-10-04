@@ -157,6 +157,11 @@ Product: [Verafin Agentic AI Workforce](https://verafin.com/product/agentic-ai-w
 
 Pulled live from GitHub. Each card links to the code and, where there is one, a live demo.
 
+## terminal-portfolio
+- This site: a zsh-style terminal on a macOS-style desktop, a standard /gui page, and an SSH edition with inline images.
+- Questions go to Claude Haiku on Amazon Bedrock behind a Guardrail; also a guestbook, live GitHub data and drop-in themes.
+- One ABOUT.md drives all content; Terraform runs it on AWS Lightsail, deployed by GitHub Actions through OIDC.
+
 # Skills
 <!-- help: tools and stacks -->
 

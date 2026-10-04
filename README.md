@@ -396,7 +396,8 @@ ABOUT.md: `about` (`**Label:** value` lines become facts), `experience`
 `publications` (`## Title`, a `Venue, year.` line, then links), `education`
 (`**Degree**  School, year`, then a `Certifications` line and indented
 certificates), `contact` (`label     value` rows), `projects` (live from GitHub;
-the body is the intro line on `/gui`), `now` (an `Updated: <when>` line and
+the body is the intro line on `/gui`, and an optional `## <repository>` heading
+with `- bullets` under it replaces that repository's generated summary), `now` (an `Updated: <when>` line and
 bullets) and `guestbook`. Any other heading renders as plain markdown.
 
 **Links and icons.** Every dock icon, desktop icon and new-tab shortcut is an
