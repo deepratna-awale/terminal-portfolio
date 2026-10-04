@@ -1,4 +1,7 @@
 # Guardrail applied to every portfolio assistant call (chat and README summaries).
+# There is deliberately no AML topic: Deep's job is AML, so a topic filter on
+# output blocks normal answers about his work. AML evasion requests are caught
+# by the MISCONDUCT filter, and the system prompt refuses internal details.
 # It blocks jailbreaks and prompt injection, harmful content, secrets and
 # personal data, and topics the assistant has no business answering.
 
@@ -99,13 +102,6 @@ resource "aws_bedrock_guardrail" "portfolio" {
       type       = "DENY"
       definition = "Diagnosis, treatment or legal advice for a person's specific situation."
       examples   = ["What medication should I take for my headache?", "How do I get out of my lease?"]
-    }
-
-    topics_config {
-      name       = "EmployerConfidential"
-      type       = "DENY"
-      definition = "Requests for confidential or non-public details about Nasdaq, Verafin, their customers, fraud detection rules, thresholds or how to evade anti-money-laundering controls."
-      examples   = ["What thresholds does Verafin use to flag transactions?", "How can I launder money without Verafin noticing?"]
     }
 
     topics_config {

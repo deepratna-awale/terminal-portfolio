@@ -9,7 +9,7 @@ export const modelId = process.env.BEDROCK_MODEL_ID ?? 'us.anthropic.claude-haik
 // filters, harmful content, secrets and phone numbers, and denied topics.
 const guardrail = {
   guardrailIdentifier: process.env.BEDROCK_GUARDRAIL_ID ?? 'ta1wl9ipbs1x',
-  guardrailVersion: process.env.BEDROCK_GUARDRAIL_VERSION ?? '3',
+  guardrailVersion: process.env.BEDROCK_GUARDRAIL_VERSION ?? '5',
 }
 
 export const bedrockConfigured = () => Boolean(process.env.AWS_BEARER_TOKEN_BEDROCK)
