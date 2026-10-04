@@ -1,0 +1,18 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Catppuccin Mocha",
+  "scheme": "dark",
+  "colors": {
+    "background": "#1e1e2e",
+    "surface": "#313244",
+    "foreground": "#cdd6f4",
+    "muted": "#7f849c",
+    "accent": "#cba6f7",
+    "accent2": "#a6e3a1",
+    "link": "#89b4fa",
+    "command": "#f9e2af",
+    "success": "#a6e3a1",
+    "error": "#f38ba8",
+    "accentForeground": "#1e1e2e"
+  }
+}

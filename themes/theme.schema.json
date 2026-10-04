@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deepratna-awale.dev/themes/theme.schema.json",
+  "title": "Portfolio theme",
+  "description": "One theme for both the terminal and the standard site. Drop a file in themes/ and it is picked up at build time. A shadcn/tweakcn registry export (with cssVars) is accepted too.",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["name", "scheme", "colors"],
+      "additionalProperties": false,
+      "properties": {
+        "$schema": { "type": "string" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "scheme": { "enum": ["dark", "light"] },
+        "colors": {
+          "type": "object",
+          "required": ["background", "surface", "foreground", "muted", "accent"],
+          "additionalProperties": false,
+          "properties": {
+            "background": { "$ref": "#/$defs/color", "description": "Page and terminal background" },
+            "surface": { "$ref": "#/$defs/color", "description": "Cards, window chrome, code" },
+            "foreground": { "$ref": "#/$defs/color", "description": "Body text" },
+            "muted": { "$ref": "#/$defs/color", "description": "Secondary text" },
+            "accent": { "$ref": "#/$defs/color", "description": "Brand colour: prompt, headings, buttons" },
+            "accentForeground": { "$ref": "#/$defs/color", "description": "Text on accent buttons (defaults to background)" },
+            "accent2": { "$ref": "#/$defs/color", "description": "Second accent: chips, highlights" },
+            "link": { "$ref": "#/$defs/color" },
+            "command": { "$ref": "#/$defs/color", "description": "Echoed commands in the terminal" },
+            "success": { "$ref": "#/$defs/color" },
+            "error": { "$ref": "#/$defs/color" }
+          }
+        },
+        "terminal": {
+          "type": "object",
+          "description": "Optional overrides for the terminal window; translucent values let the wallpaper through.",
+          "additionalProperties": false,
+          "properties": {
+            "background": { "$ref": "#/$defs/color" },
+            "chrome": { "$ref": "#/$defs/color" },
+            "code": { "$ref": "#/$defs/color" },
+            "border": { "$ref": "#/$defs/color" },
+            "glow": { "type": "string", "maxLength": 80 }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["cssVars"],
+      "properties": {
+        "name": { "type": "string" },
+        "cssVars": {
+          "type": "object",
+          "properties": {
+            "theme": { "type": "object" },
+            "light": { "$ref": "#/$defs/shadcnVars" },
+            "dark": { "$ref": "#/$defs/shadcnVars" }
+          },
+          "anyOf": [{ "required": ["light"] }, { "required": ["dark"] }]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "color": { "type": "string", "pattern": "^(#[0-9a-fA-F]{3,8}|(rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|color)\\([^;{}]*\\))$" },
+    "shadcnVars": {
+      "type": "object",
+      "required": ["background", "foreground", "primary"],
+      "properties": {
+        "background": { "type": "string" },
+        "foreground": { "type": "string" },
+        "primary": { "type": "string" }
+      }
+    }
+  }
+}

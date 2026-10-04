@@ -1,0 +1,18 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "One Dark",
+  "scheme": "dark",
+  "colors": {
+    "background": "#21252b",
+    "surface": "#282c34",
+    "foreground": "#abb2bf",
+    "muted": "#5c6370",
+    "accent": "#61afef",
+    "accent2": "#98c379",
+    "link": "#56b6c2",
+    "command": "#c678dd",
+    "success": "#98c379",
+    "error": "#e06c75",
+    "accentForeground": "#1b1f27"
+  }
+}

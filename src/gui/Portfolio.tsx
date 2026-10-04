@@ -1,13 +1,14 @@
-import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent, type ReactNode } from 'react'
 import ReactMarkdown, { defaultUrlTransform, type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { ArrowUpRight, Award, BookOpen, FileText, GraduationCap, Mail, MapPin, Menu, Moon, RotateCw, Send, SquareTerminal, Star, Sun, X } from 'lucide-react'
+import { ArrowUpRight, Award, BookOpen, Check, FileText, GraduationCap, Mail, MapPin, Menu, Palette, RotateCw, Send, SquareTerminal, Star, X } from 'lucide-react'
 import { fetchContributions, fetchGuestbook, fetchProjects, signGuestbook, type Contributions, type GuestbookEntry, type Project } from '../api'
 import { contactCopy, focusDirs, linkLabel, nowItems, profile, sectionList, sections } from '../content'
 import { parseAbout, parseEducation, parseExperience, parsePublications, parseSkills, splitYear } from './parse'
+import { onThemeChange, readTheme, saveTheme, siteThemes, type SiteTheme } from '../themeStore'
+import { themes } from '../themes'
 import './Portfolio.css'
 
-type Theme = 'dark' | 'light'
 type Props = {
   embedded?: boolean
   prerender?: boolean
@@ -20,7 +21,6 @@ type Props = {
 // Sections and nav follow ABOUT.md: one per `# Heading`, in order.
 const nav = sectionList.map((section) => [section.id, section.nav] as const)
 const sectionIds = new Set<string>(nav.map(([id]) => id))
-const themeKey = 'portfolio.gui.theme'
 const MAX_MESSAGE = 280
 
 const about = parseAbout(sections.about ?? [])
@@ -29,10 +29,6 @@ const skills = parseSkills(sections.skills ?? [])
 const papers = parsePublications(sections.publications ?? [])
 const education = parseEducation(sections.education ?? [])
 
-function initialTheme(): Theme {
-  try { const saved = localStorage.getItem(themeKey); if (saved === 'dark' || saved === 'light') return saved } catch { /* storage unavailable */ }
-  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
-}
 
 const opensElsewhere = (href: string) => /^(https?:|mailto:)/i.test(href) || href.startsWith('/media/')
 const linkAttrs = (href: string) => (opensElsewhere(href) && !href.startsWith('mailto:') ? { target: '_blank', rel: 'noopener noreferrer' } : {})
@@ -213,7 +209,19 @@ function Guestbook({ live }: { live: boolean }) {
 
 export function Portfolio({ embedded = false, prerender = false, anchor, onExternal, onOpenTerminal, onAnchor }: Props) {
   const root = useRef<HTMLDivElement>(null)
-  const [theme, setTheme] = useState<Theme>(() => (prerender ? 'dark' : initialTheme()))
+  const [theme, setTheme] = useState<SiteTheme>(() => (prerender ? 'dark' : readTheme()))
+  const palette = themes[theme] ?? themes.dark ?? Object.values(themes)[0]!
+  const { colorScheme, ...siteVars } = palette.site
+  // The page behind a standalone /gui matches the theme (no flash at the edges).
+  useEffect(() => { if (!embedded) document.body.style.background = palette.site['--bg']! }, [embedded, palette])
+  const [themeMenu, setThemeMenu] = useState(false)
+  useEffect(() => onThemeChange(setTheme), [])
+  useEffect(() => {
+    if (!themeMenu) return
+    const close = (event: PointerEvent) => { if (!(event.target as HTMLElement).closest('.pf-theme-wrap')) setThemeMenu(false) }
+    window.addEventListener('pointerdown', close)
+    return () => window.removeEventListener('pointerdown', close)
+  }, [themeMenu])
   const [menuOpen, setMenuOpen] = useState(false)
   const [active, setActive] = useState('')
   const live = !prerender
@@ -254,11 +262,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
     return () => observer.disconnect()
   }, [])
 
-  const toggleTheme = () => setTheme((current) => {
-    const next = current === 'dark' ? 'light' : 'dark'
-    try { localStorage.setItem(themeKey, next) } catch { /* storage unavailable */ }
-    return next
-  })
+  const pickTheme = (next: SiteTheme) => { setTheme(next); saveTheme(next); setThemeMenu(false) }
 
   const onClick = (event: MouseEvent<HTMLDivElement>) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
@@ -420,7 +424,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
 
 
   return (
-    <div ref={root} className={`pf${embedded ? ' pf-embedded' : ' pf-standalone'}`} data-theme={theme} onClick={onClick}>
+    <div ref={root} className={`pf${embedded ? ' pf-embedded' : ' pf-standalone'}`} data-theme={palette.scheme} data-palette={palette.id} style={{ ...siteVars, colorScheme } as CSSProperties} onClick={onClick}>
       <a className="pf-skip" href="#about">Skip to content</a>
       <nav className="pf-nav" aria-label="Sections">
         <div className="pf-nav-inner">
@@ -431,7 +435,23 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
             {nav.map(([id, label]) => <li key={id}><a href={`#${id}`} aria-current={active === id ? 'true' : undefined}>{label}</a></li>)}
           </ul>
           <div className="pf-nav-actions">
-            <button type="button" className="pf-icon-btn" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} title="Toggle theme">{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}</button>
+            <div className="pf-theme-wrap">
+              <button type="button" className="pf-icon-btn" onClick={() => setThemeMenu((open) => !open)} aria-haspopup="menu" aria-expanded={themeMenu} aria-label="Choose a theme" title="Theme"><Palette size={17} /></button>
+              {themeMenu && (
+                <ul className="pf-theme-menu" role="menu" onKeyDown={(event) => { if (event.key === 'Escape') setThemeMenu(false) }}>
+                  {siteThemes.map((option) => (
+                    <li key={option.id} role="none">
+                      <button type="button" role="menuitemradio" aria-checked={theme === option.id} onClick={() => pickTheme(option.id)}>
+                        <span className="pf-theme-swatch" aria-hidden="true" style={{ background: option.theme.site['--bg'], borderColor: option.theme.site['--accent'] }} />
+                        <span>{option.label}</span>
+                        {theme === option.id && <Check size={15} aria-hidden="true" />}
+                      </button>
+                    </li>
+                  ))}
+                  <li role="none" className="pf-theme-note">Shared with the terminal's <code>theme</code> command.</li>
+                </ul>
+              )}
+            </div>
             <a className="pf-btn ghost pf-term-btn" href="/" title="Open the terminal version"><SquareTerminal size={16} aria-hidden="true" /> <span>Terminal</span></a>
             <button type="button" className="pf-icon-btn pf-menu-btn" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-label="Sections menu">{menuOpen ? <X size={18} /> : <Menu size={18} />}</button>
           </div>

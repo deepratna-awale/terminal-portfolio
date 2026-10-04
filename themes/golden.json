@@ -1,0 +1,24 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Golden Hour",
+  "scheme": "dark",
+  "colors": {
+    "background": "#14151a",
+    "surface": "#1d1e25",
+    "foreground": "#e1dfd6",
+    "muted": "#777a72",
+    "accent": "#f3b95e",
+    "accent2": "#b5d39d",
+    "link": "#9dc9ed",
+    "command": "#f3b95e",
+    "success": "#8ec07c",
+    "error": "#ef8f82",
+    "accentForeground": "#241703"
+  },
+  "terminal": {
+    "background": "rgba(12,14,22,.64)",
+    "chrome": "rgba(36,37,45,.7)",
+    "code": "#292b25",
+    "border": "rgba(226,229,255,.22)"
+  }
+}

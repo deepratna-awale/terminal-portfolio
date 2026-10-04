@@ -379,7 +379,7 @@ export const commands: Record<string, Command> = {
   } },
   clear: { group: 'Terminal', summary: 'clear the screen (^L)', run: (_args, ctx) => ctx.clear() },
   history: { group: 'Terminal', summary: 'command history (^R to search)', run: (_args, ctx) => ctx.print([out(ctx.history.map((item, index) => `${String(index + 1).padStart(5)}  ${item}`).join('\n') || 'No commands yet.')]) },
-  theme: { group: 'Terminal', summary: `switch colours: ${themeNames.join(', ')}, crt`, usage: 'theme [name]', run: (args, ctx) => {
+  theme: { group: 'Terminal', summary: `switch colours (${themeNames.length} themes, also the standard site), crt`, usage: 'theme [name]', run: (args, ctx) => {
     const name = args[0]
     if (!name) { ctx.print([out(themeNames.map((theme) => `${theme === ctx.theme ? '●' : '○'} ${cmd(theme, `theme ${theme}`)}  ${themes[theme].label}`).join('\n') + `\n${ctx.ui.crt ? '●' : '○'} ${cmd('crt', 'theme crt')}  CRT scanlines (toggle)`)]); return }
     if (name === 'crt' || name === 'scanlines') return commands.crt!.run([], ctx)

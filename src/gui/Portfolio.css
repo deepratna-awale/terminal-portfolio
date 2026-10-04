@@ -18,6 +18,14 @@
   --heat-0: #ebedf0; --heat-1: #9be9a8; --heat-2: #40c463; --heat-3: #30a14e; --heat-4: #216e39;
   color-scheme: light;
 }
+.pf-theme-wrap { position: relative; }
+.pf-theme-menu { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; width: 240px; max-height: min(65vh, 440px); overflow-y: auto; margin: 0; padding: 6px; border: 1px solid var(--border-2); border-radius: 12px; background: var(--surface); box-shadow: 0 16px 40px rgba(0,0,0,.35); list-style: none; }
+.pf-theme-menu button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 10px; border: 0; border-radius: 8px; background: none; font-size: 14px; text-align: left; cursor: pointer; }
+.pf-theme-menu button:hover, .pf-theme-menu button:focus-visible { background: var(--surface-2); }
+.pf-theme-menu button span:nth-child(2) { flex: 1; }
+.pf-theme-menu svg { color: var(--accent); }
+.pf-theme-swatch { width: 18px; height: 18px; flex: none; border: 3px solid; border-radius: 50%; }
+.pf-theme-note { padding: 6px 10px 4px; color: var(--muted); font-size: 12px; }
 .pf-standalone { min-height: 100svh; }
 body:has(> #root > .pf-standalone) { background: #0a0c10; }
 body:has(> #root > .pf-standalone[data-theme='light']) { background: #f7f8fa; }

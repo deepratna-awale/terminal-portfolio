@@ -1,0 +1,24 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Solarized Dark",
+  "scheme": "dark",
+  "colors": {
+    "background": "#002b36",
+    "surface": "#073642",
+    "foreground": "#93a1a1",
+    "muted": "#586e75",
+    "accent": "#b58900",
+    "accent2": "#2aa198",
+    "link": "#268bd2",
+    "command": "#cb4b16",
+    "success": "#859900",
+    "error": "#dc322f",
+    "accentForeground": "#1c1500"
+  },
+  "terminal": {
+    "background": "rgba(0,43,54,.9)",
+    "chrome": "rgba(7,54,66,.92)",
+    "code": "#073642",
+    "border": "rgba(147,161,161,.25)"
+  }
+}

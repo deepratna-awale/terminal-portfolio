@@ -1,0 +1,24 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Dracula",
+  "scheme": "dark",
+  "colors": {
+    "background": "#21222c",
+    "surface": "#282a36",
+    "foreground": "#f8f8f2",
+    "muted": "#6272a4",
+    "accent": "#ff79c6",
+    "accent2": "#50fa7b",
+    "link": "#8be9fd",
+    "command": "#bd93f9",
+    "success": "#50fa7b",
+    "error": "#ff5555",
+    "accentForeground": "#2b0a1d"
+  },
+  "terminal": {
+    "background": "rgba(40,42,54,.86)",
+    "chrome": "rgba(33,34,44,.9)",
+    "code": "#44475a",
+    "border": "rgba(189,147,249,.3)"
+  }
+}

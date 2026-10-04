@@ -1,0 +1,18 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Dark",
+  "scheme": "dark",
+  "colors": {
+    "background": "#0a0c10",
+    "surface": "#12161e",
+    "foreground": "#e8eaf0",
+    "muted": "#8a91a2",
+    "accent": "#3ddc97",
+    "accent2": "#8ea2ff",
+    "link": "#7cc4ff",
+    "command": "#3ddc97",
+    "success": "#3ddc97",
+    "error": "#ff7b72",
+    "accentForeground": "#04140c"
+  }
+}
