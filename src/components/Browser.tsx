@@ -38,7 +38,7 @@ function NewTabPage({ onGo }: { onGo: (input: string) => void }) {
   const submit = (event: FormEvent) => { event.preventDefault(); if (query.trim()) onGo(query) }
   return (
     <div className="cb-newtab">
-      <div className="cb-nt-mark" aria-hidden="true"><span className="cb-nt-logo">DA</span></div>
+      <div className="cb-nt-mark" aria-hidden="true"><img src="/favicon.svg" alt="" width={72} height={72} /></div>
       <form className="cb-nt-search" onSubmit={submit} role="search">
         <Search size={18} aria-hidden="true" />
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search Google or type a URL" aria-label="Search Google or type a URL" />

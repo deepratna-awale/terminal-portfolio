@@ -19,9 +19,18 @@ function aboutSite(): Plugin {
       description: seo.description ?? `${profile.name}, ${profile.title}`,
       share_description: seo.share_description ?? seo.description ?? profile.title,
     }
-    const favicon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect x="2" y="2" width="60" height="60" rx="10" fill="#050a06" stroke="#39ff88" stroke-width="4"/>
-  <text x="32" y="42" text-anchor="middle" font-family="'JetBrains Mono',Menlo,Consolas,monospace" font-size="26" font-weight="700" fill="#39ff88">&gt;${escapeHtml(profile.initials)}</text>
+    // Initials in terminal green on a dark tile with a blinking block cursor.
+    // "DA" is drawn as paths so it stays crisp at 16px; other initials use text.
+    const letters = profile.initials === 'DA'
+      ? `<path fill="#39ff14" fill-rule="evenodd" d="M3.5 9h4a5 5 0 0 1 5 5v4a5 5 0 0 1-5 5h-4zM6.5 12v8h1a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2z"/>
+  <path fill="#39ff14" fill-rule="evenodd" d="M13.5 23l3.1-14h2.8l3.1 14h-3l-.6-3h-2.6l-.6 3zM17 17.3h2l-1-5z"/>`
+      : `<text x="13" y="22.5" text-anchor="middle" font-family="Inter,Arial,Helvetica,sans-serif" font-size="14" font-weight="800" fill="#39ff14">${escapeHtml(profile.initials.slice(0, 2))}</text>`
+    const favicon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#0d1117"/>
+  ${letters}
+  <rect x="24.5" y="9" width="4" height="14" fill="#39ff14">
+    <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;.5;.5;1" dur="1.1s" repeatCount="indefinite"/>
+  </rect>
 </svg>
 `
     const robots = `User-agent: *\nAllow: /\n\nSitemap: ${profile.website}/sitemap.xml\n`

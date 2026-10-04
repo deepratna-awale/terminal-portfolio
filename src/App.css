@@ -2,7 +2,7 @@
 
 /* Menu bar */
 .menubar { position: fixed; z-index: 30; inset: 0 0 auto; height: var(--menubar-h); display: flex; align-items: center; gap: 4px; padding: 0 10px; color: #ececf1; background: rgba(18,20,24,.55); border-bottom: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%); font: 13px/1 -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; user-select: none; }
-.menubar-logo { margin-right: 6px; padding: 3px 5px; border: 1px solid #39ff88; border-radius: 3px; color: #39ff88; font: 600 11px/1 var(--mono); text-shadow: 0 0 6px rgba(57,255,136,.6); }
+.menubar-logo { width: 18px; height: 18px; margin-right: 6px; border-radius: 4px; }
 .menubar-menus { display: flex; margin: 0; padding: 0; list-style: none; }
 .menubar-menu { position: relative; }
 .menubar-menu > button { height: 22px; padding: 0 9px; border: 0; border-radius: 4px; color: inherit; background: transparent; font: inherit; cursor: default; }
