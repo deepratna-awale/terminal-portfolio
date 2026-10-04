@@ -74,7 +74,7 @@
 .scroll-to-latest { position: absolute; z-index: 2; bottom: 44px; left: 50%; width: 32px; height: 32px; transform: translateX(-50%); border: 1px solid var(--border); border-radius: 50%; color: #08110b; background: var(--accent); box-shadow: 0 5px 18px rgba(0,0,0,.35); cursor: pointer; font: 18px/1 var(--mono); }
 
 /* CRT */
-.crt .terminal-window::after { content: ''; position: absolute; inset: 40px 0 30px; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(255,255,255,.025) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,.28)); mix-blend-mode: overlay; }
+.crt .terminal-window::after { content: ''; position: absolute; z-index: 1; inset: 40px 0 30px; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(0,0,0,.16) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,.22)); }
 .crt .terminal-body { animation: flicker 6s infinite; }
 
 /* Closed session */
