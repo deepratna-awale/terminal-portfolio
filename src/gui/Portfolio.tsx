@@ -5,6 +5,7 @@ import { ArrowUpRight, Award, BookOpen, Check, FileText, GraduationCap, Mail, Ma
 import { fetchContributions, fetchGuestbook, fetchProjects, signGuestbook, type Contributions, type GuestbookEntry, type Project } from '../api'
 import { contactCopy, focusDirs, linkLabel, nowItems, profile, sectionList, sections } from '../content'
 import { parseAbout, parseEducation, parseExperience, parsePublications, parseSkills, splitYear } from './parse'
+import { saveMode } from '../modeStore'
 import { onThemeChange, readTheme, saveTheme, siteThemes, type SiteTheme } from '../themeStore'
 import { themes } from '../themes'
 import './Portfolio.css'
@@ -270,6 +271,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
     if (!link) return
     const href = link.getAttribute('href') ?? ''
     if (href.startsWith('#')) { event.preventDefault(); go(href.slice(1)); return }
+    if (href === '/') saveMode('terminal')
     if (href === '/' && onOpenTerminal) { event.preventDefault(); onOpenTerminal(); return }
     if (!onExternal) return
     let url: URL

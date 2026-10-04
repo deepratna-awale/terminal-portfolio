@@ -7,6 +7,7 @@ import { MenuBar, type Menu } from './components/MenuBar'
 import { Terminal, type TerminalHandle } from './components/Terminal'
 import { TrafficLights } from './components/TrafficLights'
 import { useWindowFrame } from './components/useWindowFrame'
+import { saveMode } from './modeStore'
 import { Vim } from './components/Vim'
 import { linksFor, os, profile, type SiteLink } from './content'
 import { resolveAddress } from './gui/address'
@@ -48,7 +49,7 @@ function App() {
   }, [])
   const openFile = useCallback((file: string) => readFile(file), [])
   // Phones have no desktop, so the standard site opens as the page itself.
-  const openBrowser = useCallback((url = '/gui') => { if (narrow()) { window.location.assign(url); return } setBrowser({ url, stamp: Date.now() }); setFront('browser') }, [])
+  const openBrowser = useCallback((url = '/gui') => { if (narrow()) { saveMode('gui'); window.location.assign(url); return } setBrowser({ url, stamp: Date.now() }); setFront('browser') }, [])
   const closeBrowser = useCallback(() => { setBrowser(null); setFront('terminal'); setTimeout(() => terminal.current?.focus(), 30) }, [])
   const browserFront = useCallback((isFront: boolean) => setFront(isFront ? 'browser' : 'terminal'), [])
   const clickBrowser = (event: MouseEvent, url = '/gui') => {
