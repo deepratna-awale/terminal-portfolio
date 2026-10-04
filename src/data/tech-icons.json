@@ -1,0 +1,506 @@
+{
+ "source": "simple-icons 16.34.0 (CC0), https://simpleicons.org",
+ "icons": {
+  "python": {
+   "title": "Python",
+   "color": "#3776AB",
+   "names": [
+    "python"
+   ]
+  },
+  "typescript": {
+   "title": "TypeScript",
+   "color": "#3178C6",
+   "names": [
+    "typescript"
+   ]
+  },
+  "javascript": {
+   "title": "JavaScript",
+   "color": "#F7DF1E",
+   "names": [
+    "javascript"
+   ]
+  },
+  "openjdk": {
+   "title": "OpenJDK",
+   "color": null,
+   "names": [
+    "java",
+    "openjdk"
+   ]
+  },
+  "cplusplus": {
+   "title": "C++",
+   "color": "#00599C",
+   "names": [
+    "c++",
+    "cpp"
+   ]
+  },
+  "c": {
+   "title": "C",
+   "color": "#A8B9CC",
+   "names": [
+    "c"
+   ]
+  },
+  "go": {
+   "title": "Go",
+   "color": "#00ADD8",
+   "names": [
+    "go"
+   ]
+  },
+  "rust": {
+   "title": "Rust",
+   "color": null,
+   "names": [
+    "rust"
+   ]
+  },
+  "kotlin": {
+   "title": "Kotlin",
+   "color": "#7F52FF",
+   "names": [
+    "kotlin"
+   ]
+  },
+  "swift": {
+   "title": "Swift",
+   "color": "#F05138",
+   "names": [
+    "swift"
+   ]
+  },
+  "ruby": {
+   "title": "Ruby",
+   "color": "#CC342D",
+   "names": [
+    "ruby"
+   ]
+  },
+  "php": {
+   "title": "PHP",
+   "color": "#777BB4",
+   "names": [
+    "php"
+   ]
+  },
+  "r": {
+   "title": "R",
+   "color": "#276DC3",
+   "names": [
+    "r"
+   ]
+  },
+  "scala": {
+   "title": "Scala",
+   "color": "#DC322F",
+   "names": [
+    "scala"
+   ]
+  },
+  "dart": {
+   "title": "Dart",
+   "color": "#0175C2",
+   "names": [
+    "dart"
+   ]
+  },
+  "react": {
+   "title": "React",
+   "color": "#61DAFB",
+   "names": [
+    "react"
+   ]
+  },
+  "nextdotjs": {
+   "title": "Next.js",
+   "color": null,
+   "names": [
+    "next.js",
+    "nextjs"
+   ]
+  },
+  "vuedotjs": {
+   "title": "Vue.js",
+   "color": "#4FC08D",
+   "names": [
+    "vue",
+    "vue.js"
+   ]
+  },
+  "angular": {
+   "title": "Angular",
+   "color": null,
+   "names": [
+    "angular"
+   ]
+  },
+  "svelte": {
+   "title": "Svelte",
+   "color": "#FF3E00",
+   "names": [
+    "svelte"
+   ]
+  },
+  "nodedotjs": {
+   "title": "Node.js",
+   "color": "#5FA04E",
+   "names": [
+    "node",
+    "node.js",
+    "nodejs"
+   ]
+  },
+  "express": {
+   "title": "Express",
+   "color": null,
+   "names": [
+    "express",
+    "express.js"
+   ]
+  },
+  "django": {
+   "title": "Django",
+   "color": null,
+   "names": [
+    "django"
+   ]
+  },
+  "flask": {
+   "title": "Flask",
+   "color": "#3BABC3",
+   "names": [
+    "flask"
+   ]
+  },
+  "fastapi": {
+   "title": "FastAPI",
+   "color": "#009688",
+   "names": [
+    "fastapi"
+   ]
+  },
+  "spring": {
+   "title": "Spring",
+   "color": "#6DB33F",
+   "names": [
+    "spring"
+   ]
+  },
+  "pytorch": {
+   "title": "PyTorch",
+   "color": "#EE4C2C",
+   "names": [
+    "pytorch"
+   ]
+  },
+  "tensorflow": {
+   "title": "TensorFlow",
+   "color": "#FF6F00",
+   "names": [
+    "tensorflow"
+   ]
+  },
+  "keras": {
+   "title": "Keras",
+   "color": null,
+   "names": [
+    "keras"
+   ]
+  },
+  "scikitlearn": {
+   "title": "scikit-learn",
+   "color": "#F7931E",
+   "names": [
+    "scikit-learn",
+    "sklearn"
+   ]
+  },
+  "opencv": {
+   "title": "OpenCV",
+   "color": "#5C3EE8",
+   "names": [
+    "opencv"
+   ]
+  },
+  "numpy": {
+   "title": "NumPy",
+   "color": null,
+   "names": [
+    "numpy"
+   ]
+  },
+  "pandas": {
+   "title": "pandas",
+   "color": null,
+   "names": [
+    "pandas"
+   ]
+  },
+  "jupyter": {
+   "title": "Jupyter",
+   "color": "#F37626",
+   "names": [
+    "jupyter"
+   ]
+  },
+  "huggingface": {
+   "title": "Hugging Face",
+   "color": "#FFD21E",
+   "names": [
+    "hugging face",
+    "transformers"
+   ]
+  },
+  "langchain": {
+   "title": "LangChain",
+   "color": "#7FC8FF",
+   "names": [
+    "langchain"
+   ]
+  },
+  "anthropic": {
+   "title": "Anthropic",
+   "color": null,
+   "names": [
+    "anthropic"
+   ]
+  },
+  "ollama": {
+   "title": "Ollama",
+   "color": null,
+   "names": [
+    "ollama"
+   ]
+  },
+  "googlecloud": {
+   "title": "Google Cloud",
+   "color": "#4285F4",
+   "names": [
+    "gcp",
+    "google cloud"
+   ]
+  },
+  "docker": {
+   "title": "Docker",
+   "color": "#2496ED",
+   "names": [
+    "docker"
+   ]
+  },
+  "kubernetes": {
+   "title": "Kubernetes",
+   "color": "#326CE5",
+   "names": [
+    "k8s",
+    "kubernetes"
+   ]
+  },
+  "terraform": {
+   "title": "Terraform",
+   "color": "#844FBA",
+   "names": [
+    "terraform"
+   ]
+  },
+  "ansible": {
+   "title": "Ansible",
+   "color": "#EE0000",
+   "names": [
+    "ansible"
+   ]
+  },
+  "githubactions": {
+   "title": "GitHub Actions",
+   "color": "#2088FF",
+   "names": [
+    "ci/cd",
+    "cicd",
+    "github actions"
+   ]
+  },
+  "gitlab": {
+   "title": "GitLab",
+   "color": "#FC6D26",
+   "names": [
+    "gitlab"
+   ]
+  },
+  "jenkins": {
+   "title": "Jenkins",
+   "color": "#D24939",
+   "names": [
+    "jenkins"
+   ]
+  },
+  "linux": {
+   "title": "Linux",
+   "color": "#FCC624",
+   "names": [
+    "linux"
+   ]
+  },
+  "git": {
+   "title": "Git",
+   "color": "#F03C2E",
+   "names": [
+    "git"
+   ]
+  },
+  "github": {
+   "title": "GitHub",
+   "color": null,
+   "names": [
+    "github"
+   ]
+  },
+  "nginx": {
+   "title": "NGINX",
+   "color": "#009639",
+   "names": [
+    "nginx"
+   ]
+  },
+  "postgresql": {
+   "title": "PostgreSQL",
+   "color": "#4169E1",
+   "names": [
+    "postgres",
+    "postgresql"
+   ]
+  },
+  "mysql": {
+   "title": "MySQL",
+   "color": "#4479A1",
+   "names": [
+    "mysql"
+   ]
+  },
+  "mongodb": {
+   "title": "MongoDB",
+   "color": "#47A248",
+   "names": [
+    "mongodb"
+   ]
+  },
+  "redis": {
+   "title": "Redis",
+   "color": "#FF4438",
+   "names": [
+    "redis"
+   ]
+  },
+  "sqlite": {
+   "title": "SQLite",
+   "color": "#003B57",
+   "names": [
+    "sqlite"
+   ]
+  },
+  "neo4j": {
+   "title": "Neo4j",
+   "color": "#4581C3",
+   "names": [
+    "neo4j"
+   ]
+  },
+  "apachespark": {
+   "title": "Apache Spark",
+   "color": "#E25A1C",
+   "names": [
+    "apache spark",
+    "pyspark",
+    "spark"
+   ]
+  },
+  "apacheairflow": {
+   "title": "Apache Airflow",
+   "color": "#017CEE",
+   "names": [
+    "airflow",
+    "apache airflow"
+   ]
+  },
+  "apachekafka": {
+   "title": "Apache Kafka",
+   "color": null,
+   "names": [
+    "apache kafka",
+    "kafka"
+   ]
+  },
+  "elasticsearch": {
+   "title": "Elasticsearch",
+   "color": "#005571",
+   "names": [
+    "elasticsearch"
+   ]
+  },
+  "graphql": {
+   "title": "GraphQL",
+   "color": "#E10098",
+   "names": [
+    "graphql"
+   ]
+  },
+  "vite": {
+   "title": "Vite",
+   "color": "#9135FF",
+   "names": [
+    "vite"
+   ]
+  },
+  "tailwindcss": {
+   "title": "Tailwind CSS",
+   "color": "#06B6D4",
+   "names": [
+    "tailwind css"
+   ]
+  },
+  "figma": {
+   "title": "Figma",
+   "color": "#F24E1E",
+   "names": [
+    "figma"
+   ]
+  },
+  "mlflow": {
+   "title": "MLflow",
+   "color": "#0194E2",
+   "names": [
+    "mlflow"
+   ]
+  },
+  "streamlit": {
+   "title": "Streamlit",
+   "color": "#FF4B4B",
+   "names": [
+    "streamlit"
+   ]
+  },
+  "gradio": {
+   "title": "Gradio",
+   "color": "#F97316",
+   "names": [
+    "gradio"
+   ]
+  },
+  "amazonwebservices": {
+   "title": "Amazon Web Services",
+   "color": "#FF9900",
+   "names": [
+    "agentcore",
+    "amazon bedrock",
+    "amazon web services",
+    "aws",
+    "bedrock",
+    "bedrock agentcore",
+    "lightsail",
+    "sagemaker"
+   ]
+  }
+ }
+}

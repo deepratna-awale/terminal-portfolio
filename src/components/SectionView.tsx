@@ -3,6 +3,7 @@ import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Project } from '../api'
 import { profile, sectionList, sections } from '../content'
+import { TechIcon } from './TechIcon'
 import './output.css'
 
 // Rich terminal layouts for the known sections. The markdown in ABOUT.md
@@ -98,7 +99,7 @@ function Skills() {
         {rows.map(([, category = '', items = '']) => (
           <div key={category} className="skill-row">
             <div className="skill-cat">{category.trim()}</div>
-            <div className="chips">{items.split(/\s{2,}/).filter(Boolean).map((item) => <span key={item} className="chip">{item}</span>)}</div>
+            <div className="chips">{items.split(/\s{2,}/).filter(Boolean).map((item) => <span key={item} className="chip"><TechIcon name={item} />{item}</span>)}</div>
           </div>
         ))}
       </div>

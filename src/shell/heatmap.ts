@@ -5,8 +5,10 @@ const glyphs = ['·', '░', '▒', '▓', '█']
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const weekdays = ['    ', 'Mon ', '    ', 'Wed ', '    ', 'Fri ', '    ']
 
-export function renderHeatmap(days: ContributionDay[]): string {
-  const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date))
+export function renderHeatmap(days: ContributionDay[], weeks = 53): string {
+  const all = [...days].sort((a, b) => a.date.localeCompare(b.date))
+  const lastWeek = all.length ? new Date(`${all.at(-1)!.date}T00:00:00Z`).getUTCDay() + 1 : 0
+  const sorted = all.slice(Math.max(0, all.length - ((weeks - 1) * 7 + lastWeek)))
   if (!sorted.length) return '(no contribution data)'
   const offset = new Date(`${sorted[0]!.date}T00:00:00Z`).getUTCDay()
   const columns = Math.ceil((sorted.length + offset) / 7)

@@ -2,12 +2,13 @@ import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties,
 import ReactMarkdown, { defaultUrlTransform, type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ArrowUpRight, Award, BookOpen, Check, FileText, GraduationCap, Mail, MapPin, Menu, Palette, RotateCw, Send, SquareTerminal, Star, X } from 'lucide-react'
-import { fetchContributions, fetchGuestbook, fetchProjects, signGuestbook, type Contributions, type GuestbookEntry, type Project } from '../api'
+import { fetchActivity, fetchContributions, fetchGuestbook, fetchProjects, signGuestbook, type Activity, type Contributions, type GuestbookEntry, type Project } from '../api'
 import { contactCopy, focusDirs, linkLabel, nowItems, profile, sectionList, sections } from '../content'
 import { parseAbout, parseEducation, parseExperience, parsePublications, parseSkills, splitYear } from './parse'
 import { saveMode } from '../modeStore'
 import { onThemeChange, readTheme, saveTheme, siteThemes, type SiteTheme } from '../themeStore'
 import { themes } from '../themes'
+import { TechIcon } from '../components/TechIcon'
 import './Portfolio.css'
 
 type Props = {
@@ -127,23 +128,47 @@ function Projects() {
   return <div className="pf-grid pf-projects">{projects.map((project) => <ProjectCard key={project.name} project={project} />)}</div>
 }
 
+// Live last bullet of Now: the public repository most recently contributed to.
+function RecentContribution() {
+  const [activity, setActivity] = useState<Activity | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    fetchActivity().then((value) => { if (!cancelled && value.repo) setActivity(value) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+  if (!activity?.repo) return null
+  return <li>Recently contributing to <a href={activity.url}>{activity.repo}</a>{activity.at && <span className="pf-muted"> · {new Date(activity.at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span>}</li>
+}
+
+// Shows as many recent weeks as fit at a readable size, so it never scrolls.
 function Heatmap() {
   const [data, setData] = useState<Contributions | null>(null)
-  const scroller = useRef<HTMLDivElement>(null)
+  const [weeks, setWeeks] = useState(53)
+  const box = useRef<HTMLDivElement>(null)
   useEffect(() => {
     let cancelled = false
     fetchContributions().then((value) => { if (!cancelled && value.days?.length) setData(value) }).catch(() => {})
     return () => { cancelled = true }
   }, [])
-  useEffect(() => { const el = scroller.current; if (el) el.scrollLeft = el.scrollWidth }, [data])
+  useEffect(() => {
+    const el = box.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(([entry]) => setWeeks(Math.max(13, Math.min(53, Math.floor(((entry?.contentRect.width ?? 0) + 3) / 10)))))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [data])
   if (!data) return null
-  const days = data.days.slice(-364)
+  const all = data.days.slice(-371)
+  const end = all.length
+  const lastWeekDays = new Date(`${all[end - 1]!.date}T00:00:00Z`).getUTCDay() + 1
+  const days = all.slice(Math.max(0, end - ((weeks - 1) * 7 + lastWeekDays)))
   const offset = new Date(`${days[0]!.date}T00:00:00Z`).getUTCDay()
+  const months = Math.round(weeks / 4.35)
   return (
     <figure className="pf-card pf-heat">
-      <figcaption><strong>{data.total.toLocaleString('en')}</strong> GitHub contributions in the last year</figcaption>
-      <div className="pf-heat-scroll" ref={scroller}>
-        <div className="pf-heat-grid" role="img" aria-label={`Contribution heatmap: ${data.total} contributions in the last year`}>
+      <figcaption><strong>{data.total.toLocaleString('en')}</strong> GitHub contributions in the last year{weeks < 53 ? <span className="pf-muted"> · showing the last {months} months</span> : null}</figcaption>
+      <div className="pf-heat-box" ref={box}>
+        <div className="pf-heat-grid" style={{ gridTemplateColumns: `repeat(${Math.ceil((days.length + offset) / 7)}, minmax(0, 1fr))` }} role="img" aria-label={`Contribution heatmap: ${data.total} contributions in the last year`}>
           {Array.from({ length: offset }, (_, index) => <span key={`pad-${index}`} className="pf-heat-pad" />)}
           {days.map((day) => <span key={day.date} className={`pf-heat-cell l${Math.max(0, Math.min(4, day.level))}`} title={`${day.count} contribution${day.count === 1 ? '' : 's'} on ${day.date}`} />)}
         </div>
@@ -330,7 +355,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
           {skills.map((group) => (
             <div key={group.category} className="pf-card pf-skill-group">
               <h3>{group.category}</h3>
-              <ul className="pf-chips">{group.items.map((item) => <li key={item}>{item}</li>)}</ul>
+              <ul className="pf-chips">{group.items.map((item) => <li key={item}><TechIcon name={item} />{item}</li>)}</ul>
             </div>
           ))}
         </div>
@@ -384,7 +409,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
         <div className="pf-now">
           <div className="pf-card pf-now-list">
             <p className="pf-date">Updated {nowItems.updated}</p>
-            <ul className="pf-bullets">{nowItems.items.map((item) => <li key={item}><Md inline>{item}</Md></li>)}</ul>
+            <ul className="pf-bullets">{nowItems.items.map((item) => <li key={item}><Md inline>{item}</Md></li>)}{live && <RecentContribution />}</ul>
           </div>
           {live && <Heatmap />}
         </div>
