@@ -3,6 +3,7 @@ import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Project } from '../api'
 import { profile, sectionList, sections } from '../content'
+import { parseExperience } from '../gui/parse'
 import { TechIcon } from './TechIcon'
 import './output.css'
 
@@ -61,32 +62,22 @@ function About({ renderLink }: { renderLink: LinkRenderer }) {
 }
 
 function Experience({ renderLink }: { renderLink: LinkRenderer }) {
-  const roles = blocks(sections.experience!).filter((block) => block[0]?.startsWith('## '))
-  const footer = sections.experience!.filter((line) => line.startsWith('Earlier:'))
+  const { jobs, earlier } = parseExperience(sections.experience!)
   return (
     <Box title="experience" icon="⌘" className="tbox-timeline">
       <ol className="timeline">
-        {roles.map((block, index) => {
-          const title = block[0]!.replace(/^## /, '')
-          const meta = block[1] ?? ''
-          const [, name = meta, suffix = '', dates = '', place = ''] = /^\*\*(.+?)\*\*\s*([^[]*?)\s*\[(.+?)\]\s*\|?\s*(.*)$/.exec(meta) ?? []
-          const company = suffix ? `${name} ${suffix}` : name
-          const extra = block.slice(2).filter((line) => line && !line.startsWith('- ') && !line.startsWith('Earlier:'))
-          const bullets = block.filter((line) => line.startsWith('- ')).map((line) => line.slice(2))
-          return (
-            <li key={title + company} className={index === 0 ? 'current' : ''}>
-              <div className="role-head">
-                <span className="role-title">{title}</span>
-                <span className="role-dates">{dates.replace(' to ', ' → ')}</span>
-              </div>
-              <div className="role-company">{company}{place && <span className="role-place"> · {place}</span>}</div>
-              {extra.map((line) => <div key={line} className="role-extra"><Inline text={line} renderLink={renderLink} /></div>)}
-              <ul className="role-bullets">{bullets.map((bullet) => <li key={bullet}><Inline text={bullet} renderLink={renderLink} /></li>)}</ul>
-            </li>
-          )
-        })}
+        {jobs.map((job, index) => (
+          <li key={job.role + job.company} className={index === 0 ? 'current' : ''}>
+            <div className="role-head">
+              <span><span className="role-title">{job.role}</span><span className="role-sep"> — </span><span className="role-company">{job.company}</span></span>
+              <span className="role-dates">{job.dates}</span>
+            </div>
+            {job.notes.map((line) => <div key={line} className="role-extra"><Inline text={line} renderLink={renderLink} /></div>)}
+            <ul className="role-bullets">{job.bullets.map((bullet) => <li key={bullet}><Inline text={bullet} renderLink={renderLink} /></li>)}</ul>
+          </li>
+        ))}
       </ol>
-      {footer.map((line) => <p key={line} className="tbox-note">{line}</p>)}
+      {earlier && <p className="tbox-note">Earlier: {earlier}</p>}
     </Box>
   )
 }

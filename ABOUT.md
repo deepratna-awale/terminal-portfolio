@@ -140,18 +140,18 @@ Try [`projects`](cmd:projects), [`experience`](cmd:experience), or just ask me s
 
 ## Senior Software Engineer
 **Nasdaq** (Verafin) [May 2026 to Present] | St. John's, NL, Canada
-Product: [Verafin Agentic AI Workforce](https://verafin.com/product/agentic-ai-workforce/)
 
-- Building an end to end, production ready agent creation pipeline and process: data preprocessing, prompt engineering, and infrastructure that lets other developers easily deploy agents with tools and skills.
-- Optimized an agent to increase specificity and recall while cutting its response time in half.
-- Developing agents on AWS Bedrock AgentCore that autonomously work BSA/AML cases and recommend Acknowledge or Investigate dispositions, cutting false positives so analysts spend their attention on real fraud.
+- Building the end-to-end agent pipeline (data, prompts, infra) for Agentic AI Workforce.
+- Developing Bedrock AgentCore agents that autonomously work BSA/AML cases.
+- Agents recommend Acknowledge or Investigate, cutting false positives for analysts.
+- Optimized an agent for higher specificity and recall at half the response time.
 
 ## Generative AI Associate
 **Innodata Inc.** [August 2025 to May 2026] | Toronto, ON
 
-- Evaluated and rated AI model outputs for quality, relevance, and accuracy for Meta.
-- Contributed to open-source tooling like Redlite for toxicity testing and benchmark metrics.
-- Supported dataset development through data collection and augmentation to reduce overfitting.
+- Evaluated and rated AI model outputs for quality, relevance and accuracy for Meta.
+- Contributed to open-source tooling like Redlite for toxicity testing and benchmarks.
+- Supported dataset collection and augmentation to reduce model overfitting.
 
 # Projects
 <!-- help: live from my public GitHub -->

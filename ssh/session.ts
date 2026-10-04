@@ -10,7 +10,8 @@ import { applyEdit, bindingFor, expandHistory, reverseSearch, type LineState } f
 import { runInput } from '../src/shell/runner'
 import { isThemeName, themeNames, themes, type ThemeName } from '../src/themes'
 import { matrix, snake, twenty48, viewer, type App, type Screen } from './apps'
-import { hyperlink, palette, renderMarkdown, RESET, width, wrap, type Palette } from './ansi'
+import { parseExperience } from '../src/gui/parse'
+import { hyperlink, palette, renderMarkdown, RESET, sgr, width, wrap, type Palette } from './ansi'
 import { hasImage, renderImage } from './images'
 import { applyProbe, detect, parseKeys, probeDone, probeQuery, stripProbeReplies, type Graphics, type Key } from './terminal'
 
@@ -87,6 +88,21 @@ export class Session {
     return renderMarkdown(text, { columns: this.columns, palette: this.colors, base, hyperlinks: this.graphics.hyperlinks })
   }
 
+  // Resume layout: "Role — Company" with the dates right-aligned, then the bullets.
+  private experience(text: string) {
+    const colors = this.colors
+    const { jobs, earlier } = parseExperience(text.split('\n'))
+    const columns = Math.min(this.columns, 100)
+    return jobs.flatMap((job, index) => {
+      const left = `${sgr('1')}${job.role}${RESET}${colors.muted} — ${RESET}${colors.accent}${job.company}${RESET}`
+      const right = colors.muted + job.dates + RESET
+      const gap = columns - width(left) - width(right)
+      const head = gap >= 2 ? [left + ' '.repeat(gap) + right] : [...wrap(left, this.columns), right]
+      const body = this.markdown([...job.notes, ...job.bullets.map((bullet) => `- ${bullet}`)].join('\n'))
+      return [...(index ? [''] : []), ...head, ...body]
+    }).concat(earlier ? ['', ...this.markdown(`Earlier: ${earlier}`, colors.muted)] : [])
+  }
+
   render(line: NewLine): string[] {
     const colors = this.colors
     switch (line.type) {
@@ -98,6 +114,7 @@ export class Session {
       case 'ascii': return line.text.split('\n').map((item) => colors.accent + item + RESET)
       case 'neofetch': return [`${colors.heading}${line.text}${RESET}`, colors.muted + '─'.repeat(Math.min(this.columns, width(line.text))) + RESET, ...(line.info ?? []).map((row) => row.replace(/^([^:]+:)/, `${colors.accent}$1${RESET}`))]
       case 'media': return []
+      case 'section': return line.section === 'experience' ? this.experience(line.text) : this.markdown(line.text)
       default: return this.markdown(line.text)
     }
   }

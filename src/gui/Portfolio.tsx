@@ -328,11 +328,8 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
           {experience.jobs.map((job) => (
             <li key={`${job.role}-${job.company}`} className="pf-card pf-job">
               <div className="pf-job-head">
-                <div>
-                  <h3>{job.role}</h3>
-                  <p className="pf-company"><Md inline>{job.company}</Md></p>
-                </div>
-                <p className="pf-job-when"><span className="pf-date">{job.dates}</span><span className="pf-muted">{job.location}</span></p>
+                <h3>{job.role} <span className="pf-company">— <Md inline>{job.company}</Md></span></h3>
+                <span className="pf-date">{job.dates}</span>
               </div>
               {job.notes.map((note) => <p key={note} className="pf-job-note"><Md inline>{note}</Md></p>)}
               <ul className="pf-bullets">{job.bullets.map((bullet) => <li key={bullet}><Md inline>{bullet}</Md></li>)}</ul>

@@ -123,10 +123,10 @@ html:has(.pf-standalone) { scroll-behavior: smooth; }
 .pf-timeline::before { content: ''; position: absolute; top: 10px; bottom: 10px; left: 7px; width: 2px; border-radius: 2px; background: linear-gradient(var(--accent), var(--border) 80%); }
 .pf-job::before { content: ''; position: absolute; top: 28px; left: -28px; width: 16px; height: 16px; border: 3px solid var(--bg); border-radius: 50%; background: var(--border-2); box-shadow: 0 0 0 1px var(--border-2); }
 .pf-job:first-child::before { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
-.pf-job-head { display: flex; justify-content: space-between; gap: 8px 20px; flex-wrap: wrap; }
-.pf-company { margin-top: 2px; color: var(--text-2); font-size: 15px; }
-.pf-company strong { color: var(--text); font-weight: 600; }
-.pf-job-when { display: grid; justify-items: end; gap: 2px; font-size: 13.5px; text-align: right; }
+.pf-job-head { display: flex; justify-content: space-between; align-items: baseline; gap: 4px 20px; flex-wrap: wrap; }
+.pf-company { color: var(--text-2); font-weight: 500; }
+.pf-job-head .pf-date { white-space: nowrap; }
+.pf-job .pf-bullets { gap: 4px; margin-top: 10px; }
 .pf-job-note { margin-top: 10px; font-size: 14.5px; color: var(--text-2); }
 .pf-earlier { margin-top: 20px; padding-left: 28px; font-size: 14.5px; }
 .pf-earlier strong { color: var(--text-2); }
@@ -238,7 +238,6 @@ html:has(.pf-standalone) { scroll-behavior: smooth; }
   .pf-timeline { padding-left: 20px; }
   .pf-timeline::before { left: 3px; }
   .pf-job::before { left: -22px; width: 12px; height: 12px; border-width: 2px; }
-  .pf-job-when { justify-items: start; text-align: left; }
   .pf-earlier { padding-left: 0; }
   .pf-nav-links { left: 12px; }
 }
