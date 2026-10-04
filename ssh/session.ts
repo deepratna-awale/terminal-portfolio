@@ -24,6 +24,9 @@ const clampSize = (value: number, fallback: number, min: number, max: number) =>
 const frames = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
 const maxLine = 1000
 const commandsPerMinute = 40
+const maxInputBytes = 256 * 1024
+const inputWindowMs = 10_000
+const maxResizesPerSecond = 20
 export const defaultTheme: ThemeName = isThemeName('golden') ? 'golden' : themeNames[0]!
 
 export class Session {
@@ -54,6 +57,11 @@ export class Session {
   private chat: ChatTurn[] = []
   private projectNames: string[] = []
   private recent: number[] = []
+  // Raw bytes received in the current window: blunts keystroke floods and the
+  // output amplification a stream of control characters would cause.
+  private inputBytes = 0
+  private inputWindowAt = Date.now()
+  private resizes: number[] = []
   private timers: NodeJS.Timeout[] = []
   private idle: NodeJS.Timeout | undefined
   private idleMs: number
@@ -474,6 +482,11 @@ export class Session {
 
   input(data: Buffer | string) {
     if (this.mode === 'closed') return
+    // A human never sends anywhere near this; a flood or paste bomb does.
+    const now = Date.now()
+    if (now - this.inputWindowAt > inputWindowMs) { this.inputWindowAt = now; this.inputBytes = 0 }
+    this.inputBytes += data.length
+    if (this.inputBytes > maxInputBytes) { this.close('Too much input too quickly, closing the connection.'); return }
     this.touch()
     const text = typeof data === 'string' ? data : this.decoder.write(data)
     if (this.mode === 'probe') {
@@ -492,6 +505,12 @@ export class Session {
   resize(columns: number, rows: number) {
     this.columns = clampSize(columns, this.columns, 20, 400)
     this.rows = clampSize(rows, this.rows, 5, 200)
+    // The new size is always kept; only the redraw is dropped when a client
+    // spams window-change, so resize floods can't amplify into output.
+    const now = Date.now()
+    this.resizes = this.resizes.filter((time) => now - time < 1000)
+    this.resizes.push(now)
+    if (this.resizes.length > maxResizesPerSecond) return
     if (this.mode === 'app') this.app?.resize()
     else if (this.mode === 'line' || this.mode === 'question') this.refresh()
   }

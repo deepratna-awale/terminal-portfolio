@@ -116,6 +116,49 @@ describe('session', () => {
   })
 })
 
+describe('abuse resistance', () => {
+  const build = () => {
+    let output = ''
+    let closed = false
+    const session = new Session({ ip: '198.51.100.2', columns: 80, rows: 24, term: 'xterm-256color', env: {}, probeMs: 10_000, io: { write: (data) => { output += data }, close: () => { closed = true } } })
+    session.input('\x1b[?62;22c')
+    return { session, read: () => stripAnsi(output), closed: () => closed }
+  }
+
+  it('closes a connection that floods it with input', () => {
+    const t = build()
+    t.session.input('x'.repeat(300_000))
+    expect(t.closed()).toBe(true)
+    expect(t.read()).toContain('Too much input')
+  })
+
+  it('does not crash on malformed escape sequences', () => {
+    const t = build()
+    expect(() => t.session.input('\x1b[\x1b[?999;999H\x1b]evil\x9b\x9c\x90\x00\x07\x7f\xff\xfe')).not.toThrow()
+    expect(t.closed()).toBe(false)
+    t.session.close()
+  })
+
+  it('survives a resize storm and keeps working', async () => {
+    const t = build()
+    for (let i = 0; i < 300; i++) t.session.resize(60 + (i % 50), 20 + (i % 30))
+    expect(() => t.session.resize(100, 30)).not.toThrow()
+    t.session.input('help\r')
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(t.read()).toContain('Portfolio')
+    expect(t.closed()).toBe(false)
+    t.session.close()
+  })
+
+  it('still accepts a normal pasted command', async () => {
+    const t = build()
+    t.session.input('\x1b[200~about\x1b[201~\r')
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(t.closed()).toBe(false)
+    t.session.close()
+  })
+})
+
 describe('project images', () => {
   it('draws a thumbnail above each project in the list', async () => {
     const { mkdtempSync, writeFileSync } = await import('node:fs')
