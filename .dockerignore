@@ -1,4 +1,8 @@
 node_modules
 dist
 .git
+.github
 .DS_Store
+terraform
+.env
+.env.*

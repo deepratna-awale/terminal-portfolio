@@ -175,7 +175,7 @@ function App() {
         {showScrollButton && <button className="scroll-to-latest" type="button" onClick={scrollToLatest} aria-label="Scroll to latest terminal output">↓</button>}
         <footer className="terminal-footer"><span>zsh</span><span>UTF-8</span><span>main</span><span className="footer-status">● connection local</span></footer>
       </div>
-      <section className="mobile-message"><div className="mobile-mark">⌘</div><p className="eyebrow">alex-morgan.dev</p><h1>Open this portfolio on a desktop.</h1><p>The terminal experience is designed for a full keyboard and a larger screen.</p></section>
+      <section className="mobile-message"><div className="mobile-mark">⌘</div><p className="eyebrow">deepratna-awale.dev</p><h1>Open this portfolio on a desktop.</h1><p>The terminal experience is designed for a full keyboard and a larger screen.</p></section>
     </main>
   )
 }
