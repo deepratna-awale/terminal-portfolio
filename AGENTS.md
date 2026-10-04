@@ -129,6 +129,18 @@ if it needs a custom layout: add a renderer for its id in
 `show: [dock]`, `[desktop]` and/or `[newtab]`. Give it an `id` to make
 `open <id>` work. No code change.
 
+**Add a desktop window.** Call `useResizable('<id>', { disabled })` from
+`src/components/useResizable.tsx` in the window component, spread its `style`
+onto the window frame (which needs `position: relative`, `fixed` or
+`absolute`) and render its `handles` inside it. The window then resizes from
+every edge and corner, is clamped to the viewport, and remembers its size per
+id in localStorage (double-click a handle to reset). Pass `disabled` while the
+window is maximized or minimized so restore returns to the user's size; it is
+off automatically on touch and narrow screens, where windows are full screen.
+Use `anchor: 'top'` with `onTopShift` for windows positioned from the top
+rather than centred (see `Browser.tsx`). Give it `TrafficLights` for macOS
+controls.
+
 **Add a built-in command.** Add an entry to `commands` in
 `src/shell/commands.ts` (`group`, `summary`, optional `usage`/`hidden`,
 `run`). It appears in `help` and completion automatically. Add a test in

@@ -6,6 +6,7 @@ import { MatrixRain } from './components/MatrixRain'
 import { MenuBar, type Menu } from './components/MenuBar'
 import { Terminal, type TerminalHandle } from './components/Terminal'
 import { TrafficLights } from './components/TrafficLights'
+import { useResizable } from './components/useResizable'
 import { Vim } from './components/Vim'
 import { linksFor, os, profile, type SiteLink } from './content'
 import { resolveAddress } from './gui/address'
@@ -26,6 +27,7 @@ function App() {
   const terminal = useRef<TerminalHandle>(null)
   const browserControls = useRef<BrowserControls | null>(null)
   const [mode, setMode] = useState<WindowMode>(() => (narrow() ? 'maximized' : stored<WindowMode>('portfolio.window', 'normal', (value) => value === 'maximized')))
+  const terminalResize = useResizable('terminal', { disabled: mode !== 'normal', min: { width: 460, height: 300 } })
   const [theme, setThemeState] = useState<ThemeName>(() => terminalTheme(readTheme()))
   const [fontSize, setFontSize] = useState(() => Number(stored('portfolio.font', '15', (value) => /^\d+$/.test(value))))
   const [crt, setCrt] = useState(() => stored('portfolio.crt', 'on', (value) => value === 'on' || value === 'off') === 'on')
@@ -228,7 +230,7 @@ function App() {
       </div>
       <main className={`app-shell ${mode}`}>
         {mode !== 'closed' && (
-          <section className="terminal-window" aria-label="Terminal" hidden={mode === 'minimized'} onPointerDown={() => setFront('terminal')}>
+          <section className="terminal-window" aria-label="Terminal" hidden={mode === 'minimized'} style={terminalResize.style} onPointerDown={() => setFront('terminal')}>
             <header className="window-chrome" onDoubleClick={(event) => { if (!(event.target as HTMLElement).closest('button')) toggleMaximize() }}>
               <div className="traffic-lights"><TrafficLights name="terminal" maximized={mode === 'maximized'} onClose={() => setMode('closed')} onMinimize={() => setMode('minimized')} onMaximize={toggleMaximize} /></div>
               <div className="window-title">guest@{profile.host}: ~ — ssh — zsh</div>
@@ -236,6 +238,7 @@ function App() {
             </header>
             <Terminal key={sessionKey} ref={terminal} theme={theme} ui={ui} onStatus={setStatus} suspended={Boolean(game || vim || matrix || (browser && front === 'browser'))} />
             <footer className="terminal-footer"><span>zsh</span><span>UTF-8</span><span>{themes[theme].label}</span><span className="footer-status">{status || `● ssh guest@${profile.host}`}</span></footer>
+            {terminalResize.handles}
           </section>
         )}
         {mode === 'closed' && (
