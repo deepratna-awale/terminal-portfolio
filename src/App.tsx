@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 import './App.css'
-import { BrowserWindow } from './components/Browser'
+import { BrowserWindow, type BrowserControls } from './components/Browser'
 import { GameOverlay, type GameName } from './components/Games'
 import { MatrixRain } from './components/MatrixRain'
 import { MenuBar, type Menu } from './components/MenuBar'
@@ -22,6 +22,7 @@ const narrow = () => typeof window !== 'undefined' && window.matchMedia('(max-wi
 
 function App() {
   const terminal = useRef<TerminalHandle>(null)
+  const browserControls = useRef<BrowserControls | null>(null)
   const [mode, setMode] = useState<WindowMode>(() => (narrow() ? 'maximized' : stored<WindowMode>('portfolio.window', 'normal', (value) => value === 'maximized')))
   const [theme, setThemeState] = useState<ThemeName>(() => stored<ThemeName>('portfolio.theme', 'phosphor', isThemeName))
   const [fontSize, setFontSize] = useState(() => Number(stored('portfolio.font', '15', (value) => /^\d+$/.test(value))))
@@ -104,6 +105,45 @@ function App() {
 
   const run = (command: string) => { if (mode === 'closed' || mode === 'minimized') restore(); setTimeout(() => terminal.current?.run(command), 60) }
 
+  // macOS swaps the menu bar to the focused app, so Chrome gets its own menus.
+  const chrome = (action: keyof BrowserControls) => () => browserControls.current?.[action]()
+  const chromeMenus: Menu[] = [
+    { label: 'Chrome', items: [
+      { label: 'About Google Chrome', action: () => openExternal('https://www.google.com/chrome/') },
+      { separator: true },
+      { label: 'Quit Chrome', shortcut: '⌘Q', action: closeBrowser },
+    ] },
+    { label: 'File', items: [
+      { label: 'New Tab', shortcut: '⌘T', action: chrome('newTab') },
+      { label: 'Open Location…', shortcut: '⌘L', action: chrome('focusAddress') },
+      { label: 'Open in a real browser tab', action: chrome('openReal') },
+      { separator: true },
+      { label: 'Close Tab', shortcut: '⌘W', action: chrome('closeTab') },
+      { label: 'Close Window', shortcut: '⇧⌘W', action: closeBrowser },
+    ] },
+    { label: 'Edit', items: [
+      { label: 'Copy', shortcut: '⌘C', action: () => { const text = window.getSelection()?.toString(); if (text) navigator.clipboard?.writeText(text).catch(() => {}) } },
+    ] },
+    { label: 'View', items: [
+      { label: 'Reload This Page', shortcut: '⌘R', action: chrome('reload') },
+      { label: 'Enter Full Screen', shortcut: '⌃⌘F', action: toggleFullscreen },
+    ] },
+    { label: 'History', items: [
+      { label: 'Home', shortcut: '⇧⌘H', action: chrome('home') },
+      { label: 'Back', shortcut: '⌘[', action: chrome('back') },
+      { label: 'Forward', shortcut: '⌘]', action: chrome('forward') },
+    ] },
+    { label: 'Window', items: [
+      { label: 'Minimize', shortcut: '⌘M', action: chrome('minimize') },
+      { label: 'Zoom', action: chrome('toggleMax') },
+      { separator: true },
+      { label: 'Terminal', action: chrome('toTerminal') },
+    ] },
+    { label: 'Help', items: [
+      { label: 'Chrome Help', action: () => openExternal('https://support.google.com/chrome/') },
+    ] },
+  ]
+
   const menus: Menu[] = [
     { label: 'Terminal', items: [
       { label: 'About DeepOS 26.10 LTS', action: () => run('neofetch') },
@@ -166,7 +206,7 @@ function App() {
 
   return (
     <div className={`desktop theme-${theme}${crt ? ' crt' : ''}${melting ? ' meltdown' : ''}${browser && front === 'terminal' ? ' terminal-front' : ''}`} style={style}>
-      <MenuBar menus={menus} status={status} />
+      <MenuBar menus={browser && front === 'browser' ? chromeMenus : menus} status={status} />
       <a className="desktop-icon" href="/gui" title="Open the standard portfolio website" onClick={clickBrowser}>
         <img className="desktop-chrome" src="/icons/chrome.svg" alt="" />
         <span className="desktop-icon-label">Portfolio</span>
@@ -202,7 +242,7 @@ function App() {
           <a className="dock-item running" href="/gui" title="Chrome" aria-label="Chrome" onClick={clickBrowser}><span className="dock-icon app tile"><img src="/icons/chrome.svg" alt="" /></span></a>
         </>}
       </nav>
-      {browser && <BrowserWindow url={browser.url} stamp={browser.stamp} onClose={closeBrowser} onFront={browserFront} onOpenTerminal={() => { setFront('terminal'); restore() }} />}
+      {browser && <BrowserWindow controls={browserControls} url={browser.url} stamp={browser.stamp} onClose={closeBrowser} onFront={browserFront} onOpenTerminal={() => { setFront('terminal'); restore() }} />}
       {game && <GameOverlay game={game} onExit={closeOverlay} />}
       {vim && <Vim file={vim.file} text={vim.text} onExit={closeOverlay} open={openFile} />}
       {matrix && <MatrixRain onDone={stopMatrix} />}
