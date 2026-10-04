@@ -35,7 +35,9 @@ export async function fetchCowthink(text: string): Promise<string> {
   return textOrThrow(await fetch(`/api/cowthink?text=${encodeURIComponent(text)}`))
 }
 
-export async function askAssistant(messages: ChatTurn[], signal?: AbortSignal): Promise<string> {
+// A blocked reply is the Guardrail's canned message; keep it out of the history
+// so it doesn't colour the next question.
+export async function askAssistant(messages: ChatTurn[], signal?: AbortSignal): Promise<{ reply: string; blocked: boolean }> {
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -48,7 +50,8 @@ export async function askAssistant(messages: ChatTurn[], signal?: AbortSignal): 
     try { message = (JSON.parse(body) as { error?: string }).error ?? body } catch { /* plain text error */ }
     throw new Error(message || 'the assistant is unavailable right now')
   }
-  return (JSON.parse(body) as { reply: string }).reply
+  const { reply, blocked } = JSON.parse(body) as { reply: string; blocked?: boolean }
+  return { reply, blocked: Boolean(blocked) }
 }
 
 export type GuestbookEntry = { id?: string; name: string; message: string; at: string }

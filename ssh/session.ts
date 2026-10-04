@@ -393,8 +393,8 @@ export class Session {
     const spinner = setInterval(() => this.write(`\r${this.colors.muted}${frames[++frame % frames.length]}${RESET}`), 150)
     try {
       const turns: ChatTurn[] = [...this.chat.slice(-6), { role: 'user', content: question }]
-      const reply = await askAssistant(turns, controller.signal)
-      this.chat = [...turns, { role: 'assistant', content: reply }]
+      const { reply, blocked } = await askAssistant(turns, controller.signal)
+      if (!blocked) this.chat = [...turns, { role: 'assistant', content: reply }]
       clearInterval(spinner)
       this.write('\r\x1b[K')
       this.print([{ type: 'assistant', text: reply }])

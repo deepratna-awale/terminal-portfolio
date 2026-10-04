@@ -120,9 +120,9 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
     onStatus('● asking Bedrock (Claude Haiku 4.5)')
     try {
       const turns: ChatTurn[] = [...chatRef.current.slice(-6), { role: 'user', content: question }]
-      const reply = await askAssistant(turns, controller.signal)
+      const { reply, blocked } = await askAssistant(turns, controller.signal)
       clearInterval(spinner)
-      chatRef.current = [...turns, { role: 'assistant', content: reply }]
+      if (!blocked) chatRef.current = [...turns, { role: 'assistant', content: reply }]
       if (reducedMotion()) { updateLine(id, reply, 'assistant'); return }
       for (let shown = 0; shown < reply.length; shown += 6) {
         if (controller.signal.aborted) break
