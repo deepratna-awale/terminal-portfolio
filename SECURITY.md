@@ -24,7 +24,12 @@ configuration. Please do not run automated scanners against the live site.
   forks, run on `pull_request` with a read-only token and no secrets.
 - Third-party actions are pinned to commit SHAs.
 - The container runs as a non-root user. The server sends a strict Content
-  Security Policy and HSTS, and rate-limits the assistant and the guestbook.
+  Security Policy and HSTS, and rate-limits the assistant, the guestbook and
+  the fortune/cowthink endpoints per visitor (IPv6 counted per /64) and
+  overall. The assistant's daily cap bounds Bedrock spend, and an AWS Budget
+  alert catches anything else.
+- Dependabot keeps npm packages, Actions, the base image and the Terraform
+  provider up to date.
 - The assistant's Bedrock API key belongs to an IAM user that can call one model
   and apply one guardrail, nothing else. Every request goes through a Bedrock
   Guardrail that blocks prompt attacks, secrets and personal data.
