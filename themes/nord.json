@@ -1,0 +1,24 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Nord",
+  "scheme": "dark",
+  "colors": {
+    "background": "#2e3440",
+    "surface": "#3b4252",
+    "foreground": "#e5e9f0",
+    "muted": "#6b7894",
+    "accent": "#88c0d0",
+    "accent2": "#a3be8c",
+    "link": "#81a1c1",
+    "command": "#ebcb8b",
+    "success": "#a3be8c",
+    "error": "#bf616a",
+    "accentForeground": "#0f2329"
+  },
+  "terminal": {
+    "background": "rgba(46,52,64,.86)",
+    "chrome": "rgba(59,66,82,.9)",
+    "code": "#3b4252",
+    "border": "rgba(136,192,208,.28)"
+  }
+}

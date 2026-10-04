@@ -1,0 +1,18 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Rosé Pine",
+  "scheme": "dark",
+  "colors": {
+    "background": "#191724",
+    "surface": "#1f1d2e",
+    "foreground": "#e0def4",
+    "muted": "#6e6a86",
+    "accent": "#ebbcba",
+    "accent2": "#9ccfd8",
+    "link": "#c4a7e7",
+    "command": "#f6c177",
+    "success": "#31748f",
+    "error": "#eb6f92",
+    "accentForeground": "#191724"
+  }
+}

@@ -1,35 +1,71 @@
-export type ThemeName = 'phosphor' | 'golden' | 'dracula' | 'solarized' | 'gruvbox' | 'nord' | 'paper'
+// Themes are JSON files in themes/ at the repository root, discovered at build
+// time. Each one styles both the terminal and the standard site. A shadcn or
+// tweakcn registry export (cssVars with light/dark) works as-is: its dark
+// palette becomes <file> and its light palette <file>-light.
 
-export const themes: Record<ThemeName, { label: string; vars: Record<string, string> }> = {
-  phosphor: {
-    label: 'Phosphor Green',
-    vars: { '--fg': '#c8f7c5', '--muted': '#5f8a63', '--accent': '#39ff88', '--accent-2': '#9dffb0', '--link': '#7fe0ff', '--error': '#ff7b72', '--success': '#39ff88', '--command': '#39ff88', '--code-bg': 'rgba(57,255,136,.08)', '--term-bg': 'rgba(3,10,6,.78)', '--chrome-bg': 'rgba(10,22,14,.85)', '--border': 'rgba(57,255,136,.28)', '--glow': '0 0 6px rgba(57,255,136,.35)' },
-  },
-  golden: {
-    label: 'Golden Hour',
-    vars: { '--fg': '#e1dfd6', '--muted': '#777a72', '--accent': '#f3b95e', '--accent-2': '#b5d39d', '--link': '#9dc9ed', '--error': '#ef8f82', '--success': '#8ec07c', '--command': '#f3b95e', '--code-bg': '#292b25', '--term-bg': 'rgba(12,14,22,.64)', '--chrome-bg': 'rgba(36,37,45,.7)', '--border': 'rgba(226,229,255,.22)', '--glow': 'none' },
-  },
-  dracula: {
-    label: 'Dracula',
-    vars: { '--fg': '#f8f8f2', '--muted': '#6272a4', '--accent': '#ff79c6', '--accent-2': '#50fa7b', '--link': '#8be9fd', '--error': '#ff5555', '--success': '#50fa7b', '--command': '#bd93f9', '--code-bg': '#44475a', '--term-bg': 'rgba(40,42,54,.86)', '--chrome-bg': 'rgba(33,34,44,.9)', '--border': 'rgba(189,147,249,.3)', '--glow': 'none' },
-  },
-  solarized: {
-    label: 'Solarized Dark',
-    vars: { '--fg': '#93a1a1', '--muted': '#586e75', '--accent': '#b58900', '--accent-2': '#2aa198', '--link': '#268bd2', '--error': '#dc322f', '--success': '#859900', '--command': '#cb4b16', '--code-bg': '#073642', '--term-bg': 'rgba(0,43,54,.9)', '--chrome-bg': 'rgba(7,54,66,.92)', '--border': 'rgba(147,161,161,.25)', '--glow': 'none' },
-  },
-  gruvbox: {
-    label: 'Gruvbox',
-    vars: { '--fg': '#ebdbb2', '--muted': '#928374', '--accent': '#fabd2f', '--accent-2': '#b8bb26', '--link': '#83a598', '--error': '#fb4934', '--success': '#b8bb26', '--command': '#fe8019', '--code-bg': '#3c3836', '--term-bg': 'rgba(40,40,40,.9)', '--chrome-bg': 'rgba(50,48,47,.92)', '--border': 'rgba(235,219,178,.22)', '--glow': 'none' },
-  },
-  nord: {
-    label: 'Nord',
-    vars: { '--fg': '#e5e9f0', '--muted': '#6b7894', '--accent': '#88c0d0', '--accent-2': '#a3be8c', '--link': '#81a1c1', '--error': '#bf616a', '--success': '#a3be8c', '--command': '#ebcb8b', '--code-bg': '#3b4252', '--term-bg': 'rgba(46,52,64,.86)', '--chrome-bg': 'rgba(59,66,82,.9)', '--border': 'rgba(136,192,208,.28)', '--glow': 'none' },
-  },
-  paper: {
-    label: 'Paper (light)',
-    vars: { '--fg': '#2d2a24', '--muted': '#8a8577', '--accent': '#b5541b', '--accent-2': '#2f7d32', '--link': '#1f5fa8', '--error': '#b3261e', '--success': '#2f7d32', '--command': '#b5541b', '--code-bg': '#ece6d6', '--term-bg': 'rgba(250,247,238,.94)', '--chrome-bg': 'rgba(236,231,218,.95)', '--border': 'rgba(60,50,30,.22)', '--glow': 'none' },
-  },
+export type ThemeName = string
+export type Scheme = 'dark' | 'light'
+export type ThemeColors = {
+  background: string; surface: string; foreground: string; muted: string; accent: string
+  accentForeground?: string; accent2?: string; link?: string; command?: string; success?: string; error?: string
+}
+type NativeTheme = { name: string; scheme: Scheme; colors: ThemeColors; terminal?: { background?: string; chrome?: string; code?: string; border?: string; glow?: string } }
+type ShadcnTheme = { name?: string; cssVars: { light?: Record<string, string>; dark?: Record<string, string> } }
+export type ThemeFile = NativeTheme | ShadcnTheme
+export type Theme = { id: ThemeName; label: string; scheme: Scheme; vars: Record<string, string>; site: Record<string, string> }
+
+const mix = (color: string, percent: number, other = 'transparent') => `color-mix(in srgb, ${color} ${percent}%, ${other})`
+// Old shadcn files store bare HSL triples ("222 47% 11%").
+const css = (value: string | undefined) => (value && /^-?[\d.]+(deg)?\s+[\d.]+%\s+[\d.]+%/.test(value.trim()) ? `hsl(${value.trim()})` : value?.trim())
+
+export function fromShadcn(vars: Record<string, string>): ThemeColors {
+  const v = (key: string) => css(vars[key])
+  return {
+    background: v('background')!, foreground: v('foreground')!, accent: v('primary')!,
+    surface: v('card') ?? v('secondary') ?? v('muted') ?? v('background')!,
+    muted: v('muted-foreground') ?? mix(v('foreground')!, 60, v('background')),
+    accentForeground: v('primary-foreground'), accent2: v('chart-2') ?? v('accent'), link: v('chart-1') ?? v('ring'),
+    command: v('chart-3'), success: v('chart-2'), error: v('destructive'),
+  }
 }
 
-export const themeNames = Object.keys(themes) as ThemeName[]
-export const isThemeName = (value: string): value is ThemeName => value in themes
+export function buildTheme(id: string, label: string, scheme: Scheme, colors: ThemeColors, terminal: NativeTheme['terminal'] = {}): Theme {
+  const { background: bg, surface, foreground: fg, muted, accent } = colors
+  const accent2 = colors.accent2 ?? mix(accent, 60, fg)
+  return {
+    id, label, scheme,
+    vars: {
+      '--fg': fg, '--muted': muted, '--accent': accent, '--accent-2': accent2, '--link': colors.link ?? accent2,
+      '--error': colors.error ?? '#ef4444', '--success': colors.success ?? accent2, '--command': colors.command ?? accent,
+      '--code-bg': terminal.code ?? mix(accent, 10), '--term-bg': terminal.background ?? mix(bg, 88), '--chrome-bg': terminal.chrome ?? mix(surface, 92),
+      '--border': terminal.border ?? mix(accent, 28), '--glow': terminal.glow ?? 'none', '--term-solid': bg,
+    },
+    site: {
+      '--bg': bg, '--bg-2': mix(bg, 96, fg), '--surface': surface, '--surface-2': mix(surface, 94, fg),
+      '--border': mix(fg, 10), '--border-2': mix(fg, 18), '--text': fg, '--text-2': mix(fg, 80, bg), '--muted': muted,
+      '--accent': accent, '--accent-ink': colors.accentForeground ?? bg, '--accent-soft': mix(accent, 13), '--accent-2': accent2,
+      '--nav-bg': mix(bg, 78), '--heat-0': mix(fg, 7), '--heat-1': mix(accent, 30, bg), '--heat-2': mix(accent, 55, bg), '--heat-3': mix(accent, 78, bg), '--heat-4': accent,
+      'colorScheme': scheme,
+    },
+  }
+}
+
+const title = (id: string) => id.split(/[-_]/).map((word) => word[0]!.toUpperCase() + word.slice(1)).join(' ')
+
+export function loadThemes(files: Record<string, ThemeFile>): Record<ThemeName, Theme> {
+  const result: Record<ThemeName, Theme> = {}
+  for (const [path, file] of Object.entries(files).sort(([a], [b]) => a.localeCompare(b))) {
+    const id = path.split('/').at(-1)!.replace(/\.json$/, '')
+    if (id === 'theme.schema') continue
+    if ('cssVars' in file) {
+      const label = file.name ?? title(id)
+      if (file.cssVars.dark) result[id] = buildTheme(id, label, 'dark', fromShadcn({ ...file.cssVars.light, ...file.cssVars.dark }))
+      if (file.cssVars.light) result[file.cssVars.dark ? `${id}-light` : id] = buildTheme(file.cssVars.dark ? `${id}-light` : id, file.cssVars.dark ? `${label} Light` : label, 'light', fromShadcn(file.cssVars.light))
+    } else result[id] = buildTheme(id, file.name, file.scheme, file.colors, file.terminal)
+  }
+  return result
+}
+
+export const themes = loadThemes(import.meta.glob<ThemeFile>('../themes/*.json', { eager: true, import: 'default' }))
+export const themeNames = Object.keys(themes)
+export const isThemeName = (value: string): value is ThemeName => Object.hasOwn(themes, value)

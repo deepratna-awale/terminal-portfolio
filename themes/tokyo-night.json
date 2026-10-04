@@ -1,0 +1,18 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Tokyo Night",
+  "scheme": "dark",
+  "colors": {
+    "background": "#1a1b26",
+    "surface": "#24283b",
+    "foreground": "#c0caf5",
+    "muted": "#565f89",
+    "accent": "#7aa2f7",
+    "accent2": "#9ece6a",
+    "link": "#7dcfff",
+    "command": "#bb9af7",
+    "success": "#9ece6a",
+    "error": "#f7768e",
+    "accentForeground": "#16161e"
+  }
+}

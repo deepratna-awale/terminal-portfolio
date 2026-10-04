@@ -9,7 +9,8 @@ import { TrafficLights } from './components/TrafficLights'
 import { Vim } from './components/Vim'
 import { os, profile } from './content'
 import { openExternal, readFile, type ShellContext } from './shell/commands'
-import { isThemeName, themeNames, themes, type ThemeName } from './themes'
+import { readTheme, saveTheme, onThemeChange, terminalTheme } from './themeStore'
+import { themeNames, themes, type ThemeName } from './themes'
 
 type WindowMode = 'normal' | 'maximized' | 'minimized' | 'closed'
 
@@ -24,7 +25,7 @@ function App() {
   const terminal = useRef<TerminalHandle>(null)
   const browserControls = useRef<BrowserControls | null>(null)
   const [mode, setMode] = useState<WindowMode>(() => (narrow() ? 'maximized' : stored<WindowMode>('portfolio.window', 'normal', (value) => value === 'maximized')))
-  const [theme, setThemeState] = useState<ThemeName>(() => stored<ThemeName>('portfolio.theme', 'phosphor', isThemeName))
+  const [theme, setThemeState] = useState<ThemeName>(() => terminalTheme(readTheme()))
   const [fontSize, setFontSize] = useState(() => Number(stored('portfolio.font', '15', (value) => /^\d+$/.test(value))))
   const [crt, setCrt] = useState(() => stored('portfolio.crt', 'on', (value) => value === 'on' || value === 'off') === 'on')
   const [matrix, setMatrix] = useState(false)
@@ -52,7 +53,9 @@ function App() {
     openBrowser('/gui')
   }
 
-  const setTheme = useCallback((name: ThemeName) => { setThemeState(name); save('portfolio.theme', name) }, [])
+  const setTheme = useCallback((name: ThemeName) => { setThemeState(name); saveTheme(name) }, [])
+  // The standard site can change the theme too (in the in-site Chrome or another tab).
+  useEffect(() => onThemeChange((next) => setThemeState(terminalTheme(next))), [])
   const toggleMaximize = useCallback(() => setMode((current) => { const next = current === 'maximized' ? 'normal' : 'maximized'; save('portfolio.window', next); return next }), [])
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {})

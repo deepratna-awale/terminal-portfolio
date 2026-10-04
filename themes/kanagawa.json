@@ -1,0 +1,18 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Kanagawa",
+  "scheme": "dark",
+  "colors": {
+    "background": "#1f1f28",
+    "surface": "#2a2a37",
+    "foreground": "#dcd7ba",
+    "muted": "#727169",
+    "accent": "#7e9cd8",
+    "accent2": "#98bb6c",
+    "link": "#7fb4ca",
+    "command": "#e6c384",
+    "success": "#98bb6c",
+    "error": "#e82424",
+    "accentForeground": "#16161d"
+  }
+}

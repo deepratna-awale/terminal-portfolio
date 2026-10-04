@@ -1,0 +1,18 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Light",
+  "scheme": "light",
+  "colors": {
+    "background": "#f7f8fa",
+    "surface": "#ffffff",
+    "foreground": "#0f172a",
+    "muted": "#5b6577",
+    "accent": "#0a7a52",
+    "accent2": "#4453c9",
+    "link": "#1d4ed8",
+    "command": "#0a7a52",
+    "success": "#15803d",
+    "error": "#b91c1c",
+    "accentForeground": "#ffffff"
+  }
+}

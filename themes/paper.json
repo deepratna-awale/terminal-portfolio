@@ -1,0 +1,24 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Paper",
+  "scheme": "light",
+  "colors": {
+    "background": "#faf7ee",
+    "surface": "#fffdf6",
+    "foreground": "#2d2a24",
+    "muted": "#8a8577",
+    "accent": "#b5541b",
+    "accent2": "#2f7d32",
+    "link": "#1f5fa8",
+    "command": "#b5541b",
+    "success": "#2f7d32",
+    "error": "#b3261e",
+    "accentForeground": "#ffffff"
+  },
+  "terminal": {
+    "background": "rgba(250,247,238,.94)",
+    "chrome": "rgba(236,231,218,.95)",
+    "code": "#ece6d6",
+    "border": "rgba(60,50,30,.22)"
+  }
+}

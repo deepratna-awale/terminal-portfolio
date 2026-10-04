@@ -1,0 +1,18 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Solarized Light",
+  "scheme": "light",
+  "colors": {
+    "background": "#fdf6e3",
+    "surface": "#eee8d5",
+    "foreground": "#586e75",
+    "muted": "#93a1a1",
+    "accent": "#b58900",
+    "accent2": "#2aa198",
+    "link": "#268bd2",
+    "command": "#cb4b16",
+    "success": "#859900",
+    "error": "#dc322f",
+    "accentForeground": "#fdf6e3"
+  }
+}

@@ -101,6 +101,7 @@ GitHub Actions (push to main)
 | `src/` | React 19 client: `components/` (terminal, menu bar, windows), `shell/` (line editor, completion, commands), `gui/` (standard portfolio page), `games/` |
 | `ABOUT.md` | All site content and the assistant's facts (see [Make it yours](#make-it-yours)) |
 | `shared/about.js` | Parses ABOUT.md for the client, the server and the build |
+| `themes/` | One JSON file per colour theme, shared by the terminal and `/gui` (see [Themes](#themes)) |
 | `server/` | Dependency-free Node server: static files, APIs, rate limits, Bedrock client, S3 signing |
 | `scripts/prerender.mjs` | Renders `/gui` to static HTML at build time |
 | `terraform/` | All AWS infrastructure; `terraform/bootstrap/` creates the state bucket |
@@ -343,6 +344,47 @@ ABOUT.md at build time.
 The guardrail's refusal message and denied topics are set in
 `terraform/terraform.tfvars` (`owner_name`, `guardrail_denied_topics`); see
 step 6 of [Deploy your own](#deploy-your-own).
+
+### Themes
+
+Themes live in [`themes/`](themes), one JSON file each, and every file there is
+picked up at build time: it shows in the terminal's `theme` list and tab
+completion and in the standard site's theme picker. No code changes are needed.
+The terminal and `/gui` share the visitor's choice.
+
+```json
+{
+  "$schema": "./theme.schema.json",
+  "name": "My Theme",
+  "scheme": "dark",
+  "colors": {
+    "background": "#1e1e2e",
+    "surface": "#313244",
+    "foreground": "#cdd6f4",
+    "muted": "#7f849c",
+    "accent": "#cba6f7",
+    "accent2": "#a6e3a1",
+    "link": "#89b4fa",
+    "command": "#f9e2af",
+    "success": "#a6e3a1",
+    "error": "#f38ba8"
+  }
+}
+```
+
+The file name (without `.json`) is the theme's id, so `themes/my-theme.json` is
+`theme my-theme`. Only `background`, `surface`, `foreground`, `muted` and
+`accent` are required; the rest fall back to sensible mixes. Colours can be hex,
+`rgb()`, `hsl()` or `oklch()`. An optional `terminal` block overrides the
+terminal window itself (`background`, `chrome`, `code`, `border`, `glow`), for
+example to make it translucent over the wallpaper.
+
+[tweakcn](https://tweakcn.com) and other shadcn theme exports work as-is: save
+the registry JSON (the one with `cssVars.light` and `cssVars.dark`) into
+`themes/`. Its dark palette becomes `<file>` and its light palette
+`<file>-light`. CI checks every file against
+[`themes/theme.schema.json`](themes/theme.schema.json), which editors also use
+for autocomplete.
 
 ## Security
 

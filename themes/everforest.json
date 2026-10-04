@@ -1,0 +1,18 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Everforest",
+  "scheme": "dark",
+  "colors": {
+    "background": "#272e33",
+    "surface": "#2e383c",
+    "foreground": "#d3c6aa",
+    "muted": "#859289",
+    "accent": "#a7c080",
+    "accent2": "#83c092",
+    "link": "#7fbbb3",
+    "command": "#dbbc7f",
+    "success": "#a7c080",
+    "error": "#e67e80",
+    "accentForeground": "#1e2326"
+  }
+}

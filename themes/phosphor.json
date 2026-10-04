@@ -1,0 +1,25 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Phosphor Green",
+  "scheme": "dark",
+  "colors": {
+    "background": "#050a06",
+    "surface": "#0b160e",
+    "foreground": "#c8f7c5",
+    "muted": "#5f8a63",
+    "accent": "#39ff88",
+    "accent2": "#9dffb0",
+    "link": "#7fe0ff",
+    "command": "#39ff88",
+    "success": "#39ff88",
+    "error": "#ff7b72",
+    "accentForeground": "#03140a"
+  },
+  "terminal": {
+    "background": "rgba(3,10,6,.78)",
+    "chrome": "rgba(10,22,14,.85)",
+    "code": "rgba(57,255,136,.08)",
+    "border": "rgba(57,255,136,.28)",
+    "glow": "0 0 6px rgba(57,255,136,.35)"
+  }
+}

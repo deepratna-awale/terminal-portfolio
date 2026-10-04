@@ -1,0 +1,18 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "Catppuccin Latte",
+  "scheme": "light",
+  "colors": {
+    "background": "#eff1f5",
+    "surface": "#e6e9ef",
+    "foreground": "#4c4f69",
+    "muted": "#7c7f93",
+    "accent": "#8839ef",
+    "accent2": "#40a02b",
+    "link": "#1e66f5",
+    "command": "#df8e1d",
+    "success": "#40a02b",
+    "error": "#d20f39",
+    "accentForeground": "#ffffff"
+  }
+}
