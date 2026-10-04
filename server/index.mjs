@@ -43,11 +43,12 @@ function serveStatic(requestPath, response) {
   const requested = requestPath === '/' ? '/index.html' : requestPath
   const filePath = normalize(join(root, requested))
   if (!filePath.startsWith(root) || !existsSync(filePath) || !statSync(filePath).isFile()) {
-    const fallback = join(root, 'index.html')
-    createReadStream(fallback).pipe(response)
+    response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+    createReadStream(join(root, 'index.html')).pipe(response)
     return
   }
-  response.writeHead(200, { 'Content-Type': mimeTypes[extname(filePath)] ?? 'application/octet-stream' })
+  const cacheControl = requested.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'public, max-age=300'
+  response.writeHead(200, { 'Content-Type': mimeTypes[extname(filePath)] ?? 'application/octet-stream', 'Cache-Control': cacheControl })
   createReadStream(filePath).pipe(response)
 }
 
