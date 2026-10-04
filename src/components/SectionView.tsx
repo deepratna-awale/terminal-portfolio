@@ -153,7 +153,7 @@ function Education({ renderLink }: { renderLink: LinkRenderer }) {
   )
 }
 
-const contactIcons: Record<string, string> = { email: '✉', linkedin: 'in', github: 'gh', web: '⌂' }
+const contactIcons: Record<string, string> = { email: '✉', linkedin: 'in', github: 'gh', web: '⌂', ssh: '>_' }
 
 function Contact({ renderLink }: { renderLink: LinkRenderer }) {
   const rows = sections.contact!.map((line) => /^(\w+)\s{2,}(.*)$/.exec(line)).filter(Boolean) as RegExpExecArray[]

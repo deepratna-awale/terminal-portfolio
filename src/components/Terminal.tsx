@@ -1,12 +1,11 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { askAssistant, fetchCowthink, fetchProjects, type ChatTurn, type Project } from '../api'
+import { askAssistant, fetchProjects, type ChatTurn, type Project } from '../api'
 import { asciiLogo, motd, os, profile } from '../content'
-import { commands, commandNames, directories, neofetchInfo, openExternal, resolveAlias, tokenize, type Line, type NewLine, type ShellContext } from '../shell/commands'
-import { initialCommand, pipeSplit, unshareable } from '../shell/deeplink'
-import { filterNames, filters, toPlainText } from '../shell/pipes'
-import { closest, looksLikeCommand } from '../shell/typo'
+import { commands, neofetchInfo, openExternal, resolveAlias, tokenize, type Line, type NewLine, type ShellContext } from '../shell/commands'
+import { runInput } from '../shell/runner'
+import { initialCommand, unshareable } from '../shell/deeplink'
 import { commonPrefix, complete, suggestion as suggest } from '../shell/completion'
 import { FitPre } from './FitPre'
 import { MobileKeys, type MobileKey } from './MobileKeys'
@@ -144,55 +143,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
     prompt: (label) => new Promise<string | null>((resolve) => { setLine((current) => ({ ...current, value: '', cursor: 0 })); setQuestion({ label, resolve }) }),
   }), [ask, print, projects, setPath, theme, ui])
 
-  const runPipeline = useCallback(async (stages: string[]) => {
-    const captured: NewLine[] = []
-    const base = context()
-    const [first = '', ...rest] = stages
-    const [name = '', ...args] = tokenize(resolveAlias(first))
-    const command = commands[name]
-    if (!command) { print([{ type: 'error', text: `zsh: command not found: ${name}` }]); return }
-    await command.run(args, { ...base, print: (lines) => {
-      captured.push(...lines.filter((line) => line.type !== 'muted' && line.type !== 'error'))
-      const errors = lines.filter((line) => line.type === 'error')
-      if (errors.length) print(errors)
-    } })
-    let lines = captured.flatMap((line) => (line.type === 'neofetch' ? [line.text, ...(line.info ?? [])] : toPlainText(line.text).split('\n')))
-    let art = false
-    for (const stage of rest) {
-      const [filter = '', ...filterArgs] = tokenize(stage)
-      if (filter === 'cowthink' || filter === 'cowsay') {
-        art = true
-        try { lines = (await fetchCowthink(lines.join(' ').replace(/\s+/g, ' ').slice(0, 280))).split('\n') } catch (error) { print([{ type: 'error', text: error instanceof Error ? error.message : 'cowthink is unavailable' }]); return }
-        continue
-      }
-      if (filter === 'less' || filter === 'more' || filter === 'cat') continue
-      const apply = filters[filter]
-      if (!apply) { const guess = closest(filter, [...filterNames, 'cowthink']); print([{ type: 'error', text: `zsh: command not found: ${filter}` }, ...(guess ? [{ type: 'muted' as const, text: `did you mean \`${guess}\`? Pipes support: ${filterNames.join(', ')}, cowthink` }] : [])]); return }
-      const result = apply(lines, filterArgs)
-      if (!Array.isArray(result)) { print([{ type: 'error', text: result.error }]); return }
-      lines = result
-    }
-    print([art ? { type: 'output', text: `\`\`\`text\n${lines.join('\n')}\n\`\`\`` } : { type: 'plain', text: lines.join('\n') || '(no output)' }])
-  }, [context, print])
-
-  const runSingle = useCallback(async (raw: string) => {
-    const segments = pipeSplit(raw)
-    if (segments.length > 1) { await runPipeline(segments); return }
-    const expanded = resolveAlias(raw)
-    const [name = '', ...args] = tokenize(expanded)
-    const command = commands[name] ?? commands[name.toLowerCase()]
-    if (command) { await command.run(args, context()); return }
-    if (looksLikeCommand(raw) && raw.length < 40) {
-      const guess = closest(name, commandNames.filter((candidate) => !commands[candidate]?.hidden || candidate.length > 2))
-      if (guess) {
-        const fixed = [guess, ...args].join(' ')
-        print([{ type: 'error', text: `zsh: command not found: ${name}` }, { type: 'muted', text: `did you mean [\`${fixed}\`](cmd:${encodeURIComponent(fixed)})?` }])
-        return
-      }
-      if (raw.trim().split(/\s+/).length === 1 && directories.includes(name.replace(/\/$/, ''))) { await commands.cd!.run([name], context()); return }
-    }
-    await ask(raw.trim())
-  }, [ask, context, print, runPipeline])
+  const runSingle = useCallback((raw: string) => runInput(raw, context()), [context])
 
   const run = useCallback(async (input: string, echo = true) => {
     const trimmed = input.trim()

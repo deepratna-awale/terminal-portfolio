@@ -13,6 +13,8 @@ A personal portfolio served two ways from one container:
   Bedrock, behind a Bedrock Guardrail.
 - `/gui`: the same content as a normal portfolio page, prerendered at build
   time for crawlers and no-JS visitors.
+- `ssh <ssh host>`: the same commands in the visitor's own terminal, served by
+  `ssh/` from a Lightsail instance (see "The SSH edition" below).
 
 React 19 + Vite + TypeScript on the client; a dependency-free Node server
 (`server/index.mjs`) for static files and `/api/*`; Terraform on AWS Lightsail;
@@ -63,8 +65,13 @@ client, server and Vite config share it). Its tests are in
 | `server/bedrock.mjs`, `s3.mjs`, `rateLimit.mjs` | Bedrock Converse client, S3 SigV4 signing, rate limits |
 | `scripts/prerender.mjs` | Writes `dist/gui.html` from the SSR build |
 | `vite.config.ts` | Fills `index.html` tokens and generates favicon, robots.txt and sitemap.xml from ABOUT.md |
-| `terraform/` | Lightsail service, ECR, DNS, certificate, OIDC deploy role, Bedrock Guardrail, guestbook bucket |
-| `.github/workflows/` | `ci.yml` (lint, test, build, server smoke test, Terraform validate), `deploy.yml` |
+| `src/shell/runner.ts` | Runs one typed line (pipes, commands, typo hints, assistant); shared by both terminals |
+| `ssh/main.ts` | SSH server (ssh2): anonymous login, connection limits, the fetch shim that sends API calls to the site |
+| `ssh/session.ts` | One SSH visitor: line editor, prompt, `ShellContext` for the shared commands, SSH-specific command overrides |
+| `ssh/ansi.ts`, `terminal.ts`, `images.ts`, `apps.ts` | Markdown to ANSI, key parsing and terminal detection, inline images, full-screen vim/games/matrix |
+| `ssh/build-images.mjs` | Pre-renders `view` images (PNG, sixel, RGB grid) at build time |
+| `terraform/` | Lightsail service, ECR, DNS, certificate, OIDC deploy role, Bedrock Guardrail, guestbook bucket, SSH instance (`ssh.tf`, `ssh-bootstrap.sh`) |
+| `.github/workflows/` | `ci.yml` (lint, test, build, server and SSH smoke tests, Terraform validate), `deploy.yml`, `ssh.yml` (SSH release) |
 
 ## Run, test, build
 
@@ -83,8 +90,35 @@ assistant needs `AWS_BEARER_TOKEN_BEDROCK`, `BEDROCK_GUARDRAIL_ID` and
 `fortune` and `cowthink` need the binaries (`brew install fortune cowsay`).
 
 Before opening a PR: `npx tsc -b`, `npm test`, `npm run lint` and
-`npm run build` must pass. CI runs the same plus a server smoke test and
+`npm run build` must pass (and `npm run ssh:build` when `ssh/` or `src/shell/`
+changed). CI runs the same plus server and SSH smoke tests and
 `terraform fmt -check` / `terraform validate`.
+
+## The SSH edition
+
+`ssh/` reuses `src/shell/` (commands, completion, line editor, pipes, vim
+motions, games) and `src/content.ts`, so content and commands stay
+single-source. It is bundled by `ssh/vite.config.ts` into `ssh/dist/main.js`;
+only `ssh2` stays external (`ssh/package.json`, installed with
+`npm ci --prefix ssh`).
+
+- Browser-only behaviour goes through `ShellContext.ui`, which `ssh/session.ts`
+  implements for a terminal. Commands that open tabs (`resume`, `email`, `open`,
+  `gui`, `share`) are overridden at the bottom of `ssh/session.ts` to print
+  links. A new command that calls `window` or `openExternal` needs an override
+  there too.
+- Line types render in `Session.render`; markdown goes through `ssh/ansi.ts`.
+- API calls use the same `src/api.ts`; `ssh/main.ts` rewrites relative URLs to
+  `API_BASE` (the live site by default) and adds `X-Forwarded-For` with the
+  visitor's address. The site trusts that header only from `TRUSTED_RELAYS`.
+- Never add a way to run a process, read the instance's files or open network
+  connections chosen by the visitor.
+
+```bash
+npm ci --prefix ssh && npm run ssh:build
+npm run ssh                 # port 2222
+node ssh/smoke.mjs 2222     # what CI runs
+```
 
 ## Deploy
 
@@ -94,6 +128,12 @@ environment (main only) and assumes an IAM role through OIDC; account values
 come from repository variables (`AWS_DEPLOY_ROLE_ARN`, `SERVICE_NAME`,
 `BEDROCK_GUARDRAIL_ID`, `BEDROCK_GUARDRAIL_VERSION`, `GUESTBOOK_BUCKET`) and
 secrets (`BEDROCK_API_KEY`, `GUESTBOOK_*`). See the README's "Deploy your own".
+
+The SSH edition deploys separately: `ssh.yml` builds it and uploads it to the
+`ssh-latest` release (when the `SSH_ENABLED` variable is `true`), and the
+instance's updater timer installs a new build within a couple of minutes. It
+holds no AWS or GitHub credentials. `SSH_RELAY_IPS` (from the `ssh_relay_ips`
+output) is passed to the container as `TRUSTED_RELAYS`.
 
 Terraform: `terraform/terraform.tfvars` and `terraform/backend.hcl` are
 gitignored per-deployment files (copy the `.example` files). Init with

@@ -63,10 +63,12 @@ jobs:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.BEDROCK_API_KEY }}
           BEDROCK_GUARDRAIL_ID: ${{ vars.BEDROCK_GUARDRAIL_ID }}
           BEDROCK_GUARDRAIL_VERSION: ${{ vars.BEDROCK_GUARDRAIL_VERSION }}
+          # The SSH server's addresses: it may forward its visitors' addresses for rate limits.
+          TRUSTED_RELAYS: ${{ vars.SSH_RELAY_IPS }}
         run: |
-          # Guestbook and Bedrock settings are only passed when they are configured.
+          # Guestbook, Bedrock and relay settings are only passed when they are configured.
           containers=$(jq -n --arg name "$CONTAINER_NAME" --arg image "$IMAGE" \
-            '{($name): {image: $image, ports: {"8080": "HTTP"}, environment: ({PORT: "8080"} + ($ENV | with_entries(select(((.key | startswith("GUESTBOOK_")) or (.key | startswith("BEDROCK_")) or .key == "AWS_BEARER_TOKEN_BEDROCK") and .value != ""))))}}')
+            '{($name): {image: $image, ports: {"8080": "HTTP"}, environment: ({PORT: "8080"} + ($ENV | with_entries(select(((.key | startswith("GUESTBOOK_")) or (.key | startswith("BEDROCK_")) or .key == "AWS_BEARER_TOKEN_BEDROCK" or .key == "TRUSTED_RELAYS") and .value != ""))))}}')
           version=$(aws lightsail create-container-service-deployment \
             --service-name "$SERVICE_NAME" \
             --containers "$containers" \

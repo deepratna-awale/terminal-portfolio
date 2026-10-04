@@ -15,6 +15,13 @@ updates:
       npm-major:
         patterns: ["*"]
         update-types: [major]
+  - package-ecosystem: npm
+    directory: /ssh
+    schedule:
+      interval: weekly
+    groups:
+      ssh:
+        patterns: ["*"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

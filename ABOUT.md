@@ -12,6 +12,8 @@ tagline: Building agentic AI for fraud & AML
 location: St. John's, NL, Canada
 email: awale.deep@gmail.com
 domain: deepratna-awale.dev
+# Host name of the SSH edition (terraform ssh_enabled). Leave out if you don't run it.
+ssh: ssh.deepratna-awale.dev
 github: deepratna-awale
 linkedin: deepratna-awale
 source: https://github.com/deepratna-awale/terminal-portfolio
@@ -208,6 +210,7 @@ email     [awale.deep@gmail.com](mailto:awale.deep@gmail.com)
 linkedin  [linkedin.com/in/deepratna-awale](https://www.linkedin.com/in/deepratna-awale)
 github    [github.com/deepratna-awale](https://github.com/deepratna-awale)
 web       [deepratna-awale.dev](https://deepratna-awale.dev)
+ssh       `ssh ssh.deepratna-awale.dev`
 
 Email is the fastest route. Run [`email`](cmd:email) to open your mail client, or [`resume`](cmd:resume) for the PDF.
 

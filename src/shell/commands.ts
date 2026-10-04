@@ -1,6 +1,6 @@
 import type { Project } from '../api'
 import { fetchActivity, fetchContributions, fetchCowthink, fetchFortune, fetchGuestbook, signGuestbook } from '../api'
-import { exampleQuestion, linkLabel, links, liveSections, mediaFiles, neofetchRows, nowItems, os, profile, sectionList, sections } from '../content'
+import { exampleQuestion, linkLabel, links, liveSections, mediaFiles, neofetchRows, nowItems, os, profile, sectionList, sections, sshHost } from '../content'
 import { isThemeName, themeNames, themes, type ThemeName } from '../themes'
 import { renderHeatmap } from './heatmap'
 import { filters, grepLines, toPlainText } from './pipes'
@@ -316,9 +316,10 @@ export const commands: Record<string, Command> = {
   help: { group: 'Terminal', summary: 'list commands', run: (_args, ctx) => {
     const groups = ['Portfolio', 'Navigation', 'Terminal', 'Fun'] as const
     ctx.print([
-      ...groups.flatMap((group) => [{ type: 'success' as const, text: group }, out(Object.entries(commands).filter(([, command]) => command.group === group && !command.hidden).map(([name, command]) => `  ${cmd(name.padEnd(13), name)}${command.summary}`).join('\n'))]),
+      ...groups.flatMap((group) => [{ type: 'success' as const, text: group }, out(Object.entries(commands).filter(([, command]) => command.group === group && !command.hidden).map(([name, command]) => `  ${cmd(name.padEnd(Math.max(13, name.length + 1)), name)}${command.summary}`).join('\n'))]),
       muted(`Anything that is not a command goes to my AI assistant, e.g. "${exampleQuestion}"`),
       muted('zsh keys work: Tab, ^A ^E ^U ^K ^W ^Y ^L ^C ^R, ⌥B ⌥F, ↑↓, → accepts a suggestion, !! and !$. See `shortcuts`.'),
+      ...(sshHost ? [muted(`Prefer your own terminal? \`ssh ${sshHost}\``)] : []),
     ])
   } },
   ...sectionCommands(),
@@ -463,7 +464,7 @@ export const commands: Record<string, Command> = {
     try { await navigator.clipboard.writeText(url); copied = true } catch { /* clipboard blocked */ }
     ctx.print([out(`[${url}](${url})`), muted(copied ? 'copied to clipboard' : 'copy the link above to share it')])
   } },
-  ssh: { group: 'Fun', summary: 'connect to a host', hidden: true, run: (_args, ctx) => ctx.print([muted(`You are already connected to ${profile.host}. Run \`reboot\` to replay the login.`)]) },
+  ssh: { group: 'Fun', summary: 'connect to a host', hidden: true, run: (_args, ctx) => ctx.print([muted(`You are already connected to ${profile.host}. Run \`reboot\` to replay the login.`), ...(sshHost ? [muted(`For the real thing, from your own terminal: \`ssh ${sshHost}\``)] : [])]) },
   hire: { group: 'Fun', summary: 'the best command', hidden: true, run: (_args, ctx) => ctx.print([{ type: 'success', text: `Great choice. ${cmd('email', 'email')} me or reach out on [LinkedIn](${profile.linkedin}).` }]) },
 }
 

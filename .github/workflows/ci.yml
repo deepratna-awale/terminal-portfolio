@@ -34,6 +34,25 @@ jobs:
           curl -fsS localhost:8787/health
           curl -fsS localhost:8787/ | grep -q '<div id="root">'
 
+  ssh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          # The SSH instance runs Node 24 LTS.
+          node-version: 24
+          cache: npm
+      - run: npm ci && npm ci --prefix ssh
+      - run: npm run ssh:build
+      - name: Smoke test the SSH server
+        run: |
+          PORT=2299 node ssh/dist/main.js &
+          sleep 2
+          node ssh/smoke.mjs 2299
+
   terraform:
     runs-on: ubuntu-latest
     steps:

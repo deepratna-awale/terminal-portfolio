@@ -13,6 +13,8 @@ conventional portfolio page one click away. Live at
   answered by Claude Haiku 4.5 on Amazon Bedrock, behind a Bedrock Guardrail.
 - **Standard site** at `/gui`: the same content as a normal responsive page,
   prerendered for search engines and visitors without JavaScript.
+- **SSH edition**: `ssh ssh.deepratna-awale.dev` opens the same terminal in your
+  own terminal, with inline images where it supports them (see [SSH edition](#ssh-edition)).
 - **Live data**: public GitHub repositories with README summaries, a GitHub
   contributions graph, and a guestbook.
 - **Hosting**: one Docker container on AWS Lightsail (about $7 a month plus $1
@@ -94,8 +96,12 @@ Browser ──HTTPS──▶ Lightsail DNS ──▶ Lightsail container service
                                          ├─ /api/guestbook ─▶ Lightsail bucket (SigV4 signed in server/s3.mjs)
                                          └─ /api/fortune, /api/cowthink ─▶ binaries in the image
 
+ssh client ──port 22──▶ Lightsail instance (nano, ssh.<domain>)
+                        └─ Node + ssh2 (ssh/dist/main.js) ─▶ the site's /api/* for live data and the assistant
+
 GitHub Actions (push to main)
-  └─ OIDC ─▶ IAM role ─▶ build & push to ECR ─▶ new Lightsail deployment
+  ├─ OIDC ─▶ IAM role ─▶ build & push to ECR ─▶ new Lightsail deployment
+  └─ build the SSH server ─▶ ssh-latest release ◀── polled by the instance every 2 minutes
 ```
 
 | Path | Contents |
@@ -106,8 +112,9 @@ GitHub Actions (push to main)
 | `themes/` | One JSON file per colour theme, shared by the terminal and `/gui` (see [Themes](#themes)) |
 | `server/` | Dependency-free Node server: static files, APIs, rate limits, Bedrock client, S3 signing |
 | `scripts/prerender.mjs` | Renders `/gui` to static HTML at build time |
+| `ssh/` | The SSH edition: ssh2 server, ANSI renderer, inline images, full-screen apps (see [SSH edition](#ssh-edition)) |
 | `terraform/` | All AWS infrastructure; `terraform/bootstrap/` creates the state bucket |
-| `.github/workflows/` | `ci.yml` (lint, test, build, Terraform validate) and `deploy.yml` |
+| `.github/workflows/` | `ci.yml` (lint, test, build, SSH smoke test, Terraform validate), `deploy.yml` and `ssh.yml` |
 
 The server has no runtime npm dependencies: it calls Bedrock with a bearer token
 and signs S3 requests itself, so the image stays small and there is no AWS SDK.
@@ -126,6 +133,7 @@ guestbook each use a narrowly scoped long-lived key stored as a GitHub secret.
 | Bedrock Guardrail and version | Content, prompt-attack, PII and topic filtering for the assistant |
 | Lightsail bucket | Guestbook storage |
 | AWS Budget (optional) | Emails you when monthly spend is forecast to pass `monthly_budget_usd` (set `budget_alert_email`) |
+| Lightsail instance, static IP, firewall and `ssh` A/AAAA records (optional) | The SSH edition (set `ssh_enabled`) |
 
 ## Deploy your own
 
@@ -279,6 +287,64 @@ the site works without them.
 For a public fork, also turn on "Require approval for all external contributors"
 under Settings, Actions, General, so workflows on outside pull requests wait for
 you.
+
+### 9. SSH edition (optional)
+
+1. Set `ssh_enabled = true` in `terraform.tfvars`, add `ssh: ssh.<your domain>`
+   to the ABOUT.md frontmatter, and apply. This creates a Lightsail `nano_3_0`
+   instance (about $5 a month) with a static IP, a firewall that only opens
+   port 22, and `ssh.<domain>` A and AAAA records.
+2. Let the site trust the SSH server's forwarded visitor addresses, so the chat
+   and guestbook limits apply per visitor rather than to the server as a whole:
+
+   ```bash
+   gh variable set SSH_RELAY_IPS -R OWNER/NAME -b "$(terraform output -raw ssh_relay_ips)"
+   gh variable set SSH_ENABLED -R OWNER/NAME -b true
+   ```
+
+3. Push to `main` (or run the SSH server and Deploy workflows). The SSH server
+   workflow publishes a build to the `ssh-latest` release; the instance checks
+   it every two minutes and installs new builds itself.
+
+## SSH edition
+
+`ssh ssh.deepratna-awale.dev` runs the same commands as the browser terminal,
+from `src/shell/`, rendered for a real terminal by `ssh/`:
+
+- **Anyone can log in** with any username and no password. There is no shell:
+  a session can only run the portfolio's built-in commands. `exec`, SFTP, port
+  and agent forwarding are refused.
+- **Limits**: 3 sessions and 10 connections a minute per address (a /64 for
+  IPv6), 50 sessions in total, 40 commands a minute, a 10 minute idle timeout
+  and a one hour cap. The assistant, guestbook, fortune and projects go through
+  the site's own API, which applies its per-visitor limits using the address the
+  SSH server forwards (`TRUSTED_RELAYS`), and no secrets live on the instance.
+- **Images**: `view` and project screenshots use the kitty graphics protocol,
+  iTerm2 inline images (iTerm2, WezTerm) or sixel when the terminal supports
+  them, detected at login, and otherwise coloured half blocks or ASCII. The
+  variants are pre-rendered at build time by `ssh/build-images.mjs`. `graphics`
+  shows or overrides the choice.
+- **Links** are OSC 8 hyperlinks with the URL printed alongside; `share` copies
+  through OSC 52. `vim`, `snake`, `2048` and `matrix` run full screen.
+- **Host**: Debian on Lightsail. The launch script (`terraform/ssh-bootstrap.sh`)
+  installs Node, moves the admin sshd to port 22022 (key-only, closed in the
+  firewall unless `ssh_admin_cidrs` is set), creates the `portfolio-ssh` user and
+  the host key, and installs an updater timer. The service runs as that user
+  with only `CAP_NET_BIND_SERVICE` and systemd sandboxing
+  (`ssh/deploy/portfolio-ssh.service`). The host key lives in
+  `/var/lib/portfolio-ssh` and survives deploys; it changes only if the instance
+  is replaced.
+
+Run it locally:
+
+```bash
+npm ci --prefix ssh
+npm run ssh:build
+npm run ssh                 # port 2222, development host key, live site API
+ssh -p 2222 localhost
+```
+
+`API_BASE=http://localhost:8787 npm run ssh` uses a local `npm run api` instead.
 
 ## Make it yours
 

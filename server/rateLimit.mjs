@@ -38,12 +38,18 @@ export function createLimiter({ perMinute, perDay, globalPerDay, messages = chat
   }
 }
 
-export function clientIp(request) {
+// Hosts allowed to forward a visitor's address, such as the SSH server.
+const trustedRelays = new Set((process.env.TRUSTED_RELAYS ?? '').split(',').map((ip) => ip.trim().replace(/^::ffff:/i, '').toLowerCase()).filter(Boolean))
+
+export function clientIp(request, relays = trustedRelays) {
   // The Lightsail load balancer appends the real client address, so take the
-  // last hop; earlier entries are whatever the client chose to send.
+  // last hop; earlier entries are whatever the client chose to send. When that
+  // client is a trusted relay, the hop it added names the visitor.
   const forwarded = request.headers['x-forwarded-for']
-  const last = (Array.isArray(forwarded) ? forwarded.join(',') : forwarded)?.split(',').at(-1)
-  return clientKey((last || request.socket.remoteAddress || 'unknown').trim())
+  const hops = (Array.isArray(forwarded) ? forwarded.join(',') : forwarded ?? '').split(',').map((hop) => hop.trim()).filter(Boolean)
+  let last = hops.pop()
+  if (last && hops.length && relays.has(last.replace(/^::ffff:/i, '').toLowerCase())) last = hops.pop()
+  return clientKey(last || request.socket.remoteAddress || 'unknown')
 }
 
 // One IPv6 subscriber usually owns a whole /64, so count it as one client;

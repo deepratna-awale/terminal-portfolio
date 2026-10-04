@@ -9,7 +9,9 @@
     "build": "tsc -b && vite build && vite build --ssr src/gui/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "ssh:build": "tsc -p tsconfig.ssh.json && vite build -c ssh/vite.config.ts && node ssh/build-images.mjs",
+    "ssh": "node ssh/dist/main.js"
   },
   "dependencies": {
     "lucide-react": "^1.49.0",
@@ -30,6 +32,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^30.1.1",
     "oxlint": "^1.86.0",
+    "sharp": "^0.35.5",
     "typescript": "~7.0.2",
     "vite": "^8.3.2",
     "vitest": "^5.0.3"

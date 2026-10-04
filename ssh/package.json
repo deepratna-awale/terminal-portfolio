@@ -1,0 +1,12 @@
+{
+  "name": "terminal-portfolio-ssh",
+  "private": true,
+  "type": "module",
+  "description": "Runtime dependencies of the SSH server (ssh/dist/main.js). Everything else is bundled.",
+  "dependencies": {
+    "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "@types/ssh2": "^1.15.5"
+  }
+}

@@ -7,3 +7,6 @@ terraform
 .env
 .env.*
 dist-ssr
+ssh/node_modules
+ssh/dist
+ssh/.dev_host_ed25519
