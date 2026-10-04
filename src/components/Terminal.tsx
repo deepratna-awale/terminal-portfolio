@@ -9,6 +9,7 @@ import { filterNames, filters, toPlainText } from '../shell/pipes'
 import { closest, looksLikeCommand } from '../shell/typo'
 import { commonPrefix, complete, suggestion as suggest } from '../shell/completion'
 import { FitPre } from './FitPre'
+import { MobileKeys, type MobileKey } from './MobileKeys'
 import { ProjectCards, SectionView } from './SectionView'
 import { applyEdit, bindingFor, expandHistory, reverseSearch, type LineState } from '../shell/lineEditor'
 import { themeNames, themes, type ThemeName } from '../themes'
@@ -68,6 +69,9 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
   const skipBoot = useRef(false)
   const lastTab = useRef(0)
   const suspendedRef = useRef(suspended)
+  const mobile = useMobile()
+  const [ctrlArmed, setCtrlArmed] = useState(false)
+  const touch = useRef<{ x: number; y: number } | null>(null)
   const deepLinkDone = useRef(false)
   useEffect(() => { historyRef.current = history }, [history])
   useEffect(() => {
@@ -321,6 +325,38 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
     print([{ type: 'command', text: `guest@${profile.host} ${promptPath} % ${line.value}` }, { type: 'muted', text: candidates.join('  ') }])
   }
 
+  // Phones: tapping a chip takes that completion, like Tab with one match.
+  const mobileCandidates = mobile && !search && !booting ? (line.value.trim() ? complete(line.value.slice(0, line.cursor), path, projectNames, themeNames).candidates : ['help', 'about', 'projects', 'experience', 'skills', 'contact', 'gui']) : []
+  const pick = (choice: string) => {
+    if (!line.value.trim()) { setValue(choice); inputRef.current?.focus(); return }
+    const { prefix } = complete(line.value.slice(0, line.cursor), path, projectNames, themeNames)
+    const insert = prefix + choice + (choice.endsWith('/') ? '' : ' ')
+    setLine((current) => ({ ...current, value: insert + current.value.slice(current.cursor), cursor: insert.length }))
+    inputRef.current?.focus()
+  }
+  const fakeKey = (key: string, ctrlKey = false) => ({ key, code: key.length === 1 ? `Key${key.toUpperCase()}` : key, ctrlKey, altKey: false, metaKey: false, shiftKey: false, preventDefault() {} }) as unknown as React.KeyboardEvent<HTMLInputElement>
+  const mobileKey = (key: MobileKey) => {
+    if (key === 'Tab') handleTab()
+    else if (key === 'Up') recallHistory(1)
+    else if (key === 'Down') recallHistory(-1)
+    else if (search) handleKeyDown(fakeKey('Escape'))
+    else if (question) handleKeyDown(fakeKey('c', true))
+    else setValue('')
+    inputRef.current?.focus()
+  }
+  // Swipe right on the prompt accepts the suggestion (→ / Tab); up and down walk history.
+  const onTouchStart = (event: React.TouchEvent) => { const point = event.touches[0]; touch.current = point ? { x: point.clientX, y: point.clientY } : null }
+  const onTouchEnd = (event: React.TouchEvent) => {
+    const start = touch.current
+    const point = event.changedTouches[0]
+    touch.current = null
+    if (!start || !point || busy || booting) return
+    const dx = point.clientX - start.x
+    const dy = point.clientY - start.y
+    if (dx > 40 && Math.abs(dx) > Math.abs(dy) * 2) { if (ghost) setValue(line.value + ghost); else handleTab() }
+    else if (Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx) * 2) recallHistory(dy < 0 ? 1 : -1)
+  }
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     // Games, vim and Chrome own the keyboard while they are open.
     if (booting || suspendedRef.current) { event.preventDefault(); return }
@@ -431,7 +467,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
       >
         {transcript.map(renderLine)}
         {booting && <div className="terminal-line muted boot-hint">press any key to skip</div>}
-        <div className={`input-row${(busy && !question) || booting ? ' hidden-row' : ''}`}>
+        <div className={`input-row${(busy && !question) || booting ? ' hidden-row' : ''}`} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
           {question
             ? <span className="prompt prompt-question">{question.label}</span>
             : search
@@ -446,7 +482,18 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
             <input
               ref={inputRef}
               value={search ? search.query : line.value}
-              onChange={(event) => { if (!search) setLine((current) => ({ ...current, value: event.target.value, cursor: event.target.selectionStart ?? event.target.value.length })) }}
+              onChange={(event) => {
+                const value = event.target.value
+                // With the on-screen ^ armed, the next letter becomes a Ctrl shortcut instead of text.
+                if (ctrlArmed && value.length === line.value.length + 1) {
+                  const typed = value[(event.target.selectionStart ?? value.length) - 1] ?? ''
+                  setCtrlArmed(false)
+                  event.target.value = search ? search.query : line.value
+                  if (/^[a-z]$/i.test(typed)) handleKeyDown(fakeKey(typed.toLowerCase(), true))
+                  return
+                }
+                if (!search) setLine((current) => ({ ...current, value, cursor: event.target.selectionStart ?? value.length }))
+              }}
               onClick={syncCursor}
               onKeyDown={handleKeyDown}
               aria-label="Terminal command input"
@@ -459,6 +506,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
           </span>
         </div>
       </div>
+      {mobile && !suspended && <MobileKeys candidates={mobileCandidates} onPick={pick} onKey={mobileKey} ctrl={ctrlArmed} onCtrl={() => { setCtrlArmed((armed) => !armed); inputRef.current?.focus() }} />}
       {showScrollButton && <button className="scroll-to-latest" type="button" onClick={() => { setShowScrollButton(false); bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' }); inputRef.current?.focus() }} aria-label="Scroll to latest output">↓</button>}
     </>
   )
@@ -486,4 +534,16 @@ function Neofetch({ title, info, theme }: { title: string; info: string[]; theme
       </div>
     </div>
   )
+}
+
+function useMobile() {
+  const query = '(max-width: 720px)'
+  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const list = window.matchMedia(query)
+    const update = () => setMobile(list.matches)
+    list.addEventListener('change', update)
+    return () => list.removeEventListener('change', update)
+  }, [])
+  return mobile
 }
