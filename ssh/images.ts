@@ -13,7 +13,7 @@ let directory = process.env.SSH_IMAGES_DIR ?? ''
 let manifest: Record<string, Asset> | null = null
 const files = new Map<string, Buffer>()
 
-export function useImageDirectory(path: string) { directory = path; manifest = null; files.clear() }
+export function setImageDirectory(path: string) { directory = path; manifest = null; files.clear() }
 
 function assets(): Record<string, Asset> {
   if (manifest) return manifest

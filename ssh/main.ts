@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ssh2 from 'ssh2'
 import { profile, sshHost } from '../src/content'
-import { useImageDirectory } from './images'
+import { setImageDirectory } from './images'
 import { Session, visitor } from './session'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -21,7 +21,7 @@ const limits = {
   handshakeMs: 20_000,
 }
 
-useImageDirectory(process.env.SSH_IMAGES_DIR ?? join(here, 'images'))
+setImageDirectory(process.env.SSH_IMAGES_DIR ?? join(here, 'images'))
 
 function hostKey(): Buffer {
   const path = process.env.SSH_HOST_KEY ?? join(here, '..', '.dev_host_ed25519')
