@@ -96,6 +96,7 @@ describe('guardrail reasons', () => {
     expect(guardrailReason([{ wordPolicy: { managedWordLists: [{ type: 'PROFANITY', match: 'x', action: 'BLOCKED', detected: true }] } }])).toBe('it contains profanity')
     expect(guardrailReason([{ contentPolicy: { filters: [{ type: 'PROMPT_ATTACK', action: 'BLOCKED', detected: true }] } }])).toMatch(/instructions/)
     expect(guardrailReason([{ sensitiveInformationPolicy: { piiEntities: [{ type: 'CREDIT_DEBIT_CARD_NUMBER', action: 'BLOCKED', detected: true }], regexes: [] } }])).toMatch(/personal/)
+    expect(guardrailReason([{ contentPolicy: { filters: [{ type: 'INSULTS', detected: true }] }, wordPolicy: { managedWordLists: [{ type: 'PROFANITY', detected: true }] } }])).toBe('it contains profanity')
     expect(guardrailReason([])).toMatch(/rules/)
   })
 })
