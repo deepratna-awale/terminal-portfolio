@@ -38,3 +38,22 @@ export async function converse({ system, messages, maxTokens = 400, temperature 
   if (body.stopReason === 'guardrail_intervened') console.log('guardrail intervened')
   return { text, blocked: body.stopReason === 'guardrail_intervened' }
 }
+
+// Screens visitor text (guestbook notes) with the same guardrail, without
+// calling a model. Returns true when the guardrail would intervene.
+export async function guardrailBlocks(text, timeoutMs = 8000) {
+  if (!bedrockConfigured()) throw Object.assign(new Error('content checks are offline'), { status: 503 })
+  const { guardrailIdentifier, guardrailVersion } = guardrail()
+  const response = await fetch(`https://bedrock-runtime.${region}.amazonaws.com/guardrail/${encodeURIComponent(guardrailIdentifier)}/version/${encodeURIComponent(guardrailVersion)}/apply`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${process.env.AWS_BEARER_TOKEN_BEDROCK}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ source: 'INPUT', content: [{ text: { text } }] }),
+    signal: AbortSignal.timeout(timeoutMs),
+  })
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    console.error(`guardrail ${response.status}: ${body.message ?? 'unknown error'}`)
+    throw Object.assign(new Error('content checks are unavailable right now'), { status: 503 })
+  }
+  return body.action === 'GUARDRAIL_INTERVENED'
+}

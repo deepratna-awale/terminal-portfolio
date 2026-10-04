@@ -20,6 +20,7 @@ export type ShellContext = {
   clear: () => void
   projects: () => Promise<Project[]>
   ask: (question: string) => Promise<void>
+  prompt: (label: string) => Promise<string | null>
   ui: {
     setTheme: (theme: ThemeName) => void
     toggleMaximize: () => void
@@ -219,12 +220,34 @@ async function meltdown(ctx: ShellContext) {
   ctx.ui.replayBoot()
 }
 
+// `guestbook sign [--name <name>] [message]`; anything missing is asked for.
+export function parseSign(args: string[]): { name: string; message: string } {
+  let name = ''
+  const words: string[] = []
+  for (let index = 0; index < args.length; index++) {
+    const arg = args[index]!
+    if (arg === '-n' || arg === '--name' || arg === '--as') name = args[++index] ?? ''
+    else if (/^--(name|as)=/.test(arg)) name = arg.replace(/^--(name|as)=/, '')
+    else words.push(arg)
+  }
+  return { name: name.trim(), message: words.join(' ').trim() }
+}
+
 async function guestbook(args: string[], ctx: ShellContext) {
   if (args[0] === 'sign') {
-    const nameIndex = args.findIndex((arg) => arg === '-n' || arg === '--name')
-    const name = nameIndex > 0 ? args[nameIndex + 1] ?? '' : ''
-    const message = args.slice(1).filter((_, index) => nameIndex < 0 || (index + 1 !== nameIndex && index + 1 !== nameIndex + 1)).join(' ').trim()
-    if (!message) { ctx.print([muted('usage: guestbook sign [-n <name>] <message>   e.g. guestbook sign -n Ada "love the terminal!"')]); return }
+    let { name, message } = parseSign(args.slice(1))
+    if (!message) {
+      ctx.print([muted('Signing the guestbook. Plain text, up to 280 characters, shown publicly. ^C to cancel.')])
+      if (!name) {
+        const answer = await ctx.prompt('your name (enter for guest): ')
+        if (answer === null) return
+        name = answer.trim()
+      }
+      const answer = await ctx.prompt('message: ')
+      if (answer === null || !answer.trim()) { ctx.print([muted('guestbook: nothing signed')]); return }
+      message = answer.trim()
+    }
+    ctx.print([muted('checking your note ...')])
     try {
       const entry = await signGuestbook(name || 'guest', message)
       ctx.print([{ type: 'success', text: `Signed. Thanks, ${entry.name}!` }, { type: 'plain', text: `${entry.name} · just now\n  ${entry.message}` }])
@@ -233,9 +256,9 @@ async function guestbook(args: string[], ctx: ShellContext) {
   }
   try {
     const entries = await fetchGuestbook()
-    if (!entries.length) ctx.print([muted('The guestbook is empty. Be the first: `guestbook sign <message>`')])
+    if (!entries.length) ctx.print([muted('The guestbook is empty. Be the first: `guestbook sign`')])
     else ctx.print([{ type: 'plain', text: entries.slice(0, Number(args[0]) || 12).map((entry) => `${entry.name} · ${relative(entry.at)}\n  ${entry.message}`).join('\n\n') }])
-    ctx.print([muted(`Leave a note: ${cmd('guestbook sign <message>', 'guestbook sign')}  (plain text, 280 characters, public)`)])
+    ctx.print([muted(`Leave a note: ${cmd('guestbook sign', 'guestbook sign')} (asks for your name), or \`guestbook sign --name Ada "love the terminal!"\``)])
   } catch (error) { ctx.print([err(`guestbook: ${error instanceof Error ? error.message : 'unavailable right now'}`)]) }
 }
 
@@ -277,7 +300,7 @@ export function openTargets(): Record<string, string> {
 const sectionRunners: Record<string, Pick<Command, 'run' | 'usage'>> = {
   projects: { usage: 'projects [name]', run: (args, ctx) => showProjects(ctx, args[0]) },
   now: { run: (_args, ctx) => now(ctx) },
-  guestbook: { usage: 'guestbook [sign [-n name] <message>]', run: guestbook },
+  guestbook: { usage: 'guestbook [sign [--name <name>] [message]]', run: guestbook },
 }
 
 function sectionCommands(): Record<string, Command> {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { initialCommand } from './deeplink'
-import { isRootWipe, readFile } from './commands'
+import { isRootWipe, parseSign, readFile } from './commands'
 import { renderHeatmap } from './heatmap'
 import { filters, grepLines, toPlainText } from './pipes'
 import { closest, looksLikeCommand } from './typo'
@@ -66,5 +66,14 @@ describe('heatmap', () => {
     expect(rows).toHaveLength(8)
     expect(rows[0]).toContain('Mar')
     expect(rows[1]).toBe('    ·▒')
+  })
+})
+
+describe('guestbook sign', () => {
+  it('reads the name flag in any position', () => {
+    expect(parseSign(['--name', 'Jane Doe', 'great', 'site'])).toEqual({ name: 'Jane Doe', message: 'great site' })
+    expect(parseSign(['great', 'site', '-n', 'Ada'])).toEqual({ name: 'Ada', message: 'great site' })
+    expect(parseSign(['--name=Ada'])).toEqual({ name: 'Ada', message: '' })
+    expect(parseSign([])).toEqual({ name: '', message: '' })
   })
 })

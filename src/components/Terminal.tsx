@@ -51,6 +51,8 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
   const [draft, setDraft] = useState('')
   const [search, setSearch] = useState<{ query: string; skip: number } | null>(null)
   const [busy, setBusy] = useState(false)
+  // A command waiting for typed input, like `guestbook sign` asking for a name.
+  const [question, setQuestion] = useState<{ label: string; resolve: (answer: string | null) => void } | null>(null)
   const [booting, setBooting] = useState(true)
   const [projectNames, setProjectNames] = useState<string[]>([])
   const [showScrollButton, setShowScrollButton] = useState(false)
@@ -135,6 +137,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
   const context = useCallback((): ShellContext => ({
     path: pathRef.current, previousPath: previousPathRef.current, history: historyRef.current, theme,
     setPath, print, clear: () => setTranscript([]), projects, ask, ui,
+    prompt: (label) => new Promise<string | null>((resolve) => { setLine((current) => ({ ...current, value: '', cursor: 0 })); setQuestion({ label, resolve }) }),
   }), [ask, print, projects, setPath, theme, ui])
 
   const runPipeline = useCallback(async (stages: string[]) => {
@@ -245,7 +248,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
   }, []) // oxlint-disable-line react-hooks/exhaustive-deps -- boot once on mount
 
   // The input row is hidden while booting or running, so focus once it is visible again.
-  useEffect(() => { if (!booting && !busy && !suspendedRef.current) inputRef.current?.focus({ preventScroll: true }) }, [booting, busy])
+  useEffect(() => { if (!booting && (!busy || question) && !suspendedRef.current) inputRef.current?.focus({ preventScroll: true }) }, [booting, busy, question])
 
   // Typing anywhere on the page goes to the prompt, like a real terminal window.
   useEffect(() => {
@@ -326,12 +329,23 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
 
     if (ctrl && key.toLowerCase() === 'c') {
       event.preventDefault()
+      if (question) { print([{ type: 'command', text: `${question.label}${line.value}^C` }]); setLine((current) => ({ ...current, value: '', cursor: 0 })); setQuestion(null); question.resolve(null); return }
       if (abortRef.current) { abortRef.current.abort(); return }
       print([{ type: 'command', text: `guest@${profile.host} ${promptPath} % ${search ? '' : line.value}^C` }])
       setSearch(null); setLine((current) => ({ ...current, value: '', cursor: 0 })); setHistoryIndex(-1)
       return
     }
-    if (busy) { event.preventDefault(); return }
+    if (question) {
+      if (key === 'Enter') {
+        event.preventDefault()
+        print([{ type: 'command', text: `${question.label}${line.value}` }])
+        setLine((current) => ({ ...current, value: '', cursor: 0 }))
+        setQuestion(null)
+        question.resolve(line.value)
+        return
+      }
+      if (key === 'Tab' || key === 'ArrowUp' || key === 'ArrowDown') { event.preventDefault(); return }
+    } else if (busy) { event.preventDefault(); return }
 
     if (search) {
       if (ctrl && key.toLowerCase() === 'r') { event.preventDefault(); setSearch({ ...search, skip: search.skip + 1 }); return }
@@ -417,8 +431,10 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
       >
         {transcript.map(renderLine)}
         {booting && <div className="terminal-line muted boot-hint">press any key to skip</div>}
-        <div className={`input-row${busy || booting ? ' hidden-row' : ''}`}>
-          {search
+        <div className={`input-row${(busy && !question) || booting ? ' hidden-row' : ''}`}>
+          {question
+            ? <span className="prompt prompt-question">{question.label}</span>
+            : search
             ? <span className="prompt search-prompt">(reverse-i-search)`<span className="search-query">{search.query}</span>': </span>
             : <span className="prompt"><span className="prompt-user">guest@{profile.host}</span><span className="prompt-path"> {promptPath}</span><span className="prompt-symbol"> %</span></span>}
           <span className="input-shell">
