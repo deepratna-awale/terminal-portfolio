@@ -16,7 +16,7 @@ conventional portfolio page one click away. Live at
 - **SSH edition**: `ssh ssh.deepratna-awale.dev` opens the same terminal in your
   own terminal, with inline images where it supports them (see [SSH edition](#ssh-edition)).
 - **Live data**: featured GitHub repositories with hand-written bullets, a GitHub
-  contributions graph, and a guestbook.
+  contributions graph, and a guestbook whose authors can delete their own notes.
 - **Hosting**: one Docker container on AWS Lightsail (about $7 a month plus $1
   for the guestbook bucket), provisioned with Terraform and deployed by GitHub
   Actions through OIDC with no stored AWS keys.

@@ -100,3 +100,30 @@ describe('guardrail reasons', () => {
     expect(guardrailReason([])).toMatch(/rules/)
   })
 })
+
+describe('guestbook delete keys', () => {
+  it('lets only the author delete a note, and clears notes without a key', async () => {
+    const { mkdtemp, readFile, writeFile } = await import('node:fs/promises')
+    const { tmpdir } = await import('node:os')
+    const { join } = await import('node:path')
+    const file = join(await mkdtemp(join(tmpdir(), 'guestbook-')), 'guestbook.json')
+    await writeFile(file, JSON.stringify([{ name: 'old', message: 'from before keys', at: '2026-01-01T00:00:00.000Z' }]))
+    process.env.GUESTBOOK_FILE = file
+    const { addEntry, deleteEntry, listEntries } = await import('./guestbook.mjs?keys')
+    expect(await listEntries()).toEqual([])
+    expect(JSON.parse(await readFile(file, 'utf8'))).toEqual([])
+
+    const signed = await addEntry({ name: 'Ada', message: 'hello there', at: '2026-10-04T00:00:00.000Z' })
+    expect(signed.key).toMatch(/^[0-9a-f]{12}\.[\w-]{32}$/)
+    const [listed] = await listEntries()
+    expect(listed).toEqual({ id: signed.id, name: 'Ada', message: 'hello there', at: '2026-10-04T00:00:00.000Z' })
+    expect(await readFile(file, 'utf8')).not.toContain(signed.key.split('.')[1])
+
+    const other = await addEntry({ name: 'Bob', message: 'hi again', at: '2026-10-04T00:00:01.000Z' })
+    expect(await deleteEntry(`${signed.id}.${other.key.split('.')[1]}`)).toBe(false)
+    expect(await deleteEntry('nonsense')).toBe(false)
+    expect(await deleteEntry(signed.key)).toBe(true)
+    expect(await deleteEntry(signed.key)).toBe(false)
+    expect((await listEntries()).map((entry) => entry.name)).toEqual(['Bob'])
+  })
+})

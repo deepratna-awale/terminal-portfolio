@@ -1,11 +1,12 @@
 import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent, type ReactNode } from 'react'
 import ReactMarkdown, { defaultUrlTransform, type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { ArrowUpRight, Award, BookOpen, Check, FileText, GraduationCap, Mail, MapPin, Menu, Palette, RotateCw, Send, SquareTerminal, Star, X } from 'lucide-react'
-import { fetchActivity, fetchContributions, fetchGuestbook, fetchProjects, signGuestbook, type Activity, type Contributions, type GuestbookEntry, type Project } from '../api'
+import { ArrowUpRight, Award, BookOpen, Check, Copy, FileText, GraduationCap, Mail, MapPin, Menu, Palette, RotateCw, Send, SquareTerminal, Star, X } from 'lucide-react'
+import { deleteGuestbookNote, fetchActivity, fetchContributions, fetchGuestbook, fetchProjects, signGuestbook, type Activity, type Contributions, type GuestbookEntry, type Project } from '../api'
 import { contactCopy, focusDirs, linkLabel, nowItems, profile, sectionList, sections, sshHost } from '../content'
 import { parseAbout, parseEducation, parseExperience, parsePublications, parseSkills, splitYear } from './parse'
 import { saveMode } from '../modeStore'
+import { browserNoteKeys, noteId } from '../shell/noteKeys'
 import { onThemeChange, readTheme, saveTheme, siteThemes, type SiteTheme } from '../themeStore'
 import { themes } from '../themes'
 import { TechIcon } from '../components/TechIcon'
@@ -70,6 +71,20 @@ function Section({ id, index, title, embedded, children, wide = false }: { id: s
       </header>
       {children}
     </section>
+  )
+}
+
+// The SSH command as a one-click copy chip; without JS it is still selectable text.
+function SshCommand() {
+  const [copied, setCopied] = useState(false)
+  const command = `ssh ${sshHost}`
+  const copy = () => navigator.clipboard?.writeText(command).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600) }).catch(() => {})
+  return (
+    <button type="button" className="pf-ssh" onClick={copy} title="Copy to clipboard" aria-label={`Copy ${command}`}>
+      <span className="pf-ssh-prompt" aria-hidden="true">$</span><code>{command}</code>
+      {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+      <span className="pf-ssh-status" aria-live="polite">{copied ? 'copied' : ''}</span>
+    </button>
   )
 }
 
@@ -188,6 +203,12 @@ function Guestbook({ live }: { live: boolean }) {
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null)
   const [sending, setSending] = useState(false)
+  const [notes] = useState(() => (live ? browserNoteKeys() : null))
+  // Delete keys for the notes signed in this browser, by note id.
+  const readMine = () => new Map((notes?.list() ?? []).map((note) => [noteId(note.key), note.key]))
+  const [mine, setMine] = useState(readMine)
+  const [deleting, setDeleting] = useState('')
+  const refreshMine = () => setMine(readMine())
   useEffect(() => {
     if (!live) return
     let cancelled = false
@@ -200,9 +221,22 @@ function Guestbook({ live }: { live: boolean }) {
     if (sending || message.trim().length < 2) return
     setSending(true); setStatus(null)
     signGuestbook(name.trim(), message.trim())
-      .then((entry) => { setEntries((list) => [entry, ...(list ?? [])]); setMessage(''); setStatus({ ok: true, text: 'Signed. Thank you for stopping by!' }) })
+      .then(({ key, ...entry }) => {
+        notes?.add({ key, message: entry.message, at: entry.at }); refreshMine()
+        setEntries((list) => [entry, ...(list ?? [])]); setMessage('')
+        setStatus({ ok: true, text: notes?.persistent ? 'Signed. Thank you for stopping by! You can delete your note from this browser.' : 'Signed. Thank you for stopping by!' })
+      })
       .catch((reason: unknown) => { const text = reason instanceof Error ? reason.message : 'could not sign the guestbook'; setStatus({ ok: false, text: text[0]!.toUpperCase() + text.slice(1) }) })
       .finally(() => setSending(false))
+  }
+
+  const remove = (id: string, key: string) => {
+    if (deleting || !window.confirm('Delete your note from the guestbook?')) return
+    setDeleting(id); setStatus(null)
+    deleteGuestbookNote(key)
+      .then(() => { setEntries((list) => list?.filter((entry) => entry.id !== id) ?? null); setStatus({ ok: true, text: 'Your note was deleted.' }) })
+      .catch((reason: unknown) => { const text = reason instanceof Error ? reason.message : 'could not delete the note'; setStatus({ ok: false, text: text[0]!.toUpperCase() + text.slice(1) }); if (!/no note matches/.test(text)) return; notes?.remove(key); refreshMine() })
+      .finally(() => setDeleting(''))
   }
 
   if (!live) return <p className="pf-muted">Leave a note: the guestbook needs JavaScript, or sign it from the <a href="/">terminal</a> with <code>guestbook sign</code>.</p>
@@ -226,7 +260,9 @@ function Guestbook({ live }: { live: boolean }) {
             {entries.slice(0, 12).map((entry, index) => (
               <li key={`${entry.at}-${index}`} className="pf-entry">
                 <p className="pf-entry-message">{entry.message}</p>
-                <p className="pf-entry-meta"><span>{entry.name || 'guest'}</span> · <time dateTime={entry.at}>{formatMonth(entry.at)}</time></p>
+                <p className="pf-entry-meta"><span>{entry.name || 'guest'}</span> · <time dateTime={entry.at}>{formatMonth(entry.at)}</time>
+                  {entry.id && mine.has(entry.id) && <> · <button type="button" className="pf-entry-delete" disabled={deleting === entry.id} onClick={() => remove(entry.id!, mine.get(entry.id!)!)}>{deleting === entry.id ? 'deleting…' : 'delete'}</button></>}
+                </p>
               </li>
             ))}
           </ul>
@@ -439,7 +475,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
             {profile.linkedin && <li><LinkedInIcon /><a href={profile.linkedin} {...linkAttrs(profile.linkedin)}>{linkLabel(profile.linkedin)}</a></li>}
             <li><Mail size={16} aria-hidden="true" /><a href={`mailto:${profile.email}`}>{profile.email}</a></li>
             <li><SquareTerminal size={16} aria-hidden="true" /><a href="/">Terminal version of this site</a></li>
-            {sshHost && <li><SquareTerminal size={16} aria-hidden="true" /><code>ssh {sshHost}</code></li>}
+            {sshHost && <li><SquareTerminal size={16} aria-hidden="true" /><SshCommand /></li>}
           </ul>
         </div>
       </Section>
@@ -504,6 +540,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
               {profile.linkedin && <a className="pf-btn" href={profile.linkedin} {...linkAttrs(profile.linkedin)}><LinkedInIcon /> LinkedIn</a>}
               <a className="pf-btn ghost" href="/"><SquareTerminal size={16} aria-hidden="true" /> Open terminal</a>
             </div>
+            {sshHost && <div className="pf-ssh-row"><span className="pf-muted">Or from your own terminal:</span><SshCommand /></div>}
           </div>
           <div className="pf-hero-card" aria-hidden="true">
             <div className="pf-mini-chrome"><span /><span /><span /><em>guest@{profile.host}</em></div>

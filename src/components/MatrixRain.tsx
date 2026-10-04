@@ -25,8 +25,11 @@ export function MatrixRain({ onDone }: { onDone: () => void }) {
       frame = requestAnimationFrame(draw)
     }
     frame = requestAnimationFrame(draw)
-    const stop = () => onDone()
-    const timer = setTimeout(stop, 12_000)
+    // The keypress that ran `matrix` is still bubbling up to window when this effect runs,
+    // so only input that started after the rain did may end it.
+    const started = performance.now()
+    const stop = (event?: Event) => { if (!event || event.timeStamp > started) onDone() }
+    const timer = setTimeout(() => stop(), 12_000)
     window.addEventListener('keydown', stop)
     window.addEventListener('pointerdown', stop)
     window.addEventListener('resize', resize)

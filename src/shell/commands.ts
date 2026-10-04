@@ -1,8 +1,9 @@
 import type { Project } from '../api'
-import { fetchActivity, fetchContributions, fetchCowthink, fetchFortune, fetchGuestbook, signGuestbook } from '../api'
+import { deleteGuestbookNote, fetchActivity, fetchContributions, fetchCowthink, fetchFortune, fetchGuestbook, signGuestbook } from '../api'
 import { exampleQuestion, linkLabel, links, liveSections, mediaFiles, neofetchRows, nowItems, os, profile, sectionList, sections, sshHost } from '../content'
 import { isThemeName, themeNames, themes, type ThemeName } from '../themes'
 import { renderHeatmap } from './heatmap'
+import { noteId, type NoteKeys } from './noteKeys'
 import { filters, grepLines, toPlainText } from './pipes'
 import { closest } from './typo'
 
@@ -23,6 +24,8 @@ export type ShellContext = {
   projects: () => Promise<Project[]>
   ask: (question: string) => Promise<void>
   prompt: (label: string) => Promise<string | null>
+  // Delete keys for the guestbook notes this visitor signed.
+  notes: NoteKeys
   ui: {
     setTheme: (theme: ThemeName) => void
     toggleMaximize: () => void
@@ -48,6 +51,8 @@ export const aliases: Record<string, string> = { ll: 'ls -l', la: 'ls -a', '..':
 export const cmd = (label: string, command: string) => `[${label}](cmd:${encodeURIComponent(command)})`
 const out = (text: string): NewLine => ({ type: 'output', text })
 const muted = (text: string): NewLine => ({ type: 'muted', text })
+// `copy:` links copy their target when clicked in the browser terminal.
+export const sshHint = (lead = 'Prefer your own terminal?'): NewLine[] => sshHost ? [muted(`${lead} [\`ssh ${sshHost}\`](copy:${encodeURIComponent(`ssh ${sshHost}`)}) (click to copy)`)] : []
 const err = (text: string): NewLine => ({ type: 'error', text })
 const section = (name: string): NewLine => ({ type: 'section', section: name, text: sections[name]!.join('\n') })
 const fence = (text: string) => `\`\`\`text\n${text}\n\`\`\``
@@ -242,32 +247,74 @@ export function parseSign(args: string[]): { name: string; message: string } {
   return { name: name.trim(), message: words.join(' ').trim() }
 }
 
-async function guestbook(args: string[], ctx: ShellContext) {
-  if (args[0] === 'sign') {
-    let { name, message } = parseSign(args.slice(1))
-    if (!message) {
-      ctx.print([muted('Signing the guestbook. Plain text, up to 280 characters, shown publicly. ^C to cancel.')])
-      if (!name) {
-        const answer = await ctx.prompt('your name (enter for guest): ')
-        if (answer === null) return
-        name = answer.trim()
-      }
-      const answer = await ctx.prompt('message: ')
-      if (answer === null || !answer.trim()) { ctx.print([muted('guestbook: nothing signed')]); return }
-      message = answer.trim()
+async function signNote(args: string[], ctx: ShellContext) {
+  let { name, message } = parseSign(args)
+  if (!message) {
+    ctx.print([muted('Signing the guestbook. Plain text, up to 280 characters, shown publicly. ^C to cancel.')])
+    if (!name) {
+      const answer = await ctx.prompt('your name (enter for guest): ')
+      if (answer === null) return
+      name = answer.trim()
     }
-    ctx.print([muted('checking your note ...')])
-    try {
-      const entry = await signGuestbook(name || 'guest', message)
-      ctx.print([{ type: 'success', text: `Signed. Thanks, ${entry.name}!` }, { type: 'plain', text: `${entry.name} · just now\n  ${entry.message}` }])
-    } catch (error) { ctx.print([err(`guestbook: ${error instanceof Error ? error.message : 'unavailable right now'}`)]) }
-    return
+    const answer = await ctx.prompt('message: ')
+    if (answer === null || !answer.trim()) { ctx.print([muted('guestbook: nothing signed')]); return }
+    message = answer.trim()
+  }
+  ctx.print([muted('checking your note ...')])
+  try {
+    const entry = await signGuestbook(name || 'guest', message)
+    ctx.notes.add({ key: entry.key, message: entry.message, at: entry.at })
+    ctx.print([{ type: 'success', text: `Signed. Thanks, ${entry.name}!` }, { type: 'plain', text: `${entry.name} · just now\n  ${entry.message}` }])
+    ctx.print(ctx.notes.persistent
+      ? [muted(`Changed your mind? ${cmd('guestbook delete', 'guestbook delete')} removes it.`)]
+      : [muted('Your delete key, shown only once. Keep it to remove this note later:'), out(`\`guestbook delete ${entry.key}\``)])
+  } catch (error) { ctx.print([err(`guestbook: ${error instanceof Error ? error.message : 'unavailable right now'}`)]) }
+}
+
+// `guestbook delete [key]`: without a key, picks from the notes signed here.
+async function deleteNote(args: string[], ctx: ShellContext) {
+  let key = args[0]?.trim()
+  if (!key) {
+    const mine = ctx.notes.list()
+    if (!mine.length) {
+      ctx.print([muted(ctx.notes.persistent ? 'guestbook: you have no notes to delete from this browser. Have a delete key? `guestbook delete <key>`' : 'usage: guestbook delete <key>   (the key shown when you signed)')])
+      return
+    }
+    let choice = mine[0]!
+    if (mine.length > 1) {
+      ctx.print([{ type: 'plain', text: mine.map((note, index) => `${index + 1}. ${relative(note.at)}\n   ${note.message}`).join('\n\n') }])
+      const answer = await ctx.prompt(`delete which note? (1-${mine.length}): `)
+      const picked = mine[Number(answer?.trim()) - 1]
+      if (!picked) { ctx.print([muted('guestbook: nothing deleted')]); return }
+      choice = picked
+    } else {
+      ctx.print([{ type: 'plain', text: `${relative(choice.at)}\n  ${choice.message}` }])
+      const answer = await ctx.prompt('delete this note? [y/N] ')
+      if (!/^y(es)?$/i.test(answer?.trim() ?? '')) { ctx.print([muted('guestbook: nothing deleted')]); return }
+    }
+    key = choice.key
   }
   try {
+    await deleteGuestbookNote(key)
+    ctx.notes.remove(key)
+    ctx.print([{ type: 'success', text: 'Deleted your note.' }])
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'unavailable right now'
+    // The note is already gone (deleted elsewhere, or cleared), so forget its key.
+    if (/no note matches/.test(message)) ctx.notes.remove(key)
+    ctx.print([err(`guestbook: ${message}`)])
+  }
+}
+
+async function guestbook(args: string[], ctx: ShellContext) {
+  if (args[0] === 'sign') return signNote(args.slice(1), ctx)
+  if (args[0] === 'delete' || args[0] === 'rm') return deleteNote(args.slice(1), ctx)
+  try {
     const entries = await fetchGuestbook()
+    const mine = new Set(ctx.notes.list().map((note) => noteId(note.key)))
     if (!entries.length) ctx.print([muted('The guestbook is empty. Be the first: `guestbook sign`')])
-    else ctx.print([{ type: 'plain', text: entries.slice(0, Number(args[0]) || 12).map((entry) => `${entry.name} · ${relative(entry.at)}\n  ${entry.message}`).join('\n\n') }])
-    ctx.print([muted(`Leave a note: ${cmd('guestbook sign', 'guestbook sign')} (asks for your name), or \`guestbook sign --name Ada "love the terminal!"\``)])
+    else ctx.print([{ type: 'plain', text: entries.slice(0, Number(args[0]) || 12).map((entry) => `${entry.name} · ${relative(entry.at)}${entry.id && mine.has(entry.id) ? ' (yours)' : ''}\n  ${entry.message}`).join('\n\n') }])
+    ctx.print([muted(`Leave a note: ${cmd('guestbook sign', 'guestbook sign')} (asks for your name), or \`guestbook sign --name Ada "love the terminal!"\`. Remove yours with \`guestbook delete\`.`)])
   } catch (error) { ctx.print([err(`guestbook: ${error instanceof Error ? error.message : 'unavailable right now'}`)]) }
 }
 
@@ -309,7 +356,7 @@ export function openTargets(): Record<string, string> {
 const sectionRunners: Record<string, Pick<Command, 'run' | 'usage'>> = {
   projects: { usage: 'projects [name]', run: (args, ctx) => showProjects(ctx, args[0]) },
   now: { run: (_args, ctx) => now(ctx) },
-  guestbook: { usage: 'guestbook [sign [--name <name>] [message]]', run: guestbook },
+  guestbook: { usage: 'guestbook [sign [--name <name>] [message] | delete [key]]', run: guestbook },
 }
 
 function sectionCommands(): Record<string, Command> {
@@ -323,7 +370,7 @@ export const commands: Record<string, Command> = {
       ...groups.flatMap((group) => [{ type: 'success' as const, text: group }, out(Object.entries(commands).filter(([, command]) => command.group === group && !command.hidden).map(([name, command]) => `  ${cmd(name.padEnd(Math.max(13, name.length + 1)), name)}${command.summary}`).join('\n'))]),
       muted(`Anything that is not a command goes to my AI assistant, e.g. "${exampleQuestion}"`),
       muted('zsh keys work: Tab, ^A ^E ^U ^K ^W ^Y ^L ^C ^R, ⌥B ⌥F, ↑↓, → accepts a suggestion, !! and !$. See `shortcuts`.'),
-      ...(sshHost ? [muted(`Prefer your own terminal? \`ssh ${sshHost}\``)] : []),
+      ...sshHint(),
     ])
   } },
   ...sectionCommands(),
@@ -468,7 +515,7 @@ export const commands: Record<string, Command> = {
     try { await globalThis.navigator?.clipboard.writeText(url); copied = Boolean(globalThis.navigator?.clipboard) } catch { /* clipboard blocked */ }
     ctx.print([out(`[${url}](${url})`), muted(copied ? 'copied to clipboard' : 'copy the link above to share it')])
   } },
-  ssh: { group: 'Fun', summary: 'connect to a host', hidden: true, run: (_args, ctx) => ctx.print([muted(`You are already connected to ${profile.host}. Run \`reboot\` to replay the login.`), ...(sshHost ? [muted(`For the real thing, from your own terminal: \`ssh ${sshHost}\``)] : [])]) },
+  ssh: { group: 'Terminal', summary: 'SSH in from your own terminal', hidden: !sshHost, run: (_args, ctx) => ctx.print([muted(`You are already connected to ${profile.host}. Run \`reboot\` to replay the login.`), ...sshHint('For the real thing, from your own terminal:')]) },
   hire: { group: 'Fun', summary: 'the best command', hidden: true, run: (_args, ctx) => ctx.print([{ type: 'success', text: `Great choice. ${cmd('email', 'email')} me or reach out on [LinkedIn](${profile.linkedin}).` }]) },
 }
 

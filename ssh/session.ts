@@ -4,6 +4,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { StringDecoder } from 'node:string_decoder'
 import { askAssistant, fetchProjects, type ChatTurn, type Project } from '../src/api'
 import { asciiLogo, motd, os, profile, sshHost } from '../src/content'
+import { memoryNoteKeys } from '../src/shell/noteKeys'
 import { commandNames, commands, formatProject, neofetchInfo, openTargets, type NewLine, type ShellContext } from '../src/shell/commands'
 import { commonPrefix, complete, suggestion } from '../src/shell/completion'
 import { applyEdit, bindingFor, expandHistory, reverseSearch, type LineState } from '../src/shell/lineEditor'
@@ -55,6 +56,7 @@ export class Session {
   private app: App | null = null
   private abort: AbortController | null = null
   private chat: ChatTurn[] = []
+  private notes = memoryNoteKeys()
   private projectNames: string[] = []
   private recent: number[] = []
   // Raw bytes received in the current window: blunts keystroke floods and the
@@ -434,6 +436,7 @@ export class Session {
       clear: () => this.clear(),
       projects: this.projects,
       ask: (question) => this.ask(question),
+      notes: this.notes,
       prompt: (label) => new Promise<string | null>((resolve) => {
         this.question = { label, resolve }
         this.mode = 'question'
@@ -551,7 +554,7 @@ commands.gui = { ...commands.gui!, summary: 'link to the standard portfolio webs
 commands.crt = { ...commands.crt!, hidden: true, run: (_args, ctx) => ctx.print([{ type: 'muted', text: `CRT scanlines need the browser: ${profile.website}/?cmd=crt` }]) }
 commands.maximize = { ...commands.maximize!, hidden: true }
 commands.fullscreen = { ...commands.fullscreen!, hidden: true }
-commands.ssh = { ...commands.ssh!, run: (_args, ctx) => ctx.print([{ type: 'muted', text: 'You are already here, over real SSH this time.' }]) }
+commands.ssh = { ...commands.ssh!, hidden: true, run: (_args, ctx) => ctx.print([{ type: 'muted', text: 'You are already here, over real SSH this time.' }]) }
 const openTarget = commands.open!
 commands.open = { ...openTarget, summary: 'link to a project, github, linkedin or the source', run: async (args, ctx) => {
   const target = (args[0] ?? '').toLowerCase()
