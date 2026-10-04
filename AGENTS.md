@@ -129,17 +129,19 @@ if it needs a custom layout: add a renderer for its id in
 `show: [dock]`, `[desktop]` and/or `[newtab]`. Give it an `id` to make
 `open <id>` work. No code change.
 
-**Add a desktop window.** Call `useResizable('<id>', { disabled })` from
-`src/components/useResizable.tsx` in the window component, spread its `style`
-onto the window frame (which needs `position: relative`, `fixed` or
-`absolute`) and render its `handles` inside it. The window then resizes from
-every edge and corner, is clamped to the viewport, and remembers its size per
-id in localStorage (double-click a handle to reset). Pass `disabled` while the
-window is maximized or minimized so restore returns to the user's size; it is
-off automatically on touch and narrow screens, where windows are full screen.
-Use `anchor: 'top'` with `onTopShift` for windows positioned from the top
-rather than centred (see `Browser.tsx`). Give it `TrafficLights` for macOS
-controls.
+**Add a desktop window.** Call `useWindowFrame('<id>', { disabled })` from
+`src/components/useWindowFrame.tsx` in the window component. Spread
+`frameProps` and `style` onto the window root, `titleBar` onto its title bar,
+and render `handles` inside the root. The window then behaves like a macOS
+window: drag the title bar to move it, resize it from any edge or corner
+(invisible zones shown only by the cursor, opposite edge anchored), with
+Option/Alt to resize around the centre and Shift on a corner to keep the
+aspect ratio. It stays on screen below the menu bar and remembers its position
+and size per id in localStorage. Pass `disabled` while the window is maximized
+or minimized so restore returns to the user's frame; it is off automatically
+on phones and touch screens, where windows are full screen. Title bar buttons,
+inputs, links and tabs (or anything with `data-no-drag`) keep their clicks.
+Give the window `TrafficLights` for macOS controls.
 
 **Add a built-in command.** Add an entry to `commands` in
 `src/shell/commands.ts` (`group`, `summary`, optional `usage`/`hidden`,

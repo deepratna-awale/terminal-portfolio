@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type RefObject, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react'
 import { ArrowLeft, ArrowRight, CircleUserRound, EllipsisVertical, ExternalLink, Globe, Lock, Plus, RotateCw, Search, SquareTerminal, Star, X } from 'lucide-react'
 import { linksFor, profile } from '../content'
 import { HOME, NEWTAB, pageHash, pageTitle, resolveAddress } from '../gui/address'
 import { Portfolio } from '../gui/Portfolio'
 import './Browser.css'
 import { TrafficLights } from './TrafficLights'
-import { useResizable } from './useResizable'
+import { useWindowFrame } from './useWindowFrame'
 
 type Tab = { id: number; history: string[]; index: number; reload: number; loading: boolean }
 type Mode = 'normal' | 'maximized' | 'minimized'
@@ -59,15 +59,8 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
   const [mode, setMode] = useState<Mode>('normal')
   const [address, setAddress] = useState<string | null>(null)
   const [toast, setToast] = useState<{ text: string; key: number } | null>(null)
-  const [offset, setOffset] = useState({ x: 0, y: 0 })
-  const shiftBase = useRef(0)
-  const resize = useResizable('browser', {
-    disabled: mode !== 'normal', min: { width: 480, height: 320 }, anchor: 'top',
-    onTopShift: (shift, phase) => {
-      if (phase === 'start') shiftBase.current = offset.y
-      else setOffset((current) => ({ ...current, y: shiftBase.current + shift }))
-    },
-  })
+  const frame = useWindowFrame('browser', { disabled: mode !== 'normal', min: { width: 480, height: 320 } })
+
   const [menu, setMenu] = useState(false)
   const root = useRef<HTMLElement>(null)
   const addressInput = useRef<HTMLInputElement>(null)
@@ -189,20 +182,6 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
     return () => { window.removeEventListener('pointerdown', close); window.removeEventListener('keydown', escape) }
   }, [menu])
 
-  const drag = useRef<{ x: number; y: number; ox: number; oy: number; minY: number; maxY: number } | null>(null)
-  const startDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (mode !== 'normal' || event.button !== 0 || event.target !== event.currentTarget || window.matchMedia('(max-width: 720px)').matches) return
-    const rect = root.current!.getBoundingClientRect()
-    drag.current = { x: event.clientX, y: event.clientY, ox: offset.x, oy: offset.y, minY: 28 - rect.top, maxY: window.innerHeight - 60 - rect.top }
-    event.currentTarget.setPointerCapture(event.pointerId)
-  }
-  const moveDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const start = drag.current
-    if (!start) return
-    const dy = Math.min(start.maxY, Math.max(start.minY, event.clientY - start.y))
-    setOffset({ x: start.ox + event.clientX - start.x, y: start.oy + dy })
-  }
-  const endDrag = () => { drag.current = null }
   const toggleMax = () => setMode((value) => (value === 'maximized' ? 'normal' : 'maximized'))
   const minimize = () => { setMode('minimized'); onFront?.(false) }
 
@@ -229,11 +208,12 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
       className={`cb cb-${mode}`}
       hidden={mode === 'minimized'}
       aria-label="Browser"
-      style={mode === 'normal' ? ({ '--dx': `${offset.x}px`, '--dy': `${offset.y}px`, ...resize.style } as CSSProperties) : undefined}
+      style={mode === 'normal' ? frame.style : undefined}
+      {...frame.frameProps}
       onPointerDownCapture={() => onFront?.(true)}
       onFocusCapture={() => { focused.current = true }}
     >
-      <div className="cb-titlebar" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onDoubleClick={(event) => { if (!(event.target as HTMLElement).closest('button, input, a, [role="tab"]')) toggleMax() }}>
+      <div className="cb-titlebar" {...frame.titleBar} onDoubleClick={(event) => { if (!(event.target as HTMLElement).closest('button, input, a, [role="tab"]')) toggleMax() }}>
         <div className="cb-lights"><TrafficLights name="browser" maximized={mode === 'maximized'} onClose={onClose} onMinimize={minimize} onMaximize={toggleMax} /></div>
         <div className="cb-tabs" role="tablist" aria-label="Tabs">
           {tabs.map((tab) => {
@@ -311,7 +291,7 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
         })}
         {toast && <div className="cb-toast" role="status" key={toast.key}>{toast.text}</div>}
       </div>
-      {mode === 'normal' && resize.handles}
+      {mode === 'normal' && frame.handles}
     </section>
   )
 }

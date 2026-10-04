@@ -1,0 +1,13 @@
+/* Resize zones: invisible bands along each edge and corner, shown only by the
+   cursor, as on macOS. They sit just inside the border because windows clip
+   their rounded corners. */
+.window-edge { position: absolute; z-index: 8; touch-action: none; }
+.window-edge-n, .window-edge-s { left: 12px; right: 12px; height: 5px; cursor: ns-resize; }
+.window-edge-e, .window-edge-w { top: 12px; bottom: 12px; width: 5px; cursor: ew-resize; }
+.window-edge-n { top: 0; } .window-edge-s { bottom: 0; } .window-edge-e { right: 0; } .window-edge-w { left: 0; }
+.window-edge-ne, .window-edge-nw, .window-edge-se, .window-edge-sw { width: 12px; height: 12px; }
+.window-edge-ne { top: 0; right: 0; cursor: nesw-resize; } .window-edge-sw { bottom: 0; left: 0; cursor: nesw-resize; }
+.window-edge-nw { top: 0; left: 0; cursor: nwse-resize; } .window-edge-se { bottom: 0; right: 0; cursor: nwse-resize; }
+/* While dragging: no text selection or transitions, and the cursor sticks. */
+.window-moving, .window-moving *, .window-resizing, .window-resizing * { user-select: none !important; transition: none !important; }
+.window-moving, .window-moving * { cursor: default !important; }
