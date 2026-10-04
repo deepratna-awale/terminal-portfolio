@@ -60,7 +60,10 @@ docker run --rm -p 8080:8080 terminal-portfolio
 ```
 
 Without Bedrock credentials the assistant reports that it is offline and project
-summaries fall back to the repository description. Without a guestbook bucket the
+summaries fall back to the repository description. Each summary is regenerated at
+most once every 30 days (a failed one is retried the next day) and saved to the
+guestbook bucket as `project-summaries.json`, so pushes and redeploys cost no
+model calls. Without a guestbook bucket the
 guestbook stores entries in a temporary file in development and is disabled in
 production.
 
@@ -90,7 +93,7 @@ All optional; the deploy workflow sets the ones marked *deploy*.
 Browser ──HTTPS──▶ Lightsail DNS ──▶ Lightsail container service (nano)
                                       └─ Node server (server/index.mjs)
                                          ├─ static client + prerendered /gui (dist/)
-                                         ├─ /api/projects ─▶ GitHub API, Bedrock summaries (6 h cache)
+                                         ├─ /api/projects ─▶ GitHub API (6 h cache), Bedrock summaries (30 days, saved in the bucket)
                                          ├─ /api/contributions ─▶ GitHub
                                          ├─ /api/chat ─▶ Bedrock Converse + Guardrail
                                          ├─ /api/guestbook ─▶ Lightsail bucket (SigV4 signed in server/s3.mjs)
