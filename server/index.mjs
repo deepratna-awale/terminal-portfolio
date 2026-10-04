@@ -28,6 +28,7 @@ const guestbookLimit = createLimiter({
   globalPerDay: Number(process.env.GUESTBOOK_GLOBAL_PER_DAY ?? 300),
   messages: { global: 'the guestbook is full for today', day: "you've signed the guestbook enough for today, thank you", minute: 'one note a minute, please' },
 })
+const screenLimit = createLimiter({ perMinute: 6, perDay: 40, globalPerDay: 2000, messages: { global: 'the guestbook is busy today', day: "that's enough tries for today", minute: 'too many tries, slow down a little' } })
 const mimeTypes = { '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.pdf': 'application/pdf', '.txt': 'text/plain', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json' }
 const securityHeaders = {
   'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
@@ -138,11 +139,17 @@ async function handleGuestbook(request, response) {
     // Cheap local checks first, so a typo doesn't use up the visitor's quota.
     const { entry, error } = validate(await readJson(request, 2048))
     if (error) return sendJson(response, 400, { error })
-    const limit = guestbookLimit(clientIp(request))
-    if (!limit.ok) return sendJson(response, 429, { error: `${limit.reason}: try again ${waitText(limit.retryAfter)}` }, { 'Retry-After': String(limit.retryAfter) })
+    const tooMany = (limit) => sendJson(response, 429, { error: `${limit.reason}: try again ${waitText(limit.retryAfter)}` }, { 'Retry-After': String(limit.retryAfter) })
+    // Content checks have their own, looser limit (they cost a Bedrock call),
+    // so rephrasing a rejected note doesn't use up the visitor's posting quota.
+    const ip = clientIp(request)
+    const screening = screenLimit(ip)
+    if (!screening.ok) return tooMany(screening)
     if (await isDuplicate(entry.message)) return sendJson(response, 400, { error: 'someone already left that exact note' })
     const reason = await screenNote(entry)
     if (reason) return sendJson(response, 400, { error: `sorry, that note can't be posted: ${reason}. Please rephrase it and try again.` })
+    const limit = guestbookLimit(ip)
+    if (!limit.ok) return tooMany(limit)
     sendJson(response, 201, await addEntry(entry))
   } catch (error) {
     if (error.status) return sendJson(response, error.status, { error: error.message })

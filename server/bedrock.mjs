@@ -69,10 +69,12 @@ const filterReasons = {
 }
 
 export function guardrailReason(assessments = []) {
+  // Most specific first: personal details, prompt attacks, profanity, then the broader filters.
   const found = (Array.isArray(assessments) ? assessments : []).flatMap((assessment) => [
     ...(assessment.sensitiveInformationPolicy?.piiEntities ?? []).concat(assessment.sensitiveInformationPolicy?.regexes ?? []).filter((item) => item.detected !== false).map(() => 'it contains personal or sensitive details'),
-    ...(assessment.contentPolicy?.filters ?? []).filter((item) => item.detected !== false).map((item) => filterReasons[item.type] ?? 'it breaks the guestbook rules'),
+    ...(assessment.contentPolicy?.filters ?? []).filter((item) => item.detected !== false && item.type === 'PROMPT_ATTACK').map(() => filterReasons.PROMPT_ATTACK),
     ...(assessment.wordPolicy?.managedWordLists ?? []).concat(assessment.wordPolicy?.customWords ?? []).filter((item) => item.detected !== false).map(() => 'it contains profanity'),
+    ...(assessment.contentPolicy?.filters ?? []).filter((item) => item.detected !== false && item.type !== 'PROMPT_ATTACK').map((item) => filterReasons[item.type] ?? 'it breaks the guestbook rules'),
     ...(assessment.topicPolicy?.topics ?? []).filter((item) => item.detected !== false).map(() => 'it strays into advice or politics'),
   ])
   return found[0] ?? 'it breaks the guestbook rules'
