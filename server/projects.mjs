@@ -36,12 +36,13 @@ async function summarise(repo) {
   if (known && known.pushedAt === repo.pushed_at) return known.bullets
   if (!bedrockConfigured()) return fallbackBullets(repo)
   try {
-    const text = await converse({
+    const { text, blocked } = await converse({
       system: 'You write terse portfolio bullets for software projects. Reply with only a JSON array of 2 or 3 strings. Each string is one plain-English bullet under 20 words describing what the project does or how it works. No markdown, no emojis, no marketing fluff. Use only facts from the input.',
       messages: [{ role: 'user', content: `Repository: ${repo.name}\nLanguage: ${repo.language ?? 'unknown'}\nDescription: ${repo.description ?? '(none)'}\n\nREADME:\n${await readme(repo)}` }],
       maxTokens: 220,
       temperature: 0.2,
     })
+    if (blocked) throw new Error('blocked by guardrail')
     const bullets = JSON.parse(text.slice(text.indexOf('['), text.lastIndexOf(']') + 1))
     if (!Array.isArray(bullets) || !bullets.every((bullet) => typeof bullet === 'string')) throw new Error('bad shape')
     const clean = bullets.map((bullet) => bullet.trim()).filter(Boolean).slice(0, 3)

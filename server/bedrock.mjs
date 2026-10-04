@@ -5,6 +5,13 @@
 const region = process.env.BEDROCK_REGION ?? 'us-east-1'
 export const modelId = process.env.BEDROCK_MODEL_ID ?? 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
 
+// Bedrock Guardrail from terraform/guardrail.tf: jailbreak and prompt-attack
+// filters, harmful content, secrets and phone numbers, and denied topics.
+const guardrail = {
+  guardrailIdentifier: process.env.BEDROCK_GUARDRAIL_ID ?? 'ta1wl9ipbs1x',
+  guardrailVersion: process.env.BEDROCK_GUARDRAIL_VERSION ?? '2',
+}
+
 export const bedrockConfigured = () => Boolean(process.env.AWS_BEARER_TOKEN_BEDROCK)
 
 export async function converse({ system, messages, maxTokens = 400, temperature = 0.4, timeoutMs = 20_000 }) {
@@ -17,6 +24,7 @@ export async function converse({ system, messages, maxTokens = 400, temperature 
       system: [{ text: system }],
       messages: messages.map((message) => ({ role: message.role, content: [{ text: message.content }] })),
       inferenceConfig: { maxTokens, temperature },
+      guardrailConfig: { ...guardrail, trace: 'disabled' },
     }),
     signal: AbortSignal.timeout(timeoutMs),
   })
@@ -25,5 +33,7 @@ export async function converse({ system, messages, maxTokens = 400, temperature 
     console.error(`bedrock ${response.status}: ${body.message ?? 'unknown error'}`)
     throw Object.assign(new Error(response.status === 429 ? 'the assistant is busy, try again in a moment' : 'the assistant is unavailable right now'), { status: response.status === 429 ? 429 : 502 })
   }
-  return (body.output?.message?.content ?? []).map((part) => part.text ?? '').join('').trim()
+  const text = (body.output?.message?.content ?? []).map((part) => part.text ?? '').join('').trim()
+  if (body.stopReason === 'guardrail_intervened') console.log('guardrail intervened')
+  return { text, blocked: body.stopReason === 'guardrail_intervened' }
 }

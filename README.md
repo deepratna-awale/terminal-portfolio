@@ -44,7 +44,7 @@ State is kept in S3 (`terraform/bootstrap` creates the bucket once).
 
 Anything typed that is not a built-in command goes to `POST /api/chat`, which calls Claude Haiku 4.5 on Amazon Bedrock from the server. The browser never sees credentials.
 
-- Lightsail containers cannot assume IAM roles, so the key belongs to a dedicated IAM user, `terminal-portfolio-bedrock-chat`, created once in the IAM console (the Terraform identity is not allowed to manage users). Attach [`docs/bedrock-chat-policy.json`](docs/bedrock-chat-policy.json) as its only inline policy: it allows `bedrock:InvokeModel` on the Claude Haiku 4.5 inference profile and nothing else.
+- Lightsail containers cannot assume IAM roles, so the key belongs to a dedicated IAM user, `terminal-portfolio-bedrock-chat`, created once in the IAM console (the Terraform identity is not allowed to manage users). Attach [`docs/bedrock-chat-policy.json`](docs/bedrock-chat-policy.json) as its only inline policy: it allows `bedrock:InvokeModel` on the Claude Haiku 4.5 inference profile and `bedrock:ApplyGuardrail` on the portfolio guardrail, and nothing else.
 - Generate a long-term Bedrock API key for that user (IAM console, user, Security credentials, API keys for Amazon Bedrock) and store it straight into the repository secret, so it never lands in Terraform state or chat:
 
   ```bash
@@ -52,5 +52,7 @@ Anything typed that is not a built-in command goes to `POST /api/chat`, which ca
   ```
 
 - The server reads it as `AWS_BEARER_TOKEN_BEDROCK`. Limits: 6 questions/minute and 60/day per visitor, 1,500/day overall (`CHAT_PER_MINUTE`, `CHAT_PER_DAY`, `CHAT_GLOBAL_PER_DAY`).
+
+Every call goes through the Bedrock Guardrail in `terraform/guardrail.tf`: prompt-attack and jailbreak filtering, hate/insult/sexual/violence/misconduct filters, profanity, blocking of card numbers, SINs/SSNs, bank accounts, passwords and AWS keys, masking of phone numbers, and denied topics (financial, medical or legal advice, politics, and confidential Nasdaq/Verafin details or AML evasion). The server pins the guardrail ID and version (`BEDROCK_GUARDRAIL_ID`, `BEDROCK_GUARDRAIL_VERSION`); bump the version in `server/bedrock.mjs` after changing the guardrail, since Terraform publishes a new version on every change.
 
 `GET /api/projects` lists public GitHub repositories and, when Bedrock is configured, summarises each README into bullets. Results are cached for six hours.
