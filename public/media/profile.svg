@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" role="img" aria-labelledby="title desc">
+  <title id="title">Deepratna Awale portfolio profile image</title>
+  <desc id="desc">An abstract terminal window with an agentic AI network diagram.</desc>
+  <rect width="720" height="420" rx="18" fill="#20231f"/>
+  <rect x="24" y="24" width="672" height="372" rx="12" fill="#111210" stroke="#55594d"/>
+  <circle cx="52" cy="53" r="7" fill="#ee6a5f"/><circle cx="76" cy="53" r="7" fill="#f5bd4f"/><circle cx="100" cy="53" r="7" fill="#61c454"/>
+  <path d="M84 168h132M84 168l58-58M216 168l60 72M216 168l82-104M276 240l88-46M298 64l66 130M364 194l104-75M364 194l66 102M468 119l78 80M430 296l116-97" fill="none" stroke="#8ec07c" stroke-width="3" opacity=".8"/>
+  <g fill="#f3b95e"><circle cx="84" cy="168" r="12"/><circle cx="216" cy="168" r="12"/><circle cx="298" cy="64" r="12"/><circle cx="276" cy="240" r="12"/><circle cx="364" cy="194" r="15"/><circle cx="468" cy="119" r="12"/><circle cx="430" cy="296" r="12"/><circle cx="546" cy="199" r="12"/></g>
+  <text x="54" y="350" fill="#d8d6cd" font-family="monospace" font-size="18">deepratna@portfolio % build agents --reliable</text>
+</svg>
