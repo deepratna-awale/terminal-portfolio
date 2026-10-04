@@ -13,6 +13,8 @@ export type NewLine = Omit<Line, 'id'>
 export type ShellContext = {
   path: string
   previousPath: string
+  // Width in characters when the host knows it (the SSH terminal); the browser measures its window.
+  columns?: number
   history: string[]
   theme: ThemeName
   setPath: (path: string) => void
@@ -101,6 +103,7 @@ const train = [
 const escapeMd = (text: string) => text.replace(/([\\`*_[\]<>#|~])/g, '\\$1')
 
 export function openExternal(url: string) {
+  if (typeof window === 'undefined') return
   if (url.startsWith('mailto:')) window.location.href = url
   else window.open(url, '_blank', 'noopener,noreferrer')
 }
@@ -192,9 +195,10 @@ async function contributions(ctx: ShellContext, quiet = false) {
   if (!quiet) ctx.print([muted(`fetching ${linkLabel(profile.github)} contributions ...`)])
   try {
     const data = await fetchContributions()
-    // Phones get the last six months so the graph stays legible without scrolling.
-    const weeks = window.innerWidth < 560 ? 26 : 53
-    ctx.print([{ type: 'ascii', text: renderHeatmap(data.days, weeks) }, muted(`${data.total.toLocaleString()} contributions in the last year${weeks < 53 ? ' (last 6 months shown)' : ''}. Less · ░ ▒ ▓ █ More`)])
+    // Phones get the last six months so the graph stays legible without scrolling;
+    // a terminal gets as many weeks as fit beside the weekday labels.
+    const weeks = ctx.columns ? Math.max(8, Math.min(53, ctx.columns - 5)) : typeof window !== 'undefined' && window.innerWidth < 560 ? 26 : 53
+    ctx.print([{ type: 'ascii', text: renderHeatmap(data.days, weeks) }, muted(`${data.total.toLocaleString()} contributions in the last year${weeks < 53 ? ` (last ${weeks === 26 ? '6 months' : `${weeks} weeks`} shown)` : ''}. Less · ░ ▒ ▓ █ More`)])
   } catch (error) {
     ctx.print([err(`contributions: ${error instanceof Error ? error.message : 'GitHub is unreachable right now'}`)])
   }
@@ -461,7 +465,7 @@ export const commands: Record<string, Command> = {
     const command = args.join(' ') || [...ctx.history].reverse().find((item) => !item.startsWith('share')) || 'help'
     const url = siteUrl(command)
     let copied = false
-    try { await navigator.clipboard.writeText(url); copied = true } catch { /* clipboard blocked */ }
+    try { await globalThis.navigator?.clipboard.writeText(url); copied = Boolean(globalThis.navigator?.clipboard) } catch { /* clipboard blocked */ }
     ctx.print([out(`[${url}](${url})`), muted(copied ? 'copied to clipboard' : 'copy the link above to share it')])
   } },
   ssh: { group: 'Fun', summary: 'connect to a host', hidden: true, run: (_args, ctx) => ctx.print([muted(`You are already connected to ${profile.host}. Run \`reboot\` to replay the login.`), ...(sshHost ? [muted(`For the real thing, from your own terminal: \`ssh ${sshHost}\``)] : [])]) },
