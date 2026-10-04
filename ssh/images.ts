@@ -70,7 +70,16 @@ export function halfBlocks(grid: Grid, depth: ColorDepth): string[] {
   const lines: string[] = []
   for (let y = 0; y < grid.height; y += 2) {
     let line = ''
-    for (let x = 0; x < grid.width; x++) line += fg(pixel(grid, x, y), depth) + bg(pixel(grid, x, Math.min(y + 1, grid.height - 1)), depth) + '▀'
+    let lastTop = ''
+    let lastBottom = ''
+    // Neighbouring cells often share colours; only send the codes that change.
+    for (let x = 0; x < grid.width; x++) {
+      const top = fg(pixel(grid, x, y), depth)
+      const bottom = bg(pixel(grid, x, Math.min(y + 1, grid.height - 1)), depth)
+      line += (top === lastTop ? '' : top) + (bottom === lastBottom ? '' : bottom) + '▀'
+      lastTop = top
+      lastBottom = bottom
+    }
     lines.push(line + RESET)
   }
   return lines
@@ -96,15 +105,21 @@ function kitty(png: Buffer, columns: number): string {
   return chunks.map((chunk, index) => `\x1b_G${index === 0 ? `a=T,f=100,q=2,c=${columns},` : ''}m=${index === chunks.length - 1 ? 0 : 1};${chunk}\x1b\\`).join('')
 }
 
-const iterm = (png: Buffer, columns: number) => `\x1b]1337;File=inline=1;size=${png.length};width=${columns};preserveAspectRatio=1:${png.toString('base64')}\x07`
+// iTerm2 3.5+ takes the image in parts, so no single escape sequence is huge.
+function iterm(png: Buffer, columns: number, multipart: boolean): string {
+  const args = `inline=1;size=${png.length};width=${columns};preserveAspectRatio=1`
+  const data = png.toString('base64')
+  if (!multipart) return `\x1b]1337;File=${args}:${data}\x07`
+  return `\x1b]1337;MultipartFile=${args}\x07${(data.match(/.{1,8192}/g) ?? []).map((part) => `\x1b]1337;FilePart=${part}\x07`).join('')}\x1b]1337;FileEnd\x07`
+}
 
 // Returns the text to write (with \r\n line ends), or null when there is no such image.
-export function renderImage(src: string, mode: ImageMode, columns: number, depth: ColorDepth): string | null {
+export function renderImage(src: string, mode: ImageMode, columns: number, depth: ColorDepth, multipart = false): string | null {
   const asset = assets()[src]
   if (!asset) return null
   const width = Math.max(10, Math.min(columns - 2, mode === 'ascii' ? 100 : 80))
   if (mode === 'kitty') return `${kitty(read(asset.png), width)}\r\n`
-  if (mode === 'iterm') return `${iterm(read(asset.png), width)}\r\n`
+  if (mode === 'iterm') return `${iterm(read(asset.png), width, multipart)}\r\n`
   if (mode === 'sixel') return `${read(asset.sixel).toString('latin1')}\r\n`
   const grid = { width: asset.grid.width, height: asset.grid.height, data: new Uint8Array(read(asset.grid.file)) }
   const lines = mode === 'blocks' ? halfBlocks(scale(grid, width, 2), depth) : ascii(scale(grid, width, 1))
