@@ -423,7 +423,9 @@ extra background. The assistant also reads every visible section, so it answers
 from the same facts the site shows.
 
 **Media.** Replace `public/media/` (résumé, profile and architecture images,
-project thumbnails named `<repository>.jpg`), `public/og.png` (link preview),
+project thumbnails named `<repository>.jpg`), `public/og.png` (link preview,
+rendered from `docs/social/og.html` with `docs/social/render.mjs`, which also
+writes `docs/social/repo-preview.png` for the GitHub social preview),
 `public/apple-touch-icon.png` and `public/media/golden-dark.jpg` (desktop
 background). The favicon, `robots.txt` and `sitemap.xml` are generated from
 ABOUT.md at build time.
