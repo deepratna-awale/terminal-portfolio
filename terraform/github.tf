@@ -22,7 +22,7 @@ data "aws_iam_policy_document" "github_assume" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/main"]
+      values   = [for prefix in var.github_oidc_subject_prefixes : "${prefix}:ref:refs/heads/main"]
     }
   }
 }

@@ -25,11 +25,14 @@ variable "domain_name" {
 variable "attach_custom_domain" {
   type        = bool
   description = "Attach the domain and certificate to the container service. Leave false until the certificate shows ISSUED (needs GoDaddy nameservers pointed at Lightsail DNS first)."
-  default     = false
+  default     = true
 }
 
-variable "github_repository" {
-  type        = string
-  description = "owner/name of the GitHub repository allowed to deploy via OIDC."
-  default     = "deepratna-awale/terminal-portfolio"
+variable "github_oidc_subject_prefixes" {
+  type        = list(string)
+  description = "Accepted OIDC subject prefixes. The repo uses GitHub's immutable subject format (owner@id/repo@id); the name-based form is kept as a fallback."
+  default = [
+    "repo:deepratna-awale@48187232/terminal-portfolio@1372160544",
+    "repo:deepratna-awale/terminal-portfolio",
+  ]
 }

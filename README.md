@@ -37,5 +37,5 @@ State is kept in S3 (`terraform/bootstrap` creates the bucket once).
 2. `cd terraform && terraform init && terraform apply` creates the stack with the domain not yet attached.
 3. Run the command from the `nameservers_command` output and set those nameservers on the domain at GoDaddy.
 4. Wait until `aws lightsail get-certificates --certificate-name terminal-portfolio-cert --query 'certificates[0].certificateDetail.status'` shows `ISSUED`.
-5. `terraform apply -var attach_custom_domain=true` attaches the domain and creates the apex/`www` records (then set the variable's default to `true`).
+5. Set `attach_custom_domain` to `true` (the default now) and `terraform apply` to attach the domain and create the apex/`www` records.
 6. Set the GitHub repository variable `DEPLOY_ENABLED=true`. Every push to `main` now builds, pushes and deploys.
