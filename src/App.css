@@ -59,7 +59,7 @@
 /* Prompt */
 .input-row { display: flex; flex-wrap: wrap; align-items: baseline; min-height: 25px; margin-top: 8px; }
 .input-row.hidden-row { visibility: hidden; height: 0; min-height: 0; margin: 0; overflow: hidden; }
-.prompt { flex: none; padding-right: .6ch; } .prompt-user { color: var(--success); } .prompt-path { color: var(--link); } .prompt-symbol { color: var(--accent); }
+.prompt { flex: none; padding-right: .6ch; } .prompt-question { color: var(--accent); } .prompt-user { color: var(--success); } .prompt-path { color: var(--link); } .prompt-symbol { color: var(--accent); }
 .search-prompt { color: var(--muted); } .search-query { color: var(--accent); }
 .input-shell { position: relative; flex: 1; min-width: 12ch; }
 .line-render { display: block; min-height: 1.6em; color: var(--fg); white-space: pre-wrap; word-break: break-all; pointer-events: none; }

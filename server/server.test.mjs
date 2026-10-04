@@ -15,15 +15,28 @@ describe('s3 signing', () => {
 })
 
 describe('guestbook', () => {
-  it('strips control and bidi characters and defangs links', () => {
-    expect(clean('hi‮ there\n\nsee https://spam.example', 280)).toBe('hi there see [link removed]')
+  it('strips HTML, control and bidi characters', () => {
+    expect(clean('hi‮ <b>there</b>\n\nfriend')).toBe('hi there friend')
   })
 
   it('validates entries', () => {
     expect(validate({ message: 'x' }).error).toBeTruthy()
-    expect(validate({ message: 'a'.repeat(281) }).error).toContain('280')
+    expect(validate({ message: 'a b '.repeat(80) }).error).toContain('280')
     expect(validate({ message: 'hello', website: 'bot' }).entry).toBeUndefined()
     expect(validate({ name: '', message: 'hello there' }).entry).toMatchObject({ name: 'guest', message: 'hello there' })
+    expect(validate({ name: 'Zoë O\'Brien-Ng', message: 'Great site!' }).entry).toMatchObject({ name: 'Zoë O\'Brien-Ng' })
+  })
+
+  it('rejects personal details, links and spam', () => {
+    expect(validate({ message: 'see https://spam.example' }).error).toMatch(/links/)
+    expect(validate({ message: 'buy at cheap-pills.com' }).error).toMatch(/links/)
+    expect(validate({ message: 'mail me at a.b@example.org' }).error).toMatch(/email/)
+    expect(validate({ message: 'call +1 (709) 555-0199' }).error).toMatch(/phone/)
+    expect(validate({ name: 'x'.repeat(40), message: 'hi there' }).error).toMatch(/name/)
+    expect(validate({ name: '<b>Ada</b>', message: 'hi there' }).entry).toMatchObject({ name: 'Ada' })
+    expect(validate({ name: 'Ada; DROP', message: 'hi there' }).error).toMatch(/names/)
+    expect(validate({ message: 'woooooooooooooow' }).error).toMatch(/spam/)
+    expect(validate({ message: 'Loved it, met you in 2025 at AWS Summit St. John\'s' }).entry).toBeTruthy()
   })
 })
 

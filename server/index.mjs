@@ -4,9 +4,9 @@ import { createServer } from 'node:http'
 import { extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { about, assistantRules, knowledge, profile } from './about.mjs'
-import { converse } from './bedrock.mjs'
+import { bedrockConfigured, converse, guardrailBlocks } from './bedrock.mjs'
 import { getContributions } from './contributions.mjs'
-import { addEntry, listEntries, validate } from './guestbook.mjs'
+import { addEntry, isDuplicate, listEntries, validate } from './guestbook.mjs'
 import { getProjects, projectDigest } from './projects.mjs'
 import { clientIp, createLimiter } from './rateLimit.mjs'
 
@@ -110,6 +110,14 @@ async function handleChat(request, response) {
   }
 }
 
+// Every note passes the Bedrock Guardrail (hate, insults, sexual content,
+// profanity, prompt attacks, secrets and addresses). Production fails closed;
+// local development without Bedrock skips the check.
+async function screenNote(entry) {
+  if (!bedrockConfigured() && process.env.NODE_ENV !== 'production') return false
+  return guardrailBlocks(`${entry.name}: ${entry.message}`)
+}
+
 async function handleGuestbook(request, response) {
   if (request.method === 'GET') {
     try { return sendJson(response, 200, await listEntries()) } catch (error) { console.error(`guestbook read failed: ${error.message}`); return sendJson(response, 503, { error: 'the guestbook is unavailable right now' }) }
@@ -118,11 +126,14 @@ async function handleGuestbook(request, response) {
   const origin = request.headers.origin
   if (origin && !allowedOrigins.has(origin)) return sendJson(response, 403, { error: 'origin not allowed' })
   if (!/^application\/json\b/.test(request.headers['content-type'] ?? '')) return sendJson(response, 415, { error: 'send JSON' })
-  const limit = guestbookLimit(clientIp(request))
-  if (!limit.ok) return sendJson(response, 429, { error: limit.reason }, { 'Retry-After': String(limit.retryAfter) })
   try {
+    // Cheap local checks first, so a typo doesn't use up the visitor's quota.
     const { entry, error } = validate(await readJson(request, 2048))
     if (error) return sendJson(response, 400, { error })
+    const limit = guestbookLimit(clientIp(request))
+    if (!limit.ok) return sendJson(response, 429, { error: limit.reason }, { 'Retry-After': String(limit.retryAfter) })
+    if (await isDuplicate(entry.message)) return sendJson(response, 400, { error: 'someone already left that exact note' })
+    if (await screenNote(entry)) return sendJson(response, 400, { error: "sorry, that note can't be posted. Keep it friendly and leave out personal details." })
     sendJson(response, 201, await addEntry(entry))
   } catch (error) {
     if (error.status) return sendJson(response, error.status, { error: error.message })
