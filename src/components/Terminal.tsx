@@ -21,6 +21,8 @@ const HISTORY_KEY = 'portfolio.history'
 const noteKeys = browserNoteKeys()
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+// Module scope, not a ref: closing and reopening the terminal remounts it, and the deep link must not run again.
+let deepLinkDone = false
 
 function loadHistory(): string[] {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]') as string[] } catch { return [] }
@@ -74,7 +76,6 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
   const mobile = useMobile()
   const [ctrlArmed, setCtrlArmed] = useState(false)
   const touch = useRef<{ x: number; y: number } | null>(null)
-  const deepLinkDone = useRef(false)
   useEffect(() => { historyRef.current = history }, [history])
   useEffect(() => {
     suspendedRef.current = suspended
@@ -172,7 +173,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
   const boot = useCallback(async () => {
     const runId = ++bootRun.current
     // A deep link skips the login animation, once per page load.
-    const initial = deepLinkDone.current ? null : initialCommand(window.location)
+    const initial = deepLinkDone ? null : initialCommand(window.location)
     skipBoot.current = reducedMotion() || Boolean(initial)
     // Yield once so a boot cancelled straight away (StrictMode remount) stops here.
     await sleep(0)
@@ -197,7 +198,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
     if (runId !== bootRun.current) return
     setBooting(false)
     onStatus('')
-    if (initial) { deepLinkDone.current = true; run(initial) }
+    if (initial) { deepLinkDone = true; run(initial) }
   }, [onStatus, print, run, theme, updateLine])
 
   useEffect(() => {

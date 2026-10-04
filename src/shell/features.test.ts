@@ -65,6 +65,15 @@ describe('deep links', () => {
     expect(initialCommand({ search: '', pathname: '/gui' })).toBeNull()
     expect(initialCommand({ search: '', pathname: '/rm' })).toBeNull()
   })
+
+  it('never replays commands with side effects from the URL', () => {
+    expect(initialCommand({ search: '?cmd=open%20open-wallpaper-engine-mac', pathname: '/' })).toBeNull()
+    expect(initialCommand({ search: '?cmd=resume', pathname: '/' })).toBeNull()
+    expect(initialCommand({ search: '?cmd=projects%20%26%26%20email', pathname: '/' })).toBeNull()
+    expect(initialCommand({ search: '?cmd=matrix', pathname: '/' })).toBeNull()
+    expect(initialCommand({ search: '', pathname: '/open' })).toBeNull()
+    expect(initialCommand({ search: '?cmd=cat%20about.md', pathname: '/' })).toBe('cat about.md')
+  })
 })
 
 describe('heatmap', () => {
