@@ -44,11 +44,11 @@ State is kept in S3 (`terraform/bootstrap` creates the bucket once).
 
 Anything typed that is not a built-in command goes to `POST /api/chat`, which calls Claude Haiku 4.5 on Amazon Bedrock from the server. The browser never sees credentials.
 
-- `terraform/bedrock.tf` creates the IAM user `terminal-portfolio-bedrock-chat`, allowed only `bedrock:InvokeModel` on the `us.anthropic.claude-haiku-4-5` inference profile (plus `bedrock:CallWithBearerToken`).
-- Create its Bedrock API key outside Terraform so the secret never lands in state, then store it as the `BEDROCK_API_KEY` repository secret:
+- Lightsail containers cannot assume IAM roles, so the key belongs to a dedicated IAM user, `terminal-portfolio-bedrock-chat`, created once in the IAM console (the Terraform identity is not allowed to manage users). Attach [`docs/bedrock-chat-policy.json`](docs/bedrock-chat-policy.json) as its only inline policy: it allows `bedrock:InvokeModel` on the Claude Haiku 4.5 inference profile and nothing else.
+- Generate a long-term Bedrock API key for that user (IAM console, user, Security credentials, API keys for Amazon Bedrock) and store it straight into the repository secret, so it never lands in Terraform state or chat:
 
   ```bash
-  aws iam create-service-specific-credential --user-name terminal-portfolio-bedrock-chat --service-name bedrock.amazonaws.com --query 'ServiceSpecificCredential.ServiceApiKeyValue' --output text | gh secret set BEDROCK_API_KEY
+  gh secret set BEDROCK_API_KEY -R deepratna-awale/terminal-portfolio
   ```
 
 - The server reads it as `AWS_BEARER_TOKEN_BEDROCK`. Limits: 6 questions/minute and 60/day per visitor, 1,500/day overall (`CHAT_PER_MINUTE`, `CHAT_PER_DAY`, `CHAT_GLOBAL_PER_DAY`).
