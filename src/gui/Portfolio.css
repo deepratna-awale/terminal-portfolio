@@ -200,6 +200,9 @@ html:has(.pf-standalone) { scroll-behavior: smooth; }
 .pf-entry-message { color: var(--text); font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .pf-entry-meta { margin-top: 6px; color: var(--muted); font: 12px var(--mono-f); }
 .pf-entry-meta span { color: var(--accent); }
+.pf-entry-delete { padding: 0; border: 0; color: var(--muted); background: none; font: inherit; text-decoration: underline; cursor: pointer; }
+.pf-entry-delete:hover { color: var(--text); }
+.pf-entry-delete:disabled { cursor: wait; }
 
 /* Contact and footer */
 .pf-contact { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 28px; padding: 32px; background: linear-gradient(135deg, var(--accent-soft), transparent 60%), var(--surface); }

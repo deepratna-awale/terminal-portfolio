@@ -51,7 +51,9 @@ export async function askAssistant(messages: ChatTurn[], signal?: AbortSignal): 
   return (JSON.parse(body) as { reply: string }).reply
 }
 
-export type GuestbookEntry = { name: string; message: string; at: string }
+export type GuestbookEntry = { id?: string; name: string; message: string; at: string }
+// A new note comes back with its delete key, which the server never shows again.
+export type SignedEntry = GuestbookEntry & { key: string }
 export type Contributions = { total: number; days: Array<{ date: string; level: number; count: number }> }
 
 async function jsonOrThrow<T>(response: Response): Promise<T> {
@@ -70,8 +72,12 @@ export async function fetchGuestbook(): Promise<GuestbookEntry[]> {
   return jsonOrThrow<GuestbookEntry[]>(await fetch('/api/guestbook'))
 }
 
-export async function signGuestbook(name: string, message: string): Promise<GuestbookEntry> {
-  return jsonOrThrow<GuestbookEntry>(await fetch('/api/guestbook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, message }) }))
+export async function signGuestbook(name: string, message: string): Promise<SignedEntry> {
+  return jsonOrThrow<SignedEntry>(await fetch('/api/guestbook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, message }) }))
+}
+
+export async function deleteGuestbookNote(key: string): Promise<void> {
+  await jsonOrThrow<unknown>(await fetch('/api/guestbook', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) }))
 }
 
 export type Activity = { repo?: string; url?: string; action?: string; at?: string }

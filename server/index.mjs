@@ -7,7 +7,7 @@ import { about, assistantRules, knowledge, profile } from './about.mjs'
 import { bedrockConfigured, converse, guardrailVerdict } from './bedrock.mjs'
 import { getActivity } from './activity.mjs'
 import { getContributions } from './contributions.mjs'
-import { addEntry, isDuplicate, listEntries, validate } from './guestbook.mjs'
+import { addEntry, deleteEntry, isDuplicate, listEntries, validate } from './guestbook.mjs'
 import { getProjects, projectDigest } from './projects.mjs'
 import { clientIp, createLimiter } from './rateLimit.mjs'
 
@@ -28,6 +28,7 @@ const guestbookLimit = createLimiter({
   globalPerDay: Number(process.env.GUESTBOOK_GLOBAL_PER_DAY ?? 300),
   messages: { global: 'the guestbook is full for today', day: "you've signed the guestbook enough for today, thank you", minute: 'one note a minute, please' },
 })
+const deleteLimit = createLimiter({ perMinute: 10, perDay: 100, globalPerDay: 5000, messages: { global: 'the guestbook is busy today', day: "that's enough deletes for today", minute: 'too many tries, slow down a little' } })
 const screenLimit = createLimiter({ perMinute: 6, perDay: 40, globalPerDay: 2000, messages: { global: 'the guestbook is busy today', day: "that's enough tries for today", minute: 'too many tries, slow down a little' } })
 const mimeTypes = { '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.pdf': 'application/pdf', '.txt': 'text/plain', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json' }
 const securityHeaders = {
@@ -131,10 +132,11 @@ async function handleGuestbook(request, response) {
   if (request.method === 'GET') {
     try { return sendJson(response, 200, await listEntries()) } catch (error) { console.error(`guestbook read failed: ${error.message}`); return sendJson(response, 503, { error: 'the guestbook is unavailable right now' }) }
   }
-  if (request.method !== 'POST') return send(response, 405, 'method not allowed', 'text/plain', { Allow: 'GET, POST' })
+  if (request.method !== 'POST' && request.method !== 'DELETE') return send(response, 405, 'method not allowed', 'text/plain', { Allow: 'GET, POST, DELETE' })
   const origin = request.headers.origin
   if (origin && !allowedOrigins.has(origin)) return sendJson(response, 403, { error: 'origin not allowed' })
   if (!/^application\/json\b/.test(request.headers['content-type'] ?? '')) return sendJson(response, 415, { error: 'send JSON' })
+  if (request.method === 'DELETE') return removeNote(request, response)
   try {
     // Cheap local checks first, so a typo doesn't use up the visitor's quota.
     const { entry, error } = validate(await readJson(request, 2048))
@@ -154,6 +156,21 @@ async function handleGuestbook(request, response) {
   } catch (error) {
     if (error.status) return sendJson(response, error.status, { error: error.message })
     console.error(`guestbook write failed: ${error.message}`)
+    sendJson(response, 503, { error: 'the guestbook is unavailable right now' })
+  }
+}
+
+// Authors remove their own note with the delete key they got when posting it.
+async function removeNote(request, response) {
+  const limit = deleteLimit(clientIp(request))
+  if (!limit.ok) return sendJson(response, 429, { error: `${limit.reason}: try again ${waitText(limit.retryAfter)}` }, { 'Retry-After': String(limit.retryAfter) })
+  try {
+    const body = await readJson(request, 512)
+    if (!(await deleteEntry(body?.key))) return sendJson(response, 404, { error: 'no note matches that delete key' })
+    sendJson(response, 200, { deleted: true })
+  } catch (error) {
+    if (error.status) return sendJson(response, error.status, { error: error.message })
+    console.error(`guestbook delete failed: ${error.message}`)
     sendJson(response, 503, { error: 'the guestbook is unavailable right now' })
   }
 }
