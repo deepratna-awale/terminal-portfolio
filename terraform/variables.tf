@@ -36,3 +36,15 @@ variable "github_oidc_subject_prefixes" {
     "repo:deepratna-awale/terminal-portfolio",
   ]
 }
+
+variable "bedrock_model_id" {
+  type        = string
+  description = "Cross-region inference profile the portfolio assistant may invoke."
+  default     = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+}
+
+variable "bedrock_model_regions" {
+  type        = list(string)
+  description = "Regions the US inference profile routes to."
+  default     = ["us-east-1", "us-east-2", "us-west-2"]
+}

@@ -36,3 +36,4 @@ dist-ssr
 !*.tfvars.example
 crash.log
 tfplan
+.DS_Store

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" font-family="'JetBrains Mono',Menlo,Consolas,monospace">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#39ff88"/></marker>
+    <style>
+      .box{fill:#07120b;stroke:#39ff88;stroke-width:1.5;rx:10}
+      .aws{fill:none;stroke:#f3b95e;stroke-width:1.5;stroke-dasharray:6 5}
+      .t{fill:#c8f7c5;font-size:15px;font-weight:700}
+      .s{fill:#6fa77a;font-size:12px}
+      .l{fill:#9dffb0;font-size:11px}
+      .a{fill:#f3b95e;font-size:13px;font-weight:700}
+      .e{stroke:#39ff88;stroke-width:1.5;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="960" height="520" fill="#030806"/>
+  <text x="30" y="40" class="t" font-size="18">deepratna-awale.dev : how this terminal works</text>
+
+  <rect x="30" y="200" width="170" height="90" class="box"/>
+  <text x="115" y="238" text-anchor="middle" class="t">Browser</text>
+  <text x="115" y="258" text-anchor="middle" class="s">React 19 + Vite</text>
+  <text x="115" y="274" text-anchor="middle" class="s">zsh-style shell</text>
+
+  <rect x="260" y="70" width="670" height="420" class="aws" rx="14"/>
+  <text x="280" y="96" class="a">AWS  us-east-1  (Terraform)</text>
+
+  <rect x="290" y="130" width="170" height="70" class="box"/>
+  <text x="375" y="162" text-anchor="middle" class="t">Lightsail DNS</text>
+  <text x="375" y="182" text-anchor="middle" class="s">+ TLS certificate</text>
+
+  <rect x="290" y="250" width="240" height="120" class="box"/>
+  <text x="410" y="282" text-anchor="middle" class="t">Lightsail container</text>
+  <text x="410" y="302" text-anchor="middle" class="s">Node server (nano)</text>
+  <text x="410" y="322" text-anchor="middle" class="s">static app + /api/*</text>
+  <text x="410" y="342" text-anchor="middle" class="s">rate limits, caching</text>
+
+  <rect x="620" y="130" width="280" height="90" class="box"/>
+  <text x="760" y="162" text-anchor="middle" class="t">Amazon Bedrock</text>
+  <text x="760" y="182" text-anchor="middle" class="s">Claude Haiku 4.5</text>
+  <text x="760" y="200" text-anchor="middle" class="s">least-privilege, one model</text>
+
+  <rect x="620" y="260" width="280" height="70" class="box"/>
+  <text x="760" y="292" text-anchor="middle" class="t">GitHub REST API</text>
+  <text x="760" y="312" text-anchor="middle" class="s">public repos, READMEs</text>
+
+  <rect x="290" y="400" width="240" height="70" class="box"/>
+  <text x="410" y="430" text-anchor="middle" class="t">ECR</text>
+  <text x="410" y="450" text-anchor="middle" class="s">container images</text>
+
+  <rect x="620" y="400" width="280" height="70" class="box"/>
+  <text x="760" y="430" text-anchor="middle" class="t">GitHub Actions</text>
+  <text x="760" y="450" text-anchor="middle" class="s">OIDC deploy on merge</text>
+
+  <path d="M200 230 C240 200 260 170 288 165" class="e"/>
+  <text x="206" y="196" class="l">DNS</text>
+  <path d="M200 265 L288 300" class="e"/>
+  <text x="212" y="300" class="l">HTTPS</text>
+  <path d="M530 280 C570 250 590 190 618 178" class="e"/>
+  <text x="540" y="226" class="l">/api/chat</text>
+  <path d="M530 300 L618 295" class="e"/>
+  <text x="545" y="290" class="l">/api/projects</text>
+  <path d="M410 398 L410 372" class="e"/>
+  <text x="418" y="390" class="l">pull</text>
+  <path d="M618 435 L532 435" class="e"/>
+  <text x="550" y="428" class="l">push</text>
+  <path d="M760 398 C700 380 600 360 532 345" class="e"/>
+  <text x="640" y="372" class="l">deploy</text>
+</svg>

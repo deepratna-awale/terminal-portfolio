@@ -39,3 +39,18 @@ State is kept in S3 (`terraform/bootstrap` creates the bucket once).
 4. Wait until `aws lightsail get-certificates --certificate-name terminal-portfolio-cert --query 'certificates[0].certificateDetail.status'` shows `ISSUED`.
 5. Set `attach_custom_domain` to `true` (the default now) and `terraform apply` to attach the domain and create the apex/`www` records.
 6. Set the GitHub repository variable `DEPLOY_ENABLED=true`. Every push to `main` now builds, pushes and deploys.
+
+## Portfolio assistant (Bedrock)
+
+Anything typed that is not a built-in command goes to `POST /api/chat`, which calls Claude Haiku 4.5 on Amazon Bedrock from the server. The browser never sees credentials.
+
+- `terraform/bedrock.tf` creates the IAM user `terminal-portfolio-bedrock-chat`, allowed only `bedrock:InvokeModel` on the `us.anthropic.claude-haiku-4-5` inference profile (plus `bedrock:CallWithBearerToken`).
+- Create its Bedrock API key outside Terraform so the secret never lands in state, then store it as the `BEDROCK_API_KEY` repository secret:
+
+  ```bash
+  aws iam create-service-specific-credential --user-name terminal-portfolio-bedrock-chat --service-name bedrock.amazonaws.com --query 'ServiceSpecificCredential.ServiceApiKeyValue' --output text | gh secret set BEDROCK_API_KEY
+  ```
+
+- The server reads it as `AWS_BEARER_TOKEN_BEDROCK`. Limits: 6 questions/minute and 60/day per visitor, 1,500/day overall (`CHAT_PER_MINUTE`, `CHAT_PER_DAY`, `CHAT_GLOBAL_PER_DAY`).
+
+`GET /api/projects` lists public GitHub repositories and, when Bedrock is configured, summarises each README into bullets. Results are cached for six hours.
