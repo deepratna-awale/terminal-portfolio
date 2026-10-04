@@ -1,5 +1,5 @@
 import type { Project } from '../api'
-import { fetchContributions, fetchCowthink, fetchFortune, fetchGuestbook, signGuestbook } from '../api'
+import { fetchActivity, fetchContributions, fetchCowthink, fetchFortune, fetchGuestbook, signGuestbook } from '../api'
 import { exampleQuestion, linkLabel, links, liveSections, mediaFiles, neofetchRows, nowItems, os, profile, sectionList, sections } from '../content'
 import { isThemeName, themeNames, themes, type ThemeName } from '../themes'
 import { renderHeatmap } from './heatmap'
@@ -192,14 +192,19 @@ async function contributions(ctx: ShellContext, quiet = false) {
   if (!quiet) ctx.print([muted(`fetching ${linkLabel(profile.github)} contributions ...`)])
   try {
     const data = await fetchContributions()
-    ctx.print([{ type: 'ascii', text: renderHeatmap(data.days) }, muted(`${data.total.toLocaleString()} contributions in the last year. Less · ░ ▒ ▓ █ More`)])
+    // Phones get the last six months so the graph stays legible without scrolling.
+    const weeks = window.innerWidth < 560 ? 26 : 53
+    ctx.print([{ type: 'ascii', text: renderHeatmap(data.days, weeks) }, muted(`${data.total.toLocaleString()} contributions in the last year${weeks < 53 ? ' (last 6 months shown)' : ''}. Less · ░ ▒ ▓ █ More`)])
   } catch (error) {
     ctx.print([err(`contributions: ${error instanceof Error ? error.message : 'GitHub is unreachable right now'}`)])
   }
 }
 
 async function now(ctx: ShellContext) {
-  ctx.print([{ type: 'success', text: `What I'm doing now (updated ${nowItems.updated})` }, out(nowItems.items.map((item) => `- ${item}`).join('\n'))])
+  // The last bullet is live: the public repository I most recently contributed to.
+  const activity = await fetchActivity().catch(() => null)
+  const live = activity?.repo ? [`Recently contributing to [${activity.repo}](${activity.url})${activity.at ? ` *(${relative(activity.at)})*` : ''}`] : []
+  ctx.print([{ type: 'success', text: `What I'm doing now (updated ${nowItems.updated})` }, out([...nowItems.items, ...live].map((item) => `- ${item}`).join('\n'))])
   try {
     const recent = [...await ctx.projects()].sort((a, b) => Date.parse(b.pushedAt) - Date.parse(a.pushedAt)).slice(0, 3)
     if (recent.length) ctx.print([out(`**Recently pushed**\n${recent.map((project) => `- ${cmd(project.name, `cat projects/${project.name}`)}  *${relative(project.pushedAt)}*`).join('\n')}`)])

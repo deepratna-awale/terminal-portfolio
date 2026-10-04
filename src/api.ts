@@ -73,3 +73,9 @@ export async function fetchGuestbook(): Promise<GuestbookEntry[]> {
 export async function signGuestbook(name: string, message: string): Promise<GuestbookEntry> {
   return jsonOrThrow<GuestbookEntry>(await fetch('/api/guestbook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, message }) }))
 }
+
+export type Activity = { repo?: string; url?: string; action?: string; at?: string }
+
+export async function fetchActivity(): Promise<Activity> {
+  return jsonOrThrow<Activity>(await fetch('/api/activity'))
+}

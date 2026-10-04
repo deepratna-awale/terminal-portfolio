@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { latestContribution } from './activity.mjs'
 import { parseContributions } from './contributions.mjs'
 import { clean, validate } from './guestbook.mjs'
 import { signRequest } from './s3.mjs'
@@ -57,5 +58,17 @@ describe('client keys', () => {
     expect(clientKey('2001:db8:aa:1::1')).toBe('2001:db8:aa:1::/64')
     expect(clientKey('2001:0db8:00aa:0001:ffff:1:2:3')).toBe('2001:db8:aa:1::/64')
     expect(clientKey('2001:db8::5')).toBe('2001:db8:0:0::/64')
+  })
+})
+
+describe('recent activity', () => {
+  it('picks the latest contribution and skips noise', () => {
+    const events = [
+      { type: 'WatchEvent', repo: { name: 'someone/starred' }, created_at: '2026-10-04T12:00:00Z' },
+      { type: 'PushEvent', repo: { name: 'deepratna-awale/terminal-portfolio' }, created_at: '2026-10-04T11:00:00Z' },
+    ]
+    expect(latestContribution(events)).toEqual({ repo: 'deepratna-awale/terminal-portfolio', url: 'https://github.com/deepratna-awale/terminal-portfolio', action: 'pushed to', at: '2026-10-04T11:00:00Z' })
+    expect(latestContribution([])).toBeNull()
+    expect(latestContribution({ message: 'rate limited' })).toBeNull()
   })
 })

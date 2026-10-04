@@ -143,6 +143,13 @@ on phones and touch screens, where windows are full screen. Title bar buttons,
 inputs, links and tabs (or anything with `data-no-drag`) keep their clicks.
 Give the window `TrafficLights` for macOS controls.
 
+**Add a skill logo.** Skill pills look up their logo by name in
+`src/data/tech-icons.json` (titles and aliases, then simple-icons slug rules)
+and fall back to a letter. 68 common logos from simple-icons (CC0) ship in
+`public/icons/tech/`. For a new one, drop `<slug>.svg` there and add an entry
+with its `title`, brand `color` (or `null` to use the text colour) and the
+`names` it should match.
+
 **Add a built-in command.** Add an entry to `commands` in
 `src/shell/commands.ts` (`group`, `summary`, optional `usage`/`hidden`,
 `run`). It appears in `help` and completion automatically. Add a test in

@@ -5,6 +5,7 @@ import { extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { about, assistantRules, knowledge, profile } from './about.mjs'
 import { bedrockConfigured, converse, guardrailBlocks } from './bedrock.mjs'
+import { getActivity } from './activity.mjs'
 import { getContributions } from './contributions.mjs'
 import { addEntry, isDuplicate, listEntries, validate } from './guestbook.mjs'
 import { getProjects, projectDigest } from './projects.mjs'
@@ -224,6 +225,7 @@ createServer((request, response) => {
   if (pathname === '/api/chat') return request.method === 'POST' ? handleChat(request, response) : send(response, 405, 'method not allowed', 'text/plain', { Allow: 'POST' })
   if (pathname === '/api/projects' && request.method === 'GET') return handleProjects(response)
   if (pathname === '/api/contributions' && request.method === 'GET') return handleContributions(response)
+  if (pathname === '/api/activity' && request.method === 'GET') return getActivity().then((value) => sendJson(response, 200, value ?? {}, { 'Cache-Control': 'public, max-age=600' }), (error) => { console.error(`activity failed: ${error.message}`); sendJson(response, 502, { error: 'GitHub is unreachable right now' }) })
   if (pathname === '/api/guestbook') return handleGuestbook(request, response)
   if ((pathname === '/gui' || pathname === '/gui/') && (request.method === 'GET' || request.method === 'HEAD')) return handleGui(response)
   if (pathname === '/api/fortune' && request.method === 'GET') return runGame(request, response, 'fortune', ['-s'])

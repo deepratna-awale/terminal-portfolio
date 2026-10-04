@@ -1,0 +1,5 @@
+/* The SVG is a mask, so the logo takes its brand colour (or the text colour
+   when the brand colour is too dark to read on a dark theme). */
+.tech-icon { display: inline-block; flex: none; width: 1.05em; height: 1.05em; margin-right: .45em; vertical-align: -.15em; background: var(--tech-color, currentColor); -webkit-mask: var(--tech-icon) center / contain no-repeat; mask: var(--tech-icon) center / contain no-repeat; }
+/* Unknown names: a small letter tile in the text colour. */
+.tech-icon-fallback { display: inline-grid; place-items: center; border-radius: 3px; background: color-mix(in srgb, currentColor 18%, transparent); -webkit-mask: none; mask: none; font-size: .68em; font-weight: 700; line-height: 1; }
