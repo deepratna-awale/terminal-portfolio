@@ -61,8 +61,10 @@
 .cb-omnibox input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: 0; color: var(--cb-text); background: transparent; font: 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 .cb-omnibox input::placeholder { color: var(--cb-text-2); opacity: .8; }
 .cb .cb-omnibox input:focus-visible { outline: 0; }
-.cb-star { flex: none; color: var(--cb-icon); opacity: .8; }
-.cb-avatar { flex: none; width: 26px; height: 26px; margin: 0 4px; display: grid; place-items: center; border-radius: 50%; color: #e8eaed; background: #5f6368; }
+.cb-star { flex: none; width: 28px; height: 28px; margin-right: -6px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; color: var(--cb-icon); background: transparent; opacity: .8; cursor: pointer; }
+.cb-star:hover { opacity: 1; background: var(--cb-hover); }
+.cb-star.on { color: var(--cb-accent); opacity: 1; }
+.cb-avatar { flex: none; width: 26px; height: 26px; margin: 0 4px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; color: #e8eaed !important; background: #5f6368; cursor: pointer; }
 .cb-menu-wrap { position: relative; }
 .cb-menu { position: absolute; z-index: 5; top: 38px; right: 0; min-width: 240px; padding: 6px 0; border-radius: 10px; background: var(--cb-menu); box-shadow: 0 8px 28px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.08); }
 .cb-menu button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px 16px; border: 0; background: transparent; text-align: left; cursor: pointer; font-size: 13.5px; }
@@ -72,8 +74,8 @@
 .cb-progress { position: relative; z-index: 3; height: 2px; margin-top: -2px; overflow: hidden; }
 .cb-progress::after { content: ''; position: absolute; inset: 0; width: 40%; background: var(--cb-accent); animation: cb-progress .9s ease-in-out infinite; }
 
-/* Page area */
-.cb-viewports { position: relative; flex: 1; min-height: 0; background: var(--cb-page); }
+/* Page area. Its own stacking context, so a sticky page header can't cover the toolbar menu. */
+.cb-viewports { position: relative; z-index: 0; isolation: isolate; flex: 1; min-height: 0; background: var(--cb-page); }
 .cb-viewport { position: absolute; inset: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .cb-viewport[hidden] { display: block; visibility: hidden; pointer-events: none; }
 .cb-toast { position: absolute; z-index: 10; bottom: 18px; left: 50%; max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 8px; color: #fff; background: rgba(32,33,36,.94); box-shadow: 0 8px 24px rgba(0,0,0,.3); transform: translateX(-50%); font-size: 13px; animation: cb-toast 2.4s ease both; pointer-events: none; }
@@ -94,11 +96,36 @@
 .cb-tile-icon:not(.image) { font-family: ui-monospace, monospace; font-size: 13px; }
 .cb-tile-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
 
+/* chrome:// pages */
+.cb-chrome { min-height: 100%; padding: 48px max(24px, 8%); color: var(--cb-text); background: var(--cb-page); font-size: 14px; line-height: 1.5; }
+.cb-chrome h1 { display: flex; align-items: center; gap: 12px; margin: 0 0 20px; font-size: 22px; font-weight: 500; }
+.cb-chrome h2 { margin: 28px 0 8px; font-size: 16px; font-weight: 500; }
+.cb-chrome a { color: var(--cb-accent); }
+.cb-chrome code { padding: 1px 6px; border-radius: 4px; background: var(--cb-omni); font: 13px ui-monospace, monospace; }
+.cb-version table { border-collapse: collapse; }
+.cb-version th { padding: 4px 24px 4px 0; vertical-align: top; text-align: left; white-space: nowrap; font-weight: 600; }
+.cb-version td { padding: 4px 0; overflow-wrap: anywhere; font-family: ui-monospace, monospace; font-size: 13px; }
+.cb-urls ul { margin: 0; padding-left: 20px; }
+.cb-urls li { margin: 4px 0; }
+.cb-dino { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; color: var(--cb-text-2); outline: 0; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.cb .cb-dino:focus-visible { outline: 0; }
+.cb-dino canvas { width: min(600px, 100%); height: auto; image-rendering: pixelated; }
+.cb-dino p { margin: 0; font-size: 13px; }
+.cb-incognito { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #e3e3e3; background: #202124; }
+.cb-incognito p { max-width: 520px; margin: 0 0 12px; color: #bdc1c6; }
+.cb-incognito a { color: #8ab4f8; }
+.cb-private { --cb-frame: #202124; --cb-tab: #35363a; --cb-tab-hover: rgba(255,255,255,.06); --cb-toolbar: #35363a; --cb-omni: #202124; --cb-omni-focus: #202124; --cb-text: #e3e3e3; --cb-text-2: #c7c7c7; --cb-icon: #c7c7c7; --cb-hover: rgba(255,255,255,.1); --cb-line: #2b2b2b; --cb-accent: #8ab4f8; --cb-page: #202124; --cb-menu: #35363a; color-scheme: dark; }
+
+/* Search easter eggs */
+.cb-roll { animation: cb-open .22s cubic-bezier(.2,.8,.2,1) both, cb-roll 1.1s ease-in-out; }
+.cb-askew .cb-viewports { rotate: 1.4deg; transition: rotate .4s; }
+
 /* Stacking with the terminal window: the clicked window comes to the front. */
 .desktop.terminal-front .app-shell { position: relative; z-index: 26; pointer-events: none; }
 .desktop.terminal-front .app-shell > * { pointer-events: auto; }
 
 @keyframes cb-open { from { opacity: 0; scale: .97; } to { opacity: 1; scale: 1; } }
+@keyframes cb-roll { from { rotate: 0deg; } to { rotate: 360deg; } }
 @keyframes cb-spin { to { transform: rotate(360deg); } }
 @keyframes cb-progress { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 @keyframes cb-toast { 0% { opacity: 0; translate: 0 8px; } 10%, 85% { opacity: 1; translate: 0 0; } 100% { opacity: 0; } }

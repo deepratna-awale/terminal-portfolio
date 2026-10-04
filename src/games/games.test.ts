@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createSnake, step, turn, type SnakeState } from './snake'
+import { DINO_X, REX, createDino, jump, score, stepDino, type DinoState } from './dino'
 import { addRandomTile, createBoard, emptyBoard, hasMoves, move, slideLine, won, type Board } from './twenty48'
 
 const zero = () => 0
@@ -114,5 +115,30 @@ describe('2048', () => {
   it('detects a win', () => {
     expect(won([[2048, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])).toBe(true)
     expect(won(emptyBoard())).toBe(false)
+  })
+})
+
+describe('dino', () => {
+  const run = (state: DinoState, seconds: number, rng = zero) => { for (let t = 0; t < seconds; t += 1 / 60) state = stepDino(state, 1 / 60, rng); return state }
+
+  it('runs and scores until it meets a cactus', () => {
+    const state = run(createDino(), 3)
+    expect(state.alive).toBe(false)
+    expect(score(state)).toBeGreaterThan(0)
+  })
+
+  it('clears a cactus with a well timed jump', () => {
+    let state = createDino()
+    while (!state.cacti.length || state.cacti[0]!.x > DINO_X + 70) state = stepDino(state, 1 / 60, zero)
+    state = run(jump(state), 0.5)
+    expect(state.alive).toBe(true)
+    expect(state.cacti.every((cactus) => cactus.x > DINO_X + REX.width)).toBe(true)
+  })
+
+  it('only jumps from the ground and lands again', () => {
+    const up = stepDino(jump(createDino()), 1 / 60)
+    expect(up.y).toBeGreaterThan(0)
+    expect(jump(up).vy).toBe(up.vy)
+    expect(run({ ...up, cacti: [], gap: 1e9 }, 1).y).toBe(0)
   })
 })

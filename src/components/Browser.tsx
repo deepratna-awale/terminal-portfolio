@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type RefObject, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react'
-import { ArrowLeft, ArrowRight, CircleUserRound, EllipsisVertical, ExternalLink, Globe, Lock, Plus, RotateCw, Search, SquareTerminal, Star, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CircleUserRound, EllipsisVertical, ExternalLink, Globe, Info, Lock, Plus, RotateCw, Search, SquareTerminal, Star, VenetianMask, X } from 'lucide-react'
 import { linksFor, profile } from '../content'
-import { HOME, NEWTAB, pageHash, pageTitle, resolveAddress } from '../gui/address'
+import { DINO, HOME, INCOGNITO, NEWTAB, URLS, VERSION, internal, pageHash, pageTitle, resolveAddress, type Egg } from '../gui/address'
 import { Portfolio } from '../gui/Portfolio'
 import './Browser.css'
+import { DinoPage, IncognitoPage, UrlsPage, VersionPage } from './ChromePages'
 import { TrafficLights } from './TrafficLights'
 import { useWindowFrame } from './useWindowFrame'
 
@@ -22,6 +23,9 @@ const pageFor = (url: string) => { const target = resolveAddress(url, origin());
 const current = (tab: Tab) => tab.history[tab.index] ?? HOME
 const samePage = (a: string, b: string) => a.split('#')[0] === b.split('#')[0]
 const hostLabel = (url: string) => { try { const parsed = new URL(url); return parsed.protocol === 'mailto:' ? 'your mail app' : parsed.host.replace(/^www\./, '') } catch { return 'a new tab' } }
+const mac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
+const STARRED = 'browser-bookmarked'
+const readStarred = () => { try { return localStorage.getItem(STARRED) === '1' } catch { return false } }
 const modifier = (event: { metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; altKey: boolean }) => event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
 
 let nextId = 1
@@ -62,6 +66,8 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
   const frame = useWindowFrame('browser', { disabled: mode !== 'normal', min: { width: 480, height: 320 } })
 
   const [menu, setMenu] = useState(false)
+  const [starred, setStarred] = useState(readStarred)
+  const [fx, setFx] = useState<'roll' | 'askew' | null>(null)
   const root = useRef<HTMLElement>(null)
   const addressInput = useRef<HTMLInputElement>(null)
   const focused = useRef(true)
@@ -91,6 +97,20 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
     flash(`Opened ${hostLabel(target)} in a new tab`)
   }, [flash])
 
+  // Pages can't add bookmarks (the old window.external.AddFavorite and sidebar.addPanel APIs are gone), so point at the real shortcut.
+  const bookmark = useCallback(() => {
+    const keys = mac() ? '⌘D' : 'Ctrl+D'
+    flash(starred ? `Bookmarked. Press ${keys} to edit it` : `Press ${keys} to bookmark ${profile.host}`)
+  }, [flash, starred])
+  const markStarred = useCallback(() => { setStarred(true); try { localStorage.setItem(STARRED, '1') } catch { /* storage unavailable */ } }, [])
+
+  const playEgg = useCallback((egg: Egg) => {
+    if (egg === 'roll') { setFx('roll'); later(() => setFx((value) => (value === 'roll' ? null : value)), 1200) }
+    else if (egg === 'askew') { setFx((value) => (value === 'askew' ? null : 'askew')) }
+    else if (egg === 'coin') flash(Math.random() < 0.5 ? 'Heads' : 'Tails')
+    else flash(`You rolled a ${1 + Math.floor(Math.random() * 6)}`)
+  }, [flash, later])
+
   const toTerminal = useCallback(() => {
     setMode('minimized')
     onFront?.(false)
@@ -100,6 +120,7 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
   const push = useCallback((id: number, page: string) => {
     const tab = tabs.find((item) => item.id === id)
     if (!tab || current(tab) === page) return
+    setFx((value) => (value === 'askew' ? null : value))
     const loads = !samePage(current(tab), page)
     update(id, (item) => ({ ...item, history: [...item.history.slice(0, item.index + 1), page], index: item.index + 1, loading: loads || item.loading }))
     if (loads) finishLoading(id)
@@ -111,8 +132,9 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
     setAddress(null)
     if (target.kind === 'page') push(id, target.url)
     else if (target.kind === 'terminal') toTerminal()
+    else if (target.kind === 'egg') playEgg(target.egg)
     else openReal(target.url)
-  }, [activeId, openReal, push, toTerminal])
+  }, [activeId, openReal, playEgg, push, toTerminal])
 
   const go = (delta: number) => {
     const next = active.index + delta
@@ -128,12 +150,12 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
     finishLoading(active.id, 520)
   }
 
-  const newTab = useCallback(() => {
+  const newTab = useCallback((page = NEWTAB) => {
     const id = nextId++
-    setTabs((list) => [...list, { id, history: [NEWTAB], index: 0, reload: 0, loading: false }])
+    setTabs((list) => [...list, { id, history: [page], index: 0, reload: 0, loading: false }])
     setActiveId(id)
     setAddress(null)
-    later(() => addressInput.current?.focus(), 30)
+    if (page === NEWTAB) later(() => addressInput.current?.focus(), 30)
   }, [later])
 
   const closeTab = useCallback((id: number) => {
@@ -161,6 +183,8 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
   useEffect(() => {
     const down = (event: PointerEvent) => { focused.current = Boolean(root.current?.contains(event.target as Node)) }
     const keys = (event: KeyboardEvent) => {
+      // The real browser handles ⌘D itself; light the star to match.
+      if (mode !== 'minimized' && (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'd' && (focused.current || event.metaKey)) markStarred()
       if (!focused.current || mode === 'minimized' || !(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return
       const key = event.key.toLowerCase()
       if (key === 'l') { event.preventDefault(); addressInput.current?.focus(); addressInput.current?.select() }
@@ -171,7 +195,13 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
     window.addEventListener('pointerdown', down, true)
     window.addEventListener('keydown', keys, true)
     return () => { window.removeEventListener('pointerdown', down, true); window.removeEventListener('keydown', keys, true) }
-  }, [activeId, closeTab, finishLoading, mode, newTab, update])
+  }, [activeId, closeTab, finishLoading, markStarred, mode, newTab, update])
+
+  useEffect(() => {
+    const offline = () => flash(`You're offline. The dino is waiting at ${DINO}`)
+    window.addEventListener('offline', offline)
+    return () => window.removeEventListener('offline', offline)
+  }, [flash])
 
   useEffect(() => {
     if (!menu) return
@@ -187,7 +217,8 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
 
   const submitAddress = (event: FormEvent) => { event.preventDefault(); if (address !== null) navigate(address); addressInput.current?.blur() }
   const shown = address ?? (activeUrl === NEWTAB ? '' : activeUrl)
-  const secure = activeUrl !== NEWTAB && address === null
+  const secure = !internal(activeUrl) && address === null
+  const realUrl = internal(activeUrl) ? `${origin()}/gui` : `${origin()}/gui${pageHash(activeUrl) ? `#${pageHash(activeUrl)}` : ''}`
 
   const tabKeys = (event: ReactKeyboardEvent<HTMLDivElement>, id: number) => {
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setActiveId(id) }
@@ -195,8 +226,8 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
   useEffect(() => {
     if (!controls) return
     controls.current = {
-      newTab, closeTab: () => closeTab(activeId), back: () => go(-1), forward: () => go(1), reload, home: () => navigate(HOME),
-      focusAddress: () => addressInput.current?.focus(), openReal: () => openReal(activeUrl === NEWTAB ? `${origin()}/gui` : `${origin()}/gui${pageHash(activeUrl) ? `#${pageHash(activeUrl)}` : ''}`),
+      newTab: () => newTab(), closeTab: () => closeTab(activeId), back: () => go(-1), forward: () => go(1), reload, home: () => navigate(HOME),
+      focusAddress: () => addressInput.current?.focus(), openReal: () => openReal(realUrl),
       minimize, toggleMax, toTerminal,
     }
   })
@@ -205,7 +236,7 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
   return (
     <section
       ref={root}
-      className={`cb cb-${mode}`}
+      className={`cb cb-${mode}${fx ? ` cb-${fx}` : ''}${activeUrl === INCOGNITO ? ' cb-private' : ''}`}
       hidden={mode === 'minimized'}
       aria-label="Browser"
       style={mode === 'normal' ? frame.style : undefined}
@@ -231,13 +262,13 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
                 onAuxClick={(event) => auxClose(event, tab.id)}
                 onKeyDown={(event) => tabKeys(event, tab.id)}
               >
-                <span className="cb-favicon" aria-hidden="true">{tab.loading ? <span className="cb-spinner" /> : page === NEWTAB ? <Globe size={14} /> : <img src="/favicon.svg" alt="" width={16} height={16} />}</span>
+                <span className="cb-favicon" aria-hidden="true">{tab.loading ? <span className="cb-spinner" /> : page === INCOGNITO ? <VenetianMask size={14} /> : internal(page) ? <Globe size={14} /> : <img src="/favicon.svg" alt="" width={16} height={16} />}</span>
                 <span className="cb-tab-title">{pageTitle(page)}</span>
                 <button type="button" className="cb-tab-close" aria-label={`Close ${pageTitle(page)}`} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); closeTab(tab.id) }}><X size={13} strokeWidth={2.5} /></button>
               </div>
             )
           })}
-          <button type="button" className="cb-new" aria-label="New tab" title="New tab (⌘T)" onClick={newTab}><Plus size={17} /></button>
+          <button type="button" className="cb-new" aria-label="New tab" title="New tab (⌘T)" onClick={() => newTab()}><Plus size={17} /></button>
         </div>
       </div>
 
@@ -260,17 +291,20 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
             onBlur={() => setAddress(null)}
             onKeyDown={(event) => { if (event.key === 'Escape') { setAddress(null); event.currentTarget.blur() } }}
           />
-          <Star size={16} className="cb-star" aria-hidden="true" />
+          <button type="button" className={`cb-star${starred ? ' on' : ''}`} aria-label={starred ? 'Bookmarked' : 'Bookmark this site'} title={`Bookmark this tab (${mac() ? '⌘D' : 'Ctrl+D'})`} onClick={bookmark}><Star size={16} fill={starred ? 'currentColor' : 'none'} /></button>
         </form>
-        <span className="cb-avatar" title="Guest (you're browsing as a guest)" aria-label="Guest profile"><CircleUserRound size={18} /></span>
+        <button type="button" className="cb-avatar" title="Guest (you're browsing as a guest)" aria-label="Guest profile" onClick={() => flash('Browsing as Guest. Sign the guestbook from the terminal to say hi')}><CircleUserRound size={18} /></button>
         <div className="cb-menu-wrap">
           <button type="button" className="cb-tool" aria-label="Browser menu" aria-haspopup="menu" aria-expanded={menu} title="Customize and control" onClick={() => setMenu((open) => !open)}><EllipsisVertical size={18} /></button>
           {menu && (
             <div className="cb-menu" role="menu" onClick={() => setMenu(false)}>
-              <button type="button" role="menuitem" onClick={newTab}><Plus size={15} /> New tab<kbd>⌘T</kbd></button>
-              <button type="button" role="menuitem" onClick={() => openReal(activeUrl === NEWTAB ? origin() + '/gui' : `${origin()}/gui${pageHash(activeUrl) ? `#${pageHash(activeUrl)}` : ''}`)}><ExternalLink size={15} /> Open in a real tab</button>
+              <button type="button" role="menuitem" onClick={() => newTab()}><Plus size={15} /> New tab<kbd>⌘T</kbd></button>
+              <button type="button" role="menuitem" onClick={() => newTab(INCOGNITO)}><VenetianMask size={15} /> New Incognito window</button>
+              <button type="button" role="menuitem" onClick={bookmark}><Star size={15} /> Bookmark this tab<kbd>{mac() ? '⌘D' : 'Ctrl+D'}</kbd></button>
+              <button type="button" role="menuitem" onClick={() => openReal(realUrl)}><ExternalLink size={15} /> Open in a real tab</button>
               <button type="button" role="menuitem" onClick={toTerminal}><SquareTerminal size={15} /> Back to the terminal</button>
               <hr />
+              <button type="button" role="menuitem" onClick={() => navigate(VERSION)}><Info size={15} /> About Chrome</button>
               <button type="button" role="menuitem" onClick={onClose}><X size={15} /> Close window</button>
             </div>
           )}
@@ -283,8 +317,11 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
           const page = current(tab)
           return (
             <div key={tab.id} className="cb-viewport" hidden={tab.id !== active.id} role="tabpanel" aria-label={pageTitle(page)}>
-              {page === NEWTAB
-                ? <NewTabPage key={`${tab.index}-${tab.reload}`} onGo={(input) => navigate(input, tab.id)} />
+              {page === NEWTAB ? <NewTabPage key={`${tab.index}-${tab.reload}`} onGo={(input) => navigate(input, tab.id)} />
+                : page === DINO ? <DinoPage key={tab.reload} />
+                : page === VERSION ? <VersionPage go={(input) => navigate(input, tab.id)} />
+                : page === URLS ? <UrlsPage go={(input) => navigate(input, tab.id)} />
+                : page === INCOGNITO ? <IncognitoPage go={(input) => navigate(input, tab.id)} />
                 : <Portfolio key={tab.reload} embedded anchor={pageHash(page)} onExternal={openReal} onOpenTerminal={toTerminal} onAnchor={(id) => push(tab.id, id ? `${HOME}#${id}` : HOME)} />}
             </div>
           )
