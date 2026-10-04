@@ -48,3 +48,14 @@ describe('contributions', () => {
     expect(parseContributions(html)).toEqual({ total: 1234, days: [{ date: '2026-01-01', level: 0, count: 0 }, { date: '2026-01-02', level: 2, count: 5 }] })
   })
 })
+
+describe('client keys', () => {
+  it('groups IPv6 addresses by /64 and leaves IPv4 alone', async () => {
+    const { clientKey } = await import('./rateLimit.mjs')
+    expect(clientKey('203.0.113.7')).toBe('203.0.113.7')
+    expect(clientKey('::ffff:203.0.113.7')).toBe('203.0.113.7')
+    expect(clientKey('2001:db8:aa:1::1')).toBe('2001:db8:aa:1::/64')
+    expect(clientKey('2001:0db8:00aa:0001:ffff:1:2:3')).toBe('2001:db8:aa:1::/64')
+    expect(clientKey('2001:db8::5')).toBe('2001:db8:0:0::/64')
+  })
+})

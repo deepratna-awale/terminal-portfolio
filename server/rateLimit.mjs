@@ -43,5 +43,17 @@ export function clientIp(request) {
   // last hop; earlier entries are whatever the client chose to send.
   const forwarded = request.headers['x-forwarded-for']
   const last = (Array.isArray(forwarded) ? forwarded.join(',') : forwarded)?.split(',').at(-1)
-  return (last || request.socket.remoteAddress || 'unknown').trim()
+  return clientKey((last || request.socket.remoteAddress || 'unknown').trim())
+}
+
+// One IPv6 subscriber usually owns a whole /64, so count it as one client;
+// otherwise a single visitor could rotate addresses past the per-visitor limits.
+export function clientKey(address) {
+  const ip = address.replace(/^::ffff:(?=\d+\.)/i, '')
+  if (!ip.includes(':')) return ip
+  const [head, tail = ''] = ip.toLowerCase().split('::')
+  const left = head ? head.split(':') : []
+  const right = tail ? tail.split(':') : []
+  const groups = ip.includes('::') ? [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right] : left
+  return `${groups.slice(0, 4).map((group) => group.replace(/^0+(?=.)/, '')).join(':')}::/64`
 }

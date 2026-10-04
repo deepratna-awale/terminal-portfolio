@@ -6,6 +6,9 @@ owner_name  = "Alex"
 # Set to true after the certificate shows ISSUED (see README, "Deploy your own").
 attach_custom_domain = false
 
+# Email alerts when monthly AWS spend is forecast to pass monthly_budget_usd (default 25).
+# budget_alert_email = "you@example.dev"
+
 github_repository = "your-github-user/terminal-portfolio"
 # Only if `gh api repos/OWNER/NAME/actions/oidc/customization/sub` reports
 # "use_immutable_subject": true, copy its sub_claim_prefix here.

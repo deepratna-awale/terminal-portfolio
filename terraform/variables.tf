@@ -86,3 +86,15 @@ variable "bedrock_model_id" {
   description = "US cross-region inference profile the assistant calls. Must match BEDROCK_MODEL_ID in the server (default below)."
   default     = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 }
+
+variable "budget_alert_email" {
+  type        = string
+  description = "Where to send AWS budget alerts. Leave unset to skip the budget."
+  default     = null
+}
+
+variable "monthly_budget_usd" {
+  type        = number
+  description = "Monthly AWS spend that triggers a budget alert (actual or forecast)."
+  default     = 25
+}

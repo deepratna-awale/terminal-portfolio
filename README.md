@@ -74,7 +74,7 @@ All optional; the deploy workflow sets the ones marked *deploy*.
 | `BEDROCK_GUARDRAIL_ID`, `BEDROCK_GUARDRAIL_VERSION` | none (*deploy*) | Guardrail applied to every call; the assistant is offline without them |
 | `BEDROCK_MODEL_ID` | `us.anthropic.claude-haiku-4-5-20251001-v1:0` | Inference profile |
 | `BEDROCK_REGION` | `us-east-1` | Bedrock runtime region |
-| `CHAT_PER_MINUTE`, `CHAT_PER_DAY`, `CHAT_GLOBAL_PER_DAY` | 6, 60, 1500 | Assistant rate limits (per visitor, per visitor, overall) |
+| `CHAT_PER_MINUTE`, `CHAT_PER_DAY`, `CHAT_GLOBAL_PER_DAY` | 6, 60, 300 | Assistant rate limits (per visitor per minute, per visitor per day, overall per day). 300 a day costs at most about $2.50 |
 | `GUESTBOOK_BUCKET`, `GUESTBOOK_ACCESS_KEY_ID`, `GUESTBOOK_SECRET_ACCESS_KEY` | none (*deploy*) | Lightsail bucket and bucket-scoped key |
 | `GUESTBOOK_REGION` | `us-east-1` | Bucket region |
 | `GUESTBOOK_PER_DAY`, `GUESTBOOK_GLOBAL_PER_DAY` | 3, 300 | Guestbook rate limits |
@@ -125,6 +125,7 @@ guestbook each use a narrowly scoped long-lived key stored as a GitHub secret.
 | IAM OIDC provider and deploy role | GitHub Actions pushes images and creates deployments without stored keys |
 | Bedrock Guardrail and version | Content, prompt-attack, PII and topic filtering for the assistant |
 | Lightsail bucket | Guestbook storage |
+| AWS Budget (optional) | Emails you when monthly spend is forecast to pass `monthly_budget_usd` (set `budget_alert_email`) |
 
 ## Deploy your own
 

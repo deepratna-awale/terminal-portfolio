@@ -16,8 +16,11 @@ const allowedOrigins = new Set((process.env.ALLOWED_ORIGINS ?? `${profile.websit
 const chatLimit = createLimiter({
   perMinute: Number(process.env.CHAT_PER_MINUTE ?? 6),
   perDay: Number(process.env.CHAT_PER_DAY ?? 60),
-  globalPerDay: Number(process.env.CHAT_GLOBAL_PER_DAY ?? 1500),
+  // Worst case about $2.50 a day on Claude Haiku 4.5 with a full conversation every time.
+  globalPerDay: Number(process.env.CHAT_GLOBAL_PER_DAY ?? 300),
 })
+// fortune and cowthink start a process per request.
+const gameLimit = createLimiter({ perMinute: 20, perDay: 500, globalPerDay: 20_000, messages: { global: 'the fortune teller is resting, try again tomorrow', day: 'enough fortunes for today', minute: 'slow down a little, try again in a minute' } })
 const guestbookLimit = createLimiter({
   perMinute: 1,
   perDay: Number(process.env.GUESTBOOK_PER_DAY ?? 3),
@@ -59,7 +62,9 @@ function send(response, status, body, contentType = 'text/plain', headers = {}) 
 }
 const sendJson = (response, status, value, headers) => send(response, status, JSON.stringify(value), 'application/json', headers)
 
-function runGame(response, command, args) {
+function runGame(request, response, command, args) {
+  const limit = gameLimit(clientIp(request))
+  if (!limit.ok) return send(response, 429, limit.reason, 'text/plain', { 'Retry-After': String(limit.retryAfter) })
   const child = spawn(command, args, { timeout: 3000 })
   let output = ''
   child.stdout.on('data', (chunk) => { output += chunk.toString() })
@@ -221,8 +226,8 @@ createServer((request, response) => {
   if (pathname === '/api/contributions' && request.method === 'GET') return handleContributions(response)
   if (pathname === '/api/guestbook') return handleGuestbook(request, response)
   if ((pathname === '/gui' || pathname === '/gui/') && (request.method === 'GET' || request.method === 'HEAD')) return handleGui(response)
-  if (pathname === '/api/fortune' && request.method === 'GET') return runGame(response, 'fortune', ['-s'])
-  if (pathname === '/api/cowthink' && request.method === 'GET') return runGame(response, 'cowthink', ['-f', 'tux', '--', cowthinkText(requestUrl.searchParams.get('text'))])
+  if (pathname === '/api/fortune' && request.method === 'GET') return runGame(request, response, 'fortune', ['-s'])
+  if (pathname === '/api/cowthink' && request.method === 'GET') return runGame(request, response, 'cowthink', ['-f', 'tux', '--', cowthinkText(requestUrl.searchParams.get('text'))])
   if (pathname.startsWith('/api/')) return send(response, 404, 'not found')
   if (request.method !== 'GET' && request.method !== 'HEAD') return send(response, 405, 'method not allowed')
   try { serveStatic(pathname, response) } catch { send(response, 400, 'bad request') }
