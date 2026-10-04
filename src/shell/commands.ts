@@ -48,6 +48,8 @@ export const aliases: Record<string, string> = { ll: 'ls -l', la: 'ls -a', '..':
 export const cmd = (label: string, command: string) => `[${label}](cmd:${encodeURIComponent(command)})`
 const out = (text: string): NewLine => ({ type: 'output', text })
 const muted = (text: string): NewLine => ({ type: 'muted', text })
+// `copy:` links copy their target when clicked in the browser terminal.
+export const sshHint = (lead = 'Prefer your own terminal?'): NewLine[] => sshHost ? [muted(`${lead} [\`ssh ${sshHost}\`](copy:${encodeURIComponent(`ssh ${sshHost}`)}) (click to copy)`)] : []
 const err = (text: string): NewLine => ({ type: 'error', text })
 const section = (name: string): NewLine => ({ type: 'section', section: name, text: sections[name]!.join('\n') })
 const fence = (text: string) => `\`\`\`text\n${text}\n\`\`\``
@@ -323,7 +325,7 @@ export const commands: Record<string, Command> = {
       ...groups.flatMap((group) => [{ type: 'success' as const, text: group }, out(Object.entries(commands).filter(([, command]) => command.group === group && !command.hidden).map(([name, command]) => `  ${cmd(name.padEnd(Math.max(13, name.length + 1)), name)}${command.summary}`).join('\n'))]),
       muted(`Anything that is not a command goes to my AI assistant, e.g. "${exampleQuestion}"`),
       muted('zsh keys work: Tab, ^A ^E ^U ^K ^W ^Y ^L ^C ^R, ⌥B ⌥F, ↑↓, → accepts a suggestion, !! and !$. See `shortcuts`.'),
-      ...(sshHost ? [muted(`Prefer your own terminal? \`ssh ${sshHost}\``)] : []),
+      ...sshHint(),
     ])
   } },
   ...sectionCommands(),
@@ -468,7 +470,7 @@ export const commands: Record<string, Command> = {
     try { await globalThis.navigator?.clipboard.writeText(url); copied = Boolean(globalThis.navigator?.clipboard) } catch { /* clipboard blocked */ }
     ctx.print([out(`[${url}](${url})`), muted(copied ? 'copied to clipboard' : 'copy the link above to share it')])
   } },
-  ssh: { group: 'Fun', summary: 'connect to a host', hidden: true, run: (_args, ctx) => ctx.print([muted(`You are already connected to ${profile.host}. Run \`reboot\` to replay the login.`), ...(sshHost ? [muted(`For the real thing, from your own terminal: \`ssh ${sshHost}\``)] : [])]) },
+  ssh: { group: 'Terminal', summary: 'SSH in from your own terminal', hidden: !sshHost, run: (_args, ctx) => ctx.print([muted(`You are already connected to ${profile.host}. Run \`reboot\` to replay the login.`), ...sshHint('For the real thing, from your own terminal:')]) },
   hire: { group: 'Fun', summary: 'the best command', hidden: true, run: (_args, ctx) => ctx.print([{ type: 'success', text: `Great choice. ${cmd('email', 'email')} me or reach out on [LinkedIn](${profile.linkedin}).` }]) },
 }
 

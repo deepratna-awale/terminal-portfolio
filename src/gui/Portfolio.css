@@ -79,6 +79,12 @@ html:has(.pf-standalone) { scroll-behavior: smooth; }
 .pf-pitch { max-width: 60ch; margin-top: 20px; color: var(--text-2); font-size: 17.5px; }
 .pf-pitch strong { color: var(--text); font-weight: 600; }
 .pf-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.pf-ssh-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; font-size: 14.5px; }
+.pf-ssh { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 6px 12px; border: 1px dashed var(--border-2); border-radius: 8px; color: var(--muted); background: var(--surface); font: 13.5px var(--mono-f); cursor: copy; transition: border-color .15s, color .15s; }
+.pf-ssh:hover, .pf-ssh:focus-visible { border-color: var(--accent); color: var(--accent); }
+.pf-ssh code { overflow: hidden; padding: 0; color: var(--text); background: none; text-overflow: ellipsis; white-space: nowrap; user-select: all; }
+.pf-ssh-prompt { color: var(--accent); }
+.pf-ssh-status:empty { display: none; }
 .pf-hero-card { border: 1px solid var(--border-2); border-radius: 14px; overflow: hidden; background: #0b0f0c; box-shadow: 0 30px 60px rgba(0,0,0,.35); transform: perspective(1200px) rotateY(-6deg) rotateX(2deg); }
 .pf-mini-chrome { display: flex; align-items: center; gap: 7px; padding: 10px 12px; background: #141a16; border-bottom: 1px solid rgba(255,255,255,.07); }
 .pf-mini-chrome span { width: 10px; height: 10px; border-radius: 50%; background: #ee6a5f; } .pf-mini-chrome span:nth-child(2) { background: #f5bd4f; } .pf-mini-chrome span:nth-child(3) { background: #61c454; }

@@ -3,7 +3,7 @@ import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { askAssistant, fetchProjects, type ChatTurn, type Project } from '../api'
 import { asciiLogo, motd, os, profile } from '../content'
-import { commands, neofetchInfo, openExternal, resolveAlias, tokenize, type Line, type NewLine, type ShellContext } from '../shell/commands'
+import { commands, neofetchInfo, sshHint, openExternal, resolveAlias, tokenize, type Line, type NewLine, type ShellContext } from '../shell/commands'
 import { runInput } from '../shell/runner'
 import { initialCommand, unshareable } from '../shell/deeplink'
 import { commonPrefix, complete, suggestion as suggest } from '../shell/completion'
@@ -39,6 +39,7 @@ function bootScript(theme: ThemeName): Array<{ line: NewLine; delay: number; typ
     { line: { type: 'output', text: `Welcome to **${os.name} ${os.version}** on ${profile.host}` }, delay: 120 },
     { line: { type: 'muted', text: [profile.title, ...motd, `Last login: ${new Date().toUTCString()} from your browser`].filter(Boolean).map((item) => `  * ${item}`).join('\n') }, delay: 120 },
     { line: { type: 'success', text: 'Type [`help`](cmd:help) to explore, [`projects`](cmd:projects) for my GitHub, or just ask a question in plain English.' }, delay: 0 },
+    ...sshHint().map((line) => ({ line, delay: 0 })),
   ]
 }
 
@@ -380,6 +381,13 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
       const command = decodeURIComponent(href.slice(4))
       return <a href={`?cmd=${encodeURIComponent(command)}`} className="cmd-link" onClick={(event) => { event.preventDefault(); if (!busy && !booting) run(command) }}>{children}</a>
     }
+    if (href.startsWith('copy:')) {
+      const text = decodeURIComponent(href.slice(5))
+      return <a href="#" className="cmd-link" title="Copy to clipboard" onClick={(event) => {
+        event.preventDefault()
+        navigator.clipboard?.writeText(text).then(() => print([{ type: 'muted', text: `copied \`${text}\` to the clipboard` }])).catch(() => {})
+      }}>{children}</a>
+    }
     if (href.startsWith('mailto:')) return <a href={href} onClick={(event) => { event.preventDefault(); openExternal(href) }}>{children}</a>
     return <a href={href} target="_blank" rel="noreferrer noopener">{children}</a>
   }
@@ -397,7 +405,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
     if (item.type === 'neofetch') return <Neofetch key={item.id} title={item.text} info={item.info ?? []} theme={theme} />
     return (
       <div key={item.id} className={`terminal-line ${item.type}`}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]} urlTransform={(url) => (url.startsWith('cmd:') ? url : defaultUrlTransform(url))} components={{ a: renderLink, pre: ({ children }) => <FitPre>{children}</FitPre> }}>{item.text}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} urlTransform={(url) => (/^(cmd|copy):/.test(url) ? url : defaultUrlTransform(url))} components={{ a: renderLink, pre: ({ children }) => <FitPre>{children}</FitPre> }}>{item.text}</ReactMarkdown>
       </div>
     )
   }
