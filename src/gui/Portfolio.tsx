@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent, type ReactNode } from 'react'
 import ReactMarkdown, { defaultUrlTransform, type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { ArrowUpRight, Award, BookOpen, Check, FileText, GraduationCap, Mail, MapPin, Menu, Palette, RotateCw, Send, SquareTerminal, Star, X } from 'lucide-react'
+import { ArrowUpRight, Award, BookOpen, Check, Copy, FileText, GraduationCap, Mail, MapPin, Menu, Palette, RotateCw, Send, SquareTerminal, Star, X } from 'lucide-react'
 import { fetchActivity, fetchContributions, fetchGuestbook, fetchProjects, signGuestbook, type Activity, type Contributions, type GuestbookEntry, type Project } from '../api'
 import { contactCopy, focusDirs, linkLabel, nowItems, profile, sectionList, sections, sshHost } from '../content'
 import { parseAbout, parseEducation, parseExperience, parsePublications, parseSkills, splitYear } from './parse'
@@ -67,6 +67,20 @@ function Section({ id, index, title, embedded, children, wide = false }: { id: s
       </header>
       {children}
     </section>
+  )
+}
+
+// The SSH command as a one-click copy chip; without JS it is still selectable text.
+function SshCommand() {
+  const [copied, setCopied] = useState(false)
+  const command = `ssh ${sshHost}`
+  const copy = () => navigator.clipboard?.writeText(command).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600) }).catch(() => {})
+  return (
+    <button type="button" className="pf-ssh" onClick={copy} title="Copy to clipboard" aria-label={`Copy ${command}`}>
+      <span className="pf-ssh-prompt" aria-hidden="true">$</span><code>{command}</code>
+      {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+      <span className="pf-ssh-status" aria-live="polite">{copied ? 'copied' : ''}</span>
+    </button>
   )
 }
 
@@ -436,7 +450,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
             {profile.linkedin && <li><LinkedInIcon /><a href={profile.linkedin} {...linkAttrs(profile.linkedin)}>{linkLabel(profile.linkedin)}</a></li>}
             <li><Mail size={16} aria-hidden="true" /><a href={`mailto:${profile.email}`}>{profile.email}</a></li>
             <li><SquareTerminal size={16} aria-hidden="true" /><a href="/">Terminal version of this site</a></li>
-            {sshHost && <li><SquareTerminal size={16} aria-hidden="true" /><code>ssh {sshHost}</code></li>}
+            {sshHost && <li><SquareTerminal size={16} aria-hidden="true" /><SshCommand /></li>}
           </ul>
         </div>
       </Section>
@@ -501,6 +515,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
               {profile.linkedin && <a className="pf-btn" href={profile.linkedin} {...linkAttrs(profile.linkedin)}><LinkedInIcon /> LinkedIn</a>}
               <a className="pf-btn ghost" href="/"><SquareTerminal size={16} aria-hidden="true" /> Open terminal</a>
             </div>
+            {sshHost && <div className="pf-ssh-row"><span className="pf-muted">Or from your own terminal:</span><SshCommand /></div>}
           </div>
           <div className="pf-hero-card" aria-hidden="true">
             <div className="pf-mini-chrome"><span /><span /><span /><em>guest@{profile.host}</em></div>

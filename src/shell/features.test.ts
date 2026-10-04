@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { initialCommand } from './deeplink'
-import { isRootWipe, parseSign, readFile } from './commands'
+import { isRootWipe, parseSign, readFile, sshHint } from './commands'
 import { renderHeatmap } from './heatmap'
 import { filters, grepLines, toPlainText } from './pipes'
 import { closest, looksLikeCommand } from './typo'
@@ -17,6 +17,14 @@ describe('typo suggestions', () => {
     expect(looksLikeCommand('cta about')).toBe(true)
     expect(looksLikeCommand('what does deep do at nasdaq?')).toBe(false)
     expect(looksLikeCommand('who are you')).toBe(true)
+  })
+})
+
+describe('ssh hint', () => {
+  it('offers the SSH command from ABOUT.md as a copy link', () => {
+    const [line] = sshHint()
+    expect(line?.text).toContain('[`ssh ssh.deepratna-awale.dev`](copy:ssh%20ssh.deepratna-awale.dev)')
+    expect(toPlainText(line!.text)).toContain('ssh ssh.deepratna-awale.dev (click to copy)')
   })
 })
 
