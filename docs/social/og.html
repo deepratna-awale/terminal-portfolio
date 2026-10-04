@@ -1,0 +1,68 @@
+<!doctype html>
+<!-- Source of public/og.png and repo-preview.png. Edit, then run render.mjs (see its header). -->
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=block" rel="stylesheet">
+<style>
+:root{--w:1200px;--h:630px;--bg:#050a06;--fg:#c8f7c5;--muted:#5f8a63;--accent:#39ff88;--neon:#39ff14;--link:#7fe0ff}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:var(--w);height:var(--h);overflow:hidden;background:var(--bg)}
+body{font-family:'JetBrains Mono',monospace;color:var(--fg);position:relative;
+  background:
+    radial-gradient(900px 500px at 78% 30%, rgba(57,255,136,.13), transparent 60%),
+    radial-gradient(700px 420px at 10% 100%, rgba(127,224,255,.07), transparent 60%),
+    var(--bg)}
+body::before{content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(57,255,136,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(57,255,136,.05) 1px,transparent 1px);
+  background-size:40px 40px;mask-image:radial-gradient(ellipse at 60% 40%,#000 30%,transparent 80%)}
+body::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px)}
+.win{position:absolute;left:40px;top:36px;right:40px;bottom:36px;border-radius:16px;
+  background:rgba(3,10,6,.86);border:1.5px solid rgba(57,255,136,.35);
+  box-shadow:0 0 0 1px rgba(0,0,0,.6),0 30px 80px rgba(0,0,0,.6),0 0 60px rgba(57,255,136,.12);overflow:hidden}
+.bar{height:44px;display:flex;align-items:center;padding:0 18px;background:rgba(10,22,14,.95);border-bottom:1px solid rgba(57,255,136,.18);position:relative}
+.dots{display:flex;gap:9px}.dots i{width:13px;height:13px;border-radius:50%;display:block}
+.dots i:nth-child(1){background:#ff5f57}.dots i:nth-child(2){background:#febc2e}.dots i:nth-child(3){background:#28c840}
+.title{position:absolute;left:0;right:0;text-align:center;font-size:15px;color:var(--muted)}
+.body{padding:30px 44px 0;position:relative;height:calc(100% - 44px)}
+.logo{font-size:15.2px;line-height:1.08;color:var(--accent);white-space:pre;text-shadow:0 0 8px rgba(57,255,136,.55);letter-spacing:0}
+.prompt{margin-top:26px;font-size:21px;color:var(--muted)}
+.prompt b{color:var(--accent);font-weight:500}.prompt span{color:var(--fg)}
+.name{margin-top:12px;font-size:50px;font-weight:800;color:#effff0;letter-spacing:-.5px}
+.role{margin-top:8px;font-size:24px;color:var(--fg)}
+.tag{margin-top:6px;font-size:22px;color:var(--muted)}
+.chips{position:absolute;left:44px;right:44px;bottom:30px;display:flex;gap:14px;align-items:center}
+.chip{font-size:19px;padding:9px 16px;border-radius:9px;border:1px solid rgba(57,255,136,.3);background:rgba(57,255,136,.07);color:var(--fg)}
+.chip em{font-style:normal;color:var(--accent)}
+.chip.ssh{color:var(--link);border-color:rgba(127,224,255,.35);background:rgba(127,224,255,.07)}
+.cur{display:inline-block;width:12px;height:22px;background:var(--accent);vertical-align:-3px;margin-left:6px;box-shadow:0 0 10px rgba(57,255,136,.8)}
+.tile{position:absolute;right:48px;top:150px;width:236px;height:236px;filter:drop-shadow(0 0 28px rgba(57,255,140,.35)) drop-shadow(0 18px 30px rgba(0,0,0,.6))}
+.os{position:absolute;right:48px;top:394px;width:236px;text-align:center;font-size:17px;color:var(--muted);letter-spacing:.5px}
+.os b{color:var(--fg);font-weight:700}
+</style></head><body>
+<div class="win">
+  <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="title">guest@deepratna-awale.dev: ~ — zsh</div></div>
+  <div class="body">
+<div class="logo">██████╗ ███████╗███████╗██████╗ ██████╗  █████╗ ████████╗███╗   ██╗ █████╗
+██╔══██╗██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝████╗  ██║██╔══██╗
+██║  ██║█████╗  █████╗  ██████╔╝██████╔╝███████║   ██║   ██╔██╗ ██║███████║
+██║  ██║██╔══╝  ██╔══╝  ██╔═══╝ ██╔══██╗██╔══██║   ██║   ██║╚██╗██║██╔══██║
+██████╔╝███████╗███████╗██║     ██║  ██║██║  ██║   ██║   ██║ ╚████║██║  ██║
+╚═════╝ ╚══════╝╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═══╝╚═╝  ╚═╝</div>
+    <div class="prompt"><b>guest@deepratna-awale.dev</b> ~ % <span>whoami</span></div>
+    <div class="name">Deepratna Awale</div>
+    <div class="role">Senior Software Engineer @ Nasdaq</div>
+    <div class="tag">Building agentic AI for fraud &amp; AML</div>
+    <svg class="tile" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#0d1117" stroke="rgba(57,255,136,.35)" stroke-width=".25"/>
+      <path fill="#39ff14" fill-rule="evenodd" d="M3.5 9h4a5 5 0 0 1 5 5v4a5 5 0 0 1-5 5h-4zM6.5 12v8h1a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2z"/>
+      <path fill="#39ff14" fill-rule="evenodd" d="M13.5 23l3.1-14h2.8l3.1 14h-3l-.6-3h-2.6l-.6 3zM17 17.3h2l-1-5z"/>
+      <rect x="25" y="9" width="3.5" height="14" fill="#39ff14" opacity=".42"/></svg>
+    <div class="os"><b>DeepOS</b> 26.10 LTS</div>
+    <div class="chips">
+      <div class="chip ssh">$ ssh ssh.deepratna-awale.dev</div>
+      <div class="chip"><em>https://</em>deepratna-awale.dev</div>
+      <div class="chip" id="c3">ask the AI <em>anything</em><span class="cur"></span></div>
+    </div>
+  </div>
+</div>
+<script>if (location.hash === "#repo") { const s = document.documentElement.style; s.setProperty("--w", "1280px"); s.setProperty("--h", "640px"); document.querySelector(".title").textContent = "deepratna-awale/terminal-portfolio — zsh"; document.getElementById("c3").innerHTML = "React · Terraform · <em>AWS</em><span class=\"cur\"></span>" }</script>
+</body></html>

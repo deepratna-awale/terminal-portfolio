@@ -64,6 +64,7 @@ client, server and Vite config share it). Its tests are in
 | `server/about.mjs` | Server view of ABOUT.md: profile, featured repos, assistant rules and facts |
 | `server/bedrock.mjs`, `s3.mjs`, `rateLimit.mjs` | Bedrock Converse client, S3 SigV4 signing, rate limits |
 | `scripts/prerender.mjs` | Writes `dist/gui.html` from the SSR build |
+| `docs/social/` | Link preview source (`og.html`) and `render.mjs`, which writes `public/og.png` and the GitHub social preview `repo-preview.png` |
 | `vite.config.ts` | Fills `index.html` tokens and generates favicon, robots.txt and sitemap.xml from ABOUT.md |
 | `src/shell/runner.ts` | Runs one typed line (pipes, commands, typo hints, assistant); shared by both terminals |
 | `ssh/main.ts` | SSH server (ssh2): anonymous login, connection limits, the fetch shim that sends API calls to the site |
