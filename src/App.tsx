@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 import './App.css'
 import { BrowserWindow } from './components/Browser'
-import { ChromeIcon, GitHubIcon, GmailIcon, LinkedInIcon } from './components/BrandIcons'
 import { GameOverlay, type GameName } from './components/Games'
 import { MatrixRain } from './components/MatrixRain'
 import { MenuBar, type Menu } from './components/MenuBar'
 import { Terminal, type TerminalHandle } from './components/Terminal'
+import { TrafficLights } from './components/TrafficLights'
 import { Vim } from './components/Vim'
 import { profile } from './content'
 import { openExternal, readFile, type ShellContext } from './shell/commands'
@@ -168,20 +168,16 @@ function App() {
     <div className={`desktop theme-${theme}${crt ? ' crt' : ''}${melting ? ' meltdown' : ''}${browser && front === 'terminal' ? ' terminal-front' : ''}`} style={style}>
       <MenuBar menus={menus} status={status} />
       <a className="desktop-icon" href="/gui" title="Open the standard portfolio website" onClick={clickBrowser}>
-        <span className="desktop-chrome" aria-hidden="true"><ChromeIcon /></span>
+        <img className="desktop-chrome" src="/icons/chrome.svg" alt="" />
         <span className="desktop-icon-label">Portfolio</span>
       </a>
       <main className={`app-shell ${mode}`}>
         {mode !== 'closed' && (
           <section className="terminal-window" aria-label="Terminal" hidden={mode === 'minimized'} onPointerDown={() => setFront('terminal')}>
-            <header className="window-chrome" onDoubleClick={toggleMaximize}>
-              <div className="traffic-lights">
-                <button type="button" className="light close" aria-label="Close session" title="Close" onClick={() => setMode('closed')} />
-                <button type="button" className="light minimize" aria-label="Minimize" title="Minimize" onClick={() => setMode('minimized')} />
-                <button type="button" className="light maximize" aria-label={mode === 'maximized' ? 'Restore' : 'Maximize'} title={mode === 'maximized' ? 'Restore' : 'Maximize'} onClick={toggleMaximize} />
-              </div>
+            <header className="window-chrome" onDoubleClick={(event) => { if (!(event.target as HTMLElement).closest('button')) toggleMaximize() }}>
+              <div className="traffic-lights"><TrafficLights name="terminal" maximized={mode === 'maximized'} onClose={() => setMode('closed')} onMinimize={() => setMode('minimized')} onMaximize={toggleMaximize} /></div>
               <div className="window-title">guest@{profile.host}: ~ — ssh — zsh</div>
-              <div className="window-actions"><button type="button" onClick={toggleMaximize} aria-label="Toggle maximize">{mode === 'maximized' ? '⤡' : '⤢'}</button></div>
+              <div className="window-actions" aria-hidden="true" />
             </header>
             <Terminal key={sessionKey} ref={terminal} theme={theme} ui={ui} onStatus={setStatus} suspended={Boolean(game || vim || matrix || (browser && front === 'browser'))} />
             <footer className="terminal-footer"><span>zsh</span><span>UTF-8</span><span>{themes[theme].label}</span><span className="footer-status">{status || `● ssh guest@${profile.host}`}</span></footer>
@@ -196,14 +192,14 @@ function App() {
       </main>
       <nav className="dock" aria-label="Dock">
         <button type="button" className={`dock-item${visible ? ' running' : ''}`} onClick={mode === 'closed' ? reconnect : restore} title="Terminal">
-          <span className="dock-icon">&gt;_</span>
+          <span className="dock-icon app"><img src="/icons/terminal.svg" alt="" /></span>
         </button>
-        <a className="dock-item" href={profile.github} target="_blank" rel="noreferrer noopener" title="GitHub" aria-label="GitHub"><span className="dock-icon brand gh"><GitHubIcon /></span></a>
-        <a className="dock-item" href={profile.linkedin} target="_blank" rel="noreferrer noopener" title="LinkedIn" aria-label="LinkedIn"><span className="dock-icon brand in"><LinkedInIcon /></span></a>
-        <a className="dock-item" href={`mailto:${profile.email}`} title="Email" aria-label="Email"><span className="dock-icon brand mail"><GmailIcon /></span></a>
+        <a className="dock-item" href={profile.github} target="_blank" rel="noreferrer noopener" title="GitHub" aria-label="GitHub"><span className="dock-icon app tile"><img src="/icons/github.svg" alt="" /></span></a>
+        <a className="dock-item" href={profile.linkedin} target="_blank" rel="noreferrer noopener" title="LinkedIn" aria-label="LinkedIn"><span className="dock-icon app"><img src="/icons/linkedin.png" alt="" /></span></a>
+        <a className="dock-item" href={`mailto:${profile.email}`} title="Email" aria-label="Email"><span className="dock-icon app tile"><img src="/icons/gmail.svg" alt="" /></span></a>
         {browser && <>
           <span className="dock-separator" aria-hidden="true" />
-          <a className="dock-item running" href="/gui" title="Chrome" aria-label="Chrome" onClick={clickBrowser}><span className="dock-icon brand chrome"><ChromeIcon /></span></a>
+          <a className="dock-item running" href="/gui" title="Chrome" aria-label="Chrome" onClick={clickBrowser}><span className="dock-icon app tile"><img src="/icons/chrome.svg" alt="" /></span></a>
         </>}
       </nav>
       {browser && <BrowserWindow url={browser.url} stamp={browser.stamp} onClose={closeBrowser} onFront={browserFront} onOpenTerminal={() => { setFront('terminal'); restore() }} />}

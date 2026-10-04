@@ -66,7 +66,8 @@ function Experience({ renderLink }: { renderLink: LinkRenderer }) {
         {roles.map((block, index) => {
           const title = block[0]!.replace(/^## /, '')
           const meta = block[1] ?? ''
-          const [, company = meta, dates = '', place = ''] = /^\*\*(.+?)\*\*\s*\[(.+?)\]\s*\|?\s*(.*)$/.exec(meta) ?? []
+          const [, name = meta, suffix = '', dates = '', place = ''] = /^\*\*(.+?)\*\*\s*([^[]*?)\s*\[(.+?)\]\s*\|?\s*(.*)$/.exec(meta) ?? []
+          const company = suffix ? `${name} ${suffix}` : name
           const extra = block.slice(2).filter((line) => line && !line.startsWith('- ') && !line.startsWith('Earlier:'))
           const bullets = block.filter((line) => line.startsWith('- ')).map((line) => line.slice(2))
           return (

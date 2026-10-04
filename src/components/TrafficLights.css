@@ -1,0 +1,11 @@
+.traffic { flex: none; display: flex; align-items: center; gap: 8px; }
+.traffic-btn { position: relative; width: 12px; height: 12px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; cursor: default; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.22); }
+.traffic-btn.close { background: #ff5f57; color: #4d0000; }
+.traffic-btn.minimize { background: #febc2e; color: #985700; }
+.traffic-btn.maximize { background: #28c840; color: #006500; }
+.traffic-btn svg { width: 12px; height: 12px; opacity: 0; }
+.traffic-btn path { fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; }
+.traffic-btn path.fill { fill: currentColor; stroke: none; }
+.traffic:hover .traffic-btn svg, .traffic-btn:focus-visible svg { opacity: 1; }
+.traffic-btn:active { filter: brightness(.82); }
+.traffic-btn:focus-visible { outline: 2px solid #4c8bf5; outline-offset: 1px; }
