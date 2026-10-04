@@ -185,7 +185,7 @@ IJSRP, 2022. NLP system for automated scoring of theory answers with plagiarism 
 
 Certifications
   AWS Certified Machine Learning Engineer, Associate (2025)
-  IBM Data Science Professional Specialization (2019)
+  [IBM Data Science Professional Specialization](https://www.credly.com/badges/a3630bd3-b2cd-4e08-b5cb-bd8701a9792f) (2019)
   IIT Madras Programming and DSA Using Python (2019)
 
 # Now

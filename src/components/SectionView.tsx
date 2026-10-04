@@ -125,7 +125,7 @@ function Publications({ renderLink }: { renderLink: LinkRenderer }) {
   )
 }
 
-function Education() {
+function Education({ renderLink }: { renderLink: LinkRenderer }) {
   const lines = sections.education!
   const split = lines.indexOf('Certifications')
   const degrees = blocks(lines.slice(0, split), /^\*\*/).filter((block) => block[0])
@@ -146,7 +146,7 @@ function Education() {
       <div className="cert-head">Certifications</div>
       <ul className="certs">{certs.map((cert) => {
         const [, name = cert, year = ''] = /^(.*?)\s*\((\d{4})\)$/.exec(cert) ?? []
-        return <li key={cert}><span className="cert-badge" aria-hidden="true">✓</span>{name}{year && <span className="role-dates"> {year}</span>}</li>
+        return <li key={cert}><span className="cert-badge" aria-hidden="true">✓</span><Inline text={name} renderLink={renderLink} />{year && <span className="role-dates"> {year}</span>}</li>
       })}</ul>
     </Box>
   )
@@ -200,7 +200,7 @@ export function SectionView({ name, renderLink }: Props) {
   if (name === 'experience') return <Experience renderLink={renderLink} />
   if (name === 'skills') return <Skills />
   if (name === 'publications') return <Publications renderLink={renderLink} />
-  if (name === 'education') return <Education />
+  if (name === 'education') return <Education renderLink={renderLink} />
   if (name === 'contact') return <Contact renderLink={renderLink} />
   const generic = sectionList.find((section) => section.id === name)
   if (!generic) return null
