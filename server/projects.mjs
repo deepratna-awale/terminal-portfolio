@@ -1,12 +1,12 @@
 // Public GitHub repositories, summarised into bullets by Bedrock and cached in
 // memory. READMEs come from raw.githubusercontent.com, which does not count
 // against the 60 requests/hour unauthenticated REST limit.
+import { featured, profile } from './about.mjs'
 import { bedrockConfigured, converse } from './bedrock.mjs'
 
-const owner = process.env.GITHUB_OWNER ?? 'deepratna-awale'
-// Only these repositories appear on the site, in this order. Each has a share
-// image at public/media/projects/<name>.jpg (the repo's GitHub social preview).
-const featured = ['open-wallpaper-engine-mac', 'AutoExpress', '3t-chatbot', 'sd-parsers', 'TAES2', 'Polar-Image-Inspector']
+const owner = process.env.GITHUB_OWNER ?? profile.githubUser
+// Only the repositories listed under `featured` in ABOUT.md appear, in that
+// order. Each has a share image at public/media/projects/<name>.jpg.
 const rank = new Map(featured.map((name, index) => [name.toLowerCase(), index]))
 const REFRESH_MS = 6 * 60 * 60 * 1000
 
@@ -15,7 +15,7 @@ let inflight = null
 const summaries = new Map() // name -> { pushedAt, bullets }
 
 function githubHeaders() {
-  const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'deepratna-awale.dev' }
+  const headers = { Accept: 'application/vnd.github+json', 'User-Agent': profile.host }
   if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`
   return headers
 }

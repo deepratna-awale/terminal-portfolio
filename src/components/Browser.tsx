@@ -16,7 +16,7 @@ type Props = {
   onFront?: (front: boolean) => void
 }
 
-const origin = () => (typeof location === 'undefined' ? 'https://deepratna-awale.dev' : location.origin)
+const origin = () => (typeof location === 'undefined' ? profile.website : location.origin)
 const pageFor = (url: string) => { const target = resolveAddress(url, origin()); return target?.kind === 'page' ? target.url : HOME }
 const current = (tab: Tab) => tab.history[tab.index] ?? HOME
 const samePage = (a: string, b: string) => a.split('#')[0] === b.split('#')[0]

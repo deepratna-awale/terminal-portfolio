@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { profile } from '../content'
 
 export type MenuItem = { label: string; shortcut?: string; checked?: boolean; action?: () => void; separator?: false } | { separator: true }
 export type Menu = { label: string; items: MenuItem[] }
@@ -24,7 +25,7 @@ export function MenuBar({ menus, status }: { menus: Menu[]; status: string }) {
 
   return (
     <nav className="menubar" ref={barRef} aria-label="Terminal menu bar">
-      <span className="menubar-logo" aria-hidden="true">&gt;DA</span>
+      <span className="menubar-logo" aria-hidden="true">&gt;{profile.initials}</span>
       <ul className="menubar-menus" role="menubar">
         {menus.map((menu, index) => (
           <li key={menu.label} className={`menubar-menu${index === 0 ? ' app-menu' : ''}`} role="none">

@@ -3,9 +3,10 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { Portfolio } from './gui/Portfolio.tsx'
+import { profile } from './content.ts'
 
 const gui = /^\/gui(\/|\.html|$)/.test(location.pathname)
-if (gui) document.title = 'Deepratna Awale | Portfolio'
+if (gui) document.title = `${profile.name} | Portfolio`
 
 // /gui is prerendered for crawlers and no-JS visitors; the client renders fresh instead of hydrating.
 createRoot(document.getElementById('root')!).render(

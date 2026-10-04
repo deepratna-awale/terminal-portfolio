@@ -2,7 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffec
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { askAssistant, fetchCowthink, fetchProjects, type ChatTurn, type Project } from '../api'
-import { asciiLogo, profile } from '../content'
+import { asciiLogo, motd, os, profile } from '../content'
 import { commands, commandNames, directories, neofetchInfo, openExternal, resolveAlias, tokenize, type Line, type NewLine, type ShellContext } from '../shell/commands'
 import { initialCommand, pipeSplit, unshareable } from '../shell/deeplink'
 import { filterNames, filters, toPlainText } from '../shell/pipes'
@@ -26,17 +26,17 @@ function loadHistory(): string[] {
 function bootScript(theme: ThemeName): Array<{ line: NewLine; delay: number; typed?: boolean }> {
   const fingerprint = 'SHA256:dA7r/MjQ9xP2nKfE0wq+Zs3vTbYc8LuHg5oVe1iN4Ws'
   return [
-    { line: { type: 'command', text: 'guest@internet ~ % ssh guest@deepratna-awale.dev' }, delay: 250, typed: true },
-    { line: { type: 'muted', text: 'Resolving deepratna-awale.dev ... ok' }, delay: 260 },
-    { line: { type: 'muted', text: 'Connecting to deepratna-awale.dev port 22 ... connected.' }, delay: 320 },
+    { line: { type: 'command', text: `guest@internet ~ % ssh guest@${profile.host}` }, delay: 250, typed: true },
+    { line: { type: 'muted', text: `Resolving ${profile.host} ... ok` }, delay: 260 },
+    { line: { type: 'muted', text: `Connecting to ${profile.host} port 22 ... connected.` }, delay: 320 },
     { line: { type: 'muted', text: `ED25519 key fingerprint is ${fingerprint}.` }, delay: 180 },
-    { line: { type: 'muted', text: "Warning: Permanently added 'deepratna-awale.dev' (ED25519) to the list of known hosts." }, delay: 220 },
+    { line: { type: 'muted', text: `Warning: Permanently added '${profile.host}' (ED25519) to the list of known hosts.` }, delay: 220 },
     { line: { type: 'muted', text: 'Authenticating as guest (publickey) ... accepted.' }, delay: 300 },
     { line: { type: 'muted', text: 'Allocating pty, starting zsh ... done.' }, delay: 260 },
     { line: { type: 'ascii', text: asciiLogo }, delay: 120 },
     { line: { type: 'neofetch', text: `${profile.handle}@${profile.host}`, info: neofetchInfo(theme) }, delay: 160 },
-    { line: { type: 'output', text: `Welcome to **DeepOS 26.10 LTS** on ${profile.host}` }, delay: 120 },
-    { line: { type: 'muted', text: `  * ${profile.title}\n  * Building agentic AI for fraud and AML at Verafin\n  * Last login: ${new Date().toUTCString()} from your browser` }, delay: 120 },
+    { line: { type: 'output', text: `Welcome to **${os.name} ${os.version}** on ${profile.host}` }, delay: 120 },
+    { line: { type: 'muted', text: [profile.title, ...motd, `Last login: ${new Date().toUTCString()} from your browser`].filter(Boolean).map((item) => `  * ${item}`).join('\n') }, delay: 120 },
     { line: { type: 'success', text: 'Type [`help`](cmd:help) to explore, [`projects`](cmd:projects) for my GitHub, or just ask a question in plain English.' }, delay: 0 },
   ]
 }

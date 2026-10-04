@@ -1,9 +1,13 @@
 // Writes dist/gui.html: the built index.html shell with the static portfolio rendered inside #root.
 import { readFile, writeFile } from 'node:fs/promises'
+import { parseAboutMarkdown, siteProfile } from '../shared/about.js'
 
-const site = 'https://deepratna-awale.dev'
-const title = 'Deepratna Awale | Portfolio'
-const description = 'Deepratna Awale, Senior Software Engineer at Nasdaq (Verafin) building agentic AI for fraud and AML on AWS. Experience, projects, research and contact.'
+const about = parseAboutMarkdown(await readFile(new URL('../ABOUT.md', import.meta.url), 'utf8'))
+const profile = siteProfile(about.meta)
+const escapeAttr = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char])
+const site = profile.website
+const title = escapeAttr(`${profile.name} | Portfolio`)
+const description = escapeAttr(about.meta.seo?.gui_description ?? about.meta.seo?.description ?? `${profile.name}, ${profile.title}`)
 const placeholder = '<!--projects-->'
 const noscript = `<noscript><p style="font-family:system-ui,sans-serif;color:#e8eaf0;padding:2rem">This terminal needs JavaScript. Read the <a style="color:#3ddc97" href="/gui">full portfolio as a standard web page</a> instead.</p></noscript>`
 

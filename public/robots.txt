@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://deepratna-awale.dev/sitemap.xml

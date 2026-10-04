@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react'
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { Project } from '../api'
-import { profile, sections } from '../content'
+import { profile, sectionList, sections } from '../content'
 import './output.css'
 
-// Rich terminal layouts for the static sections. The markdown in content.ts
+// Rich terminal layouts for the known sections. The markdown in ABOUT.md
 // stays the single source (the GUI site and the assistant read it too); this
-// only parses its simple structure into boxes, timelines and chips.
+// only parses its simple structure into boxes, timelines and chips. Any other
+// section is rendered as plain markdown in a box.
 
 type LinkRenderer = (props: { href?: string; children?: ReactNode }) => ReactNode
 type Props = { name: string; renderLink: LinkRenderer }
@@ -41,7 +43,7 @@ function About({ renderLink }: { renderLink: LinkRenderer }) {
   return (
     <Box title="about" icon="◉" className="tbox-about">
       <div className="about-head">
-        <div className="about-avatar" aria-hidden="true">DA</div>
+        <div className="about-avatar" aria-hidden="true">{profile.initials}</div>
         <div>
           <div className="about-name">{profile.name}</div>
           <div className="about-title">{profile.title}</div>
@@ -200,5 +202,11 @@ export function SectionView({ name, renderLink }: Props) {
   if (name === 'publications') return <Publications renderLink={renderLink} />
   if (name === 'education') return <Education />
   if (name === 'contact') return <Contact renderLink={renderLink} />
-  return null
+  const generic = sectionList.find((section) => section.id === name)
+  if (!generic) return null
+  return (
+    <Box title={generic.id} icon="§" className="tbox-generic">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} urlTransform={(url) => (url.startsWith('cmd:') ? url : defaultUrlTransform(url))} components={{ a: renderLink }}>{generic.lines.join('\n')}</ReactMarkdown>
+    </Box>
+  )
 }

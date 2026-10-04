@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
 import ReactMarkdown, { defaultUrlTransform, type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ArrowUpRight, Award, BookOpen, FileText, GraduationCap, Mail, MapPin, Menu, Moon, RotateCw, Send, SquareTerminal, Star, Sun, X } from 'lucide-react'
 import { fetchContributions, fetchGuestbook, fetchProjects, signGuestbook, type Contributions, type GuestbookEntry, type Project } from '../api'
-import { nowItems, profile, sections } from '../content'
+import { contactCopy, focusDirs, linkLabel, nowItems, profile, sectionList, sections } from '../content'
 import { parseAbout, parseEducation, parseExperience, parsePublications, parseSkills, splitYear } from './parse'
 import './Portfolio.css'
 
@@ -17,10 +17,8 @@ type Props = {
   onAnchor?: (id: string) => void
 }
 
-const nav = [
-  ['about', 'About'], ['experience', 'Experience'], ['projects', 'Projects'], ['skills', 'Skills'], ['publications', 'Research'],
-  ['education', 'Education'], ['now', 'Now'], ['guestbook', 'Guestbook'], ['contact', 'Contact'],
-] as const
+// Sections and nav follow ABOUT.md: one per `# Heading`, in order.
+const nav = sectionList.map((section) => [section.id, section.nav] as const)
 const sectionIds = new Set<string>(nav.map(([id]) => id))
 const themeKey = 'portfolio.gui.theme'
 const MAX_MESSAGE = 280
@@ -280,13 +278,154 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
   const next = () => ++index
   const year = new Date().getFullYear()
 
+  const renderers: Record<string, (title: string) => ReactNode> = {
+    about: (title: string) => (
+      <Section id="about" index={next()} title={title} {...sectionProps}>
+        <div className="pf-about">
+          <div className="pf-prose">{about.prose.map((line) => <Md key={line}>{line}</Md>)}</div>
+          <dl className="pf-card pf-facts">
+            <div><dt>Role</dt><dd>{profile.title}</dd></div>
+            <div><dt>Based in</dt><dd>{profile.location}</dd></div>
+            {about.facts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd><Md inline>{fact.value}</Md></dd></div>)}
+          </dl>
+        </div>
+      </Section>
+    ),
+    experience: (title: string) => (
+      <Section id="experience" index={next()} title={title} {...sectionProps}>
+        <ol className="pf-timeline">
+          {experience.jobs.map((job) => (
+            <li key={`${job.role}-${job.company}`} className="pf-card pf-job">
+              <div className="pf-job-head">
+                <div>
+                  <h3>{job.role}</h3>
+                  <p className="pf-company"><Md inline>{job.company}</Md></p>
+                </div>
+                <p className="pf-job-when"><span className="pf-date">{job.dates}</span><span className="pf-muted">{job.location}</span></p>
+              </div>
+              {job.notes.map((note) => <p key={note} className="pf-job-note"><Md inline>{note}</Md></p>)}
+              <ul className="pf-bullets">{job.bullets.map((bullet) => <li key={bullet}><Md inline>{bullet}</Md></li>)}</ul>
+            </li>
+          ))}
+        </ol>
+        {experience.earlier && <p className="pf-muted pf-earlier"><strong>Earlier:</strong> <Md inline>{experience.earlier}</Md></p>}
+      </Section>
+    ),
+    projects: (title: string) => (
+      <Section id="projects" index={next()} title={title} wide {...sectionProps}>
+        {(sections.projects ?? []).filter((line) => line.trim()).map((line) => <p key={line} className="pf-lede"><Md inline>{line}</Md></p>)}
+        {prerender ? <div className="pf-grid pf-projects pf-projects-static" dangerouslySetInnerHTML={{ __html: '<!--projects-->' }} /> : <Projects />}
+        <p className="pf-more"><a href={profile.github} {...linkAttrs(profile.github)}>All repositories on GitHub <ArrowUpRight size={15} aria-hidden="true" /></a></p>
+      </Section>
+    ),
+    skills: (title: string) => (
+      <Section id="skills" index={next()} title={title} {...sectionProps}>
+        <div className="pf-grid pf-skills">
+          {skills.map((group) => (
+            <div key={group.category} className="pf-card pf-skill-group">
+              <h3>{group.category}</h3>
+              <ul className="pf-chips">{group.items.map((item) => <li key={item}>{item}</li>)}</ul>
+            </div>
+          ))}
+        </div>
+      </Section>
+    ),
+    publications: (title: string) => (
+      <Section id="publications" index={next()} title={title} {...sectionProps}>
+        <div className="pf-grid pf-papers">
+          {papers.map((paper) => (
+            <article key={paper.title} className="pf-card pf-paper">
+              <BookOpen size={20} className="pf-card-icon" aria-hidden="true" />
+              {paper.venue && <p className="pf-date">{paper.venue}</p>}
+              <h3>{paper.title}</h3>
+              <p>{paper.summary}</p>
+              {paper.links && <div className="pf-card-links"><Md inline>{paper.links}</Md></div>}
+            </article>
+          ))}
+        </div>
+      </Section>
+    ),
+    education: (title: string) => (
+      <Section id="education" index={next()} title={title} {...sectionProps}>
+        <div className="pf-edu">
+          <div className="pf-edu-degrees">
+            {education.degrees.map((degree) => {
+              const degreeYear = /,\s*(\d{4})$/.exec(degree.school)?.[1] ?? ''
+              const name = degree.school.replace(/,\s*\d{4}$/, '')
+              return (
+                <article key={degree.title} className="pf-card pf-degree">
+                  <GraduationCap size={22} className="pf-card-icon" aria-hidden="true" />
+                  <div>
+                    <h3>{degree.title}</h3>
+                    <p>{name}{degreeYear && <span className="pf-date"> · {degreeYear}</span>}</p>
+                    {degree.notes.map((note) => <p key={note} className="pf-muted">{note}</p>)}
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+          <ul className="pf-card pf-certs" aria-label="Certifications">
+            {education.certifications.map((cert) => {
+              const { name, year: certYear } = splitYear(cert)
+              return <li key={cert}><Award size={18} className="pf-card-icon" aria-hidden="true" /><span>{name}</span>{certYear && <span className="pf-date">{certYear}</span>}</li>
+            })}
+          </ul>
+        </div>
+      </Section>
+    ),
+    now: (title: string) => (
+      <Section id="now" index={next()} title={title} {...sectionProps}>
+        <div className="pf-now">
+          <div className="pf-card pf-now-list">
+            <p className="pf-date">Updated {nowItems.updated}</p>
+            <ul className="pf-bullets">{nowItems.items.map((item) => <li key={item}><Md inline>{item}</Md></li>)}</ul>
+          </div>
+          {live && <Heatmap />}
+        </div>
+      </Section>
+    ),
+    guestbook: (title: string) => (
+      <Section id="guestbook" index={next()} title={title} {...sectionProps}>
+        <Guestbook live={live} />
+      </Section>
+    ),
+    contact: (title: string) => (
+      <Section id="contact" index={next()} title={title} {...sectionProps}>
+        <div className="pf-card pf-contact">
+          <div>
+            {contactCopy.heading && <h3>{contactCopy.heading}</h3>}
+            {contactCopy.note && <p className="pf-muted">{contactCopy.note}</p>}
+            <div className="pf-actions">
+              <a className="pf-btn primary" href={`mailto:${profile.email}`}><Mail size={16} aria-hidden="true" /> {profile.email}</a>
+              <a className="pf-btn" href={profile.resume} {...linkAttrs(profile.resume)}><FileText size={16} aria-hidden="true" /> Resume</a>
+            </div>
+          </div>
+          <ul className="pf-contact-list">
+            <li><GitHubIcon /><a href={profile.github} {...linkAttrs(profile.github)}>{linkLabel(profile.github)}</a></li>
+            {profile.linkedin && <li><LinkedInIcon /><a href={profile.linkedin} {...linkAttrs(profile.linkedin)}>{linkLabel(profile.linkedin)}</a></li>}
+            <li><Mail size={16} aria-hidden="true" /><a href={`mailto:${profile.email}`}>{profile.email}</a></li>
+            <li><SquareTerminal size={16} aria-hidden="true" /><a href="/">Terminal version of this site</a></li>
+          </ul>
+        </div>
+      </Section>
+    ),
+  }
+
+  // Any heading without its own layout renders as markdown.
+  const genericSection = (id: string) => (title: string) => (
+    <Section id={id} index={next()} title={title} {...sectionProps}>
+      <div className="pf-prose pf-generic"><Md>{(sections[id] ?? []).join('\n')}</Md></div>
+    </Section>
+  )
+
+
   return (
     <div ref={root} className={`pf${embedded ? ' pf-embedded' : ' pf-standalone'}`} data-theme={theme} onClick={onClick}>
       <a className="pf-skip" href="#about">Skip to content</a>
       <nav className="pf-nav" aria-label="Sections">
         <div className="pf-nav-inner">
           <a className="pf-brand" href="#top" onClick={(event) => { event.preventDefault(); go('') }}>
-            <span className="pf-logo" aria-hidden="true">DA</span><span className="pf-brand-name">{profile.name}</span>
+            <span className="pf-logo" aria-hidden="true">{profile.initials}</span><span className="pf-brand-name">{profile.name}</span>
           </a>
           <ul className={`pf-nav-links${menuOpen ? ' open' : ''}`}>
             {nav.map(([id, label]) => <li key={id}><a href={`#${id}`} aria-current={active === id ? 'true' : undefined}>{label}</a></li>)}
@@ -302,7 +441,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
       <main className="pf-main" id={embedded ? undefined : 'top'}>
         <header className="pf-hero">
           <div className="pf-hero-text">
-            <p className="pf-kicker"><span className="pf-pulse" aria-hidden="true" /> Building agentic AI for fraud & AML</p>
+            {profile.tagline && <p className="pf-kicker"><span className="pf-pulse" aria-hidden="true" /> {profile.tagline}</p>}
             <h1>{profile.name}</h1>
             <p className="pf-role">{profile.title}</p>
             <p className="pf-location"><MapPin size={16} aria-hidden="true" /> {profile.location}</p>
@@ -311,7 +450,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
               <a className="pf-btn primary" href={profile.resume} {...linkAttrs(profile.resume)}><FileText size={16} aria-hidden="true" /> Resume PDF</a>
               <a className="pf-btn" href={`mailto:${profile.email}`}><Mail size={16} aria-hidden="true" /> Email</a>
               <a className="pf-btn" href={profile.github} {...linkAttrs(profile.github)}><GitHubIcon /> GitHub</a>
-              <a className="pf-btn" href={profile.linkedin} {...linkAttrs(profile.linkedin)}><LinkedInIcon /> LinkedIn</a>
+              {profile.linkedin && <a className="pf-btn" href={profile.linkedin} {...linkAttrs(profile.linkedin)}><LinkedInIcon /> LinkedIn</a>}
               <a className="pf-btn ghost" href="/"><SquareTerminal size={16} aria-hidden="true" /> Open terminal</a>
             </div>
           </div>
@@ -320,132 +459,13 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
             <pre>
               <span className="c">$</span> whoami{'\n'}<b>{profile.name}</b>{'\n\n'}
               <span className="c">$</span> cat role{'\n'}{profile.title}{'\n\n'}
-              <span className="c">$</span> ls focus/{'\n'}<i>agentic-ai/  evals/  aws/  ml-infra/</i>{'\n\n'}
+              {focusDirs.length > 0 && <><span className="c">$</span> ls focus/{'\n'}<i>{focusDirs.map((dir) => `${dir}/`).join('  ')}</i>{'\n\n'}</>}
               <span className="c">$</span> <span className="pf-caret" />
             </pre>
           </div>
         </header>
 
-        <Section id="about" index={next()} title="About" {...sectionProps}>
-          <div className="pf-about">
-            <div className="pf-prose">{about.prose.map((line) => <Md key={line}>{line}</Md>)}</div>
-            <dl className="pf-card pf-facts">
-              <div><dt>Role</dt><dd>{profile.title}</dd></div>
-              <div><dt>Based in</dt><dd>{profile.location}</dd></div>
-              {about.facts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd><Md inline>{fact.value}</Md></dd></div>)}
-            </dl>
-          </div>
-        </Section>
-
-        <Section id="experience" index={next()} title="Experience" {...sectionProps}>
-          <ol className="pf-timeline">
-            {experience.jobs.map((job) => (
-              <li key={`${job.role}-${job.company}`} className="pf-card pf-job">
-                <div className="pf-job-head">
-                  <div>
-                    <h3>{job.role}</h3>
-                    <p className="pf-company"><Md inline>{job.company}</Md></p>
-                  </div>
-                  <p className="pf-job-when"><span className="pf-date">{job.dates}</span><span className="pf-muted">{job.location}</span></p>
-                </div>
-                {job.notes.map((note) => <p key={note} className="pf-job-note"><Md inline>{note}</Md></p>)}
-                <ul className="pf-bullets">{job.bullets.map((bullet) => <li key={bullet}><Md inline>{bullet}</Md></li>)}</ul>
-              </li>
-            ))}
-          </ol>
-          {experience.earlier && <p className="pf-muted pf-earlier"><strong>Earlier:</strong> <Md inline>{experience.earlier}</Md></p>}
-        </Section>
-
-        <Section id="projects" index={next()} title="Projects" wide {...sectionProps}>
-          <p className="pf-lede">Pulled live from GitHub. Each card links to the code and, where there is one, a live demo.</p>
-          {prerender ? <div className="pf-grid pf-projects pf-projects-static" dangerouslySetInnerHTML={{ __html: '<!--projects-->' }} /> : <Projects />}
-          <p className="pf-more"><a href={profile.github} {...linkAttrs(profile.github)}>All repositories on GitHub <ArrowUpRight size={15} aria-hidden="true" /></a></p>
-        </Section>
-
-        <Section id="skills" index={next()} title="Skills" {...sectionProps}>
-          <div className="pf-grid pf-skills">
-            {skills.map((group) => (
-              <div key={group.category} className="pf-card pf-skill-group">
-                <h3>{group.category}</h3>
-                <ul className="pf-chips">{group.items.map((item) => <li key={item}>{item}</li>)}</ul>
-              </div>
-            ))}
-          </div>
-        </Section>
-
-        <Section id="publications" index={next()} title="Publications" {...sectionProps}>
-          <div className="pf-grid pf-papers">
-            {papers.map((paper) => (
-              <article key={paper.title} className="pf-card pf-paper">
-                <BookOpen size={20} className="pf-card-icon" aria-hidden="true" />
-                {paper.venue && <p className="pf-date">{paper.venue}</p>}
-                <h3>{paper.title}</h3>
-                <p>{paper.summary}</p>
-                {paper.links && <div className="pf-card-links"><Md inline>{paper.links}</Md></div>}
-              </article>
-            ))}
-          </div>
-        </Section>
-
-        <Section id="education" index={next()} title="Education & certifications" {...sectionProps}>
-          <div className="pf-edu">
-            <div className="pf-edu-degrees">
-              {education.degrees.map((degree) => {
-                const degreeYear = /,\s*(\d{4})$/.exec(degree.school)?.[1] ?? ''
-                const name = degree.school.replace(/,\s*\d{4}$/, '')
-                return (
-                  <article key={degree.title} className="pf-card pf-degree">
-                    <GraduationCap size={22} className="pf-card-icon" aria-hidden="true" />
-                    <div>
-                      <h3>{degree.title}</h3>
-                      <p>{name}{degreeYear && <span className="pf-date"> · {degreeYear}</span>}</p>
-                      {degree.notes.map((note) => <p key={note} className="pf-muted">{note}</p>)}
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
-            <ul className="pf-card pf-certs" aria-label="Certifications">
-              {education.certifications.map((cert) => {
-                const { name, year: certYear } = splitYear(cert)
-                return <li key={cert}><Award size={18} className="pf-card-icon" aria-hidden="true" /><span>{name}</span>{certYear && <span className="pf-date">{certYear}</span>}</li>
-              })}
-            </ul>
-          </div>
-        </Section>
-
-        <Section id="now" index={next()} title="Now" {...sectionProps}>
-          <div className="pf-now">
-            <div className="pf-card pf-now-list">
-              <p className="pf-date">Updated {nowItems.updated}</p>
-              <ul className="pf-bullets">{nowItems.items.map((item) => <li key={item}><Md inline>{item}</Md></li>)}</ul>
-            </div>
-            {live && <Heatmap />}
-          </div>
-        </Section>
-
-        <Section id="guestbook" index={next()} title="Guestbook" {...sectionProps}>
-          <Guestbook live={live} />
-        </Section>
-
-        <Section id="contact" index={next()} title="Contact" {...sectionProps}>
-          <div className="pf-card pf-contact">
-            <div>
-              <h3>Let's build something reliable.</h3>
-              <p className="pf-muted">Email is the fastest way to reach me.</p>
-              <div className="pf-actions">
-                <a className="pf-btn primary" href={`mailto:${profile.email}`}><Mail size={16} aria-hidden="true" /> {profile.email}</a>
-                <a className="pf-btn" href={profile.resume} {...linkAttrs(profile.resume)}><FileText size={16} aria-hidden="true" /> Resume</a>
-              </div>
-            </div>
-            <ul className="pf-contact-list">
-              <li><GitHubIcon /><a href={profile.github} {...linkAttrs(profile.github)}>github.com/deepratna-awale</a></li>
-              <li><LinkedInIcon /><a href={profile.linkedin} {...linkAttrs(profile.linkedin)}>linkedin.com/in/deepratna-awale</a></li>
-              <li><Mail size={16} aria-hidden="true" /><a href={`mailto:${profile.email}`}>{profile.email}</a></li>
-              <li><SquareTerminal size={16} aria-hidden="true" /><a href="/">Terminal version of this site</a></li>
-            </ul>
-          </div>
-        </Section>
+        {sectionList.map((section) => <Fragment key={section.id}>{(renderers[section.id] ?? genericSection(section.id))(section.title)}</Fragment>)}
       </main>
 
       <footer className="pf-footer">
