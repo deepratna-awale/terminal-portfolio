@@ -5,6 +5,7 @@ import { HOME, NEWTAB, pageHash, pageTitle, resolveAddress } from '../gui/addres
 import { Portfolio } from '../gui/Portfolio'
 import './Browser.css'
 import { TrafficLights } from './TrafficLights'
+import { useResizable } from './useResizable'
 
 type Tab = { id: number; history: string[]; index: number; reload: number; loading: boolean }
 type Mode = 'normal' | 'maximized' | 'minimized'
@@ -59,6 +60,14 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
   const [address, setAddress] = useState<string | null>(null)
   const [toast, setToast] = useState<{ text: string; key: number } | null>(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const shiftBase = useRef(0)
+  const resize = useResizable('browser', {
+    disabled: mode !== 'normal', min: { width: 480, height: 320 }, anchor: 'top',
+    onTopShift: (shift, phase) => {
+      if (phase === 'start') shiftBase.current = offset.y
+      else setOffset((current) => ({ ...current, y: shiftBase.current + shift }))
+    },
+  })
   const [menu, setMenu] = useState(false)
   const root = useRef<HTMLElement>(null)
   const addressInput = useRef<HTMLInputElement>(null)
@@ -220,7 +229,7 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
       className={`cb cb-${mode}`}
       hidden={mode === 'minimized'}
       aria-label="Browser"
-      style={mode === 'normal' ? ({ '--dx': `${offset.x}px`, '--dy': `${offset.y}px` } as CSSProperties) : undefined}
+      style={mode === 'normal' ? ({ '--dx': `${offset.x}px`, '--dy': `${offset.y}px`, ...resize.style } as CSSProperties) : undefined}
       onPointerDownCapture={() => onFront?.(true)}
       onFocusCapture={() => { focused.current = true }}
     >
@@ -302,6 +311,7 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
         })}
         {toast && <div className="cb-toast" role="status" key={toast.key}>{toast.text}</div>}
       </div>
+      {mode === 'normal' && resize.handles}
     </section>
   )
 }
