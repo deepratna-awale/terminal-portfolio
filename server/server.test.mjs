@@ -1,0 +1,37 @@
+import { describe, expect, it } from 'vitest'
+import { parseContributions } from './contributions.mjs'
+import { clean, validate } from './guestbook.mjs'
+import { signRequest } from './s3.mjs'
+
+describe('s3 signing', () => {
+  it('matches the AWS SigV4 GetObject example', () => {
+    const headers = signRequest({
+      method: 'GET', host: 'examplebucket.s3.amazonaws.com', path: '/test.txt', region: 'us-east-1',
+      accessKeyId: 'AKIAIOSFODNN7EXAMPLE', secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+      headers: { Range: 'bytes=0-9' }, now: new Date('2013-05-24T00:00:00Z'),
+    })
+    expect(headers.Authorization).toBe('AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request, SignedHeaders=host;range;x-amz-content-sha256;x-amz-date, Signature=f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41')
+  })
+})
+
+describe('guestbook', () => {
+  it('strips control and bidi characters and defangs links', () => {
+    expect(clean('hi‮ there\n\nsee https://spam.example', 280)).toBe('hi there see [link removed]')
+  })
+
+  it('validates entries', () => {
+    expect(validate({ message: 'x' }).error).toBeTruthy()
+    expect(validate({ message: 'a'.repeat(281) }).error).toContain('280')
+    expect(validate({ message: 'hello', website: 'bot' }).entry).toBeUndefined()
+    expect(validate({ name: '', message: 'hello there' }).entry).toMatchObject({ name: 'guest', message: 'hello there' })
+  })
+})
+
+describe('contributions', () => {
+  it('parses the calendar fragment', () => {
+    const html = `<h2>1,234 contributions in the last year</h2>
+      <td data-date="2026-01-02" id="day-1" data-level="2" class="x"></td><tool-tip for="day-1" class="sr-only">5 contributions on January 2nd.</tool-tip>
+      <td data-date="2026-01-01" id="day-0" data-level="0"></td><tool-tip for="day-0">No contributions on January 1st.</tool-tip>`
+    expect(parseContributions(html)).toEqual({ total: 1234, days: [{ date: '2026-01-01', level: 0, count: 0 }, { date: '2026-01-02', level: 2, count: 5 }] })
+  })
+})

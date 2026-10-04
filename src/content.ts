@@ -93,6 +93,16 @@ export const sections: Record<string, string[]> = {
   ],
 }
 
+// Shown by `now`. Keep it short and current; recent GitHub pushes are added live.
+export const nowItems = {
+  updated: 'October 2026',
+  items: [
+    'Building agents on AWS Bedrock AgentCore at Nasdaq (Verafin) that work BSA/AML cases and cut false positives.',
+    'Building the pipeline that lets other engineers ship agents with tools and skills safely.',
+    `Running this portfolio in the open: Terraform, Lightsail and Bedrock. Source: [GitHub](${profile.source}).`,
+  ],
+}
+
 export const mediaFiles: Record<string, { src: string; alt: string }> = {
   'profile.svg': { src: '/media/profile.svg', alt: 'Abstract profile illustration for Deepratna Awale' },
   'architecture.svg': { src: '/media/architecture.svg', alt: 'Architecture diagram of this portfolio: browser, Lightsail container, Bedrock and GitHub' },

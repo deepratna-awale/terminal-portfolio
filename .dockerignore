@@ -6,3 +6,4 @@ dist
 terraform
 .env
 .env.*
+dist-ssr

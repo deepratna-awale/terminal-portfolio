@@ -1,4 +1,4 @@
-export type ThemeName = 'phosphor' | 'golden' | 'dracula' | 'nord' | 'paper'
+export type ThemeName = 'phosphor' | 'golden' | 'dracula' | 'solarized' | 'gruvbox' | 'nord' | 'paper'
 
 export const themes: Record<ThemeName, { label: string; vars: Record<string, string> }> = {
   phosphor: {
@@ -12,6 +12,14 @@ export const themes: Record<ThemeName, { label: string; vars: Record<string, str
   dracula: {
     label: 'Dracula',
     vars: { '--fg': '#f8f8f2', '--muted': '#6272a4', '--accent': '#ff79c6', '--accent-2': '#50fa7b', '--link': '#8be9fd', '--error': '#ff5555', '--success': '#50fa7b', '--command': '#bd93f9', '--code-bg': '#44475a', '--term-bg': 'rgba(40,42,54,.86)', '--chrome-bg': 'rgba(33,34,44,.9)', '--border': 'rgba(189,147,249,.3)', '--glow': 'none' },
+  },
+  solarized: {
+    label: 'Solarized Dark',
+    vars: { '--fg': '#93a1a1', '--muted': '#586e75', '--accent': '#b58900', '--accent-2': '#2aa198', '--link': '#268bd2', '--error': '#dc322f', '--success': '#859900', '--command': '#cb4b16', '--code-bg': '#073642', '--term-bg': 'rgba(0,43,54,.9)', '--chrome-bg': 'rgba(7,54,66,.92)', '--border': 'rgba(147,161,161,.25)', '--glow': 'none' },
+  },
+  gruvbox: {
+    label: 'Gruvbox',
+    vars: { '--fg': '#ebdbb2', '--muted': '#928374', '--accent': '#fabd2f', '--accent-2': '#b8bb26', '--link': '#83a598', '--error': '#fb4934', '--success': '#b8bb26', '--command': '#fe8019', '--code-bg': '#3c3836', '--term-bg': 'rgba(40,40,40,.9)', '--chrome-bg': 'rgba(50,48,47,.92)', '--border': 'rgba(235,219,178,.22)', '--glow': 'none' },
   },
   nord: {
     label: 'Nord',

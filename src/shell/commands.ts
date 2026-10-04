@@ -1,10 +1,13 @@
 import type { Project } from '../api'
-import { fetchCowthink, fetchFortune } from '../api'
-import { asciiLogo, mediaFiles, profile, sections } from '../content'
+import { fetchContributions, fetchCowthink, fetchFortune, fetchGuestbook, signGuestbook } from '../api'
+import { mediaFiles, nowItems, profile, sections } from '../content'
 import { isThemeName, themeNames, themes, type ThemeName } from '../themes'
+import { renderHeatmap } from './heatmap'
+import { filters, grepLines, toPlainText } from './pipes'
+import { closest } from './typo'
 
-export type LineType = 'command' | 'output' | 'muted' | 'success' | 'error' | 'media' | 'ascii' | 'assistant'
-export type Line = { id: number; type: LineType; text: string; media?: { src: string; alt: string; href?: string } }
+export type LineType = 'command' | 'output' | 'muted' | 'success' | 'error' | 'media' | 'ascii' | 'assistant' | 'plain' | 'neofetch' | 'section' | 'projects'
+export type Line = { id: number; type: LineType; text: string; media?: { src: string; alt: string; href?: string }; info?: string[]; section?: string; projects?: Project[]; detailed?: boolean }
 export type NewLine = Omit<Line, 'id'>
 
 export type ShellContext = {
@@ -24,20 +27,76 @@ export type ShellContext = {
     exit: () => void
     matrix: () => void
     replayBoot: () => void
+    setCrt: (on: boolean) => void
+    crt: boolean
+    game: (name: 'snake' | '2048') => void
+    vim: (file: string, text: string) => void
+    meltdown: () => void
+    openBrowser: (url?: string) => void
   }
 }
 
 type Command = { summary: string; group: 'Portfolio' | 'Navigation' | 'Terminal' | 'Fun'; usage?: string; hidden?: boolean; run: (args: string[], ctx: ShellContext) => void | Promise<void> }
 
 export const directories = ['about', 'experience', 'projects', 'skills', 'publications', 'education', 'contact', 'media']
-export const aliases: Record<string, string> = { ll: 'ls -l', la: 'ls -a', '..': 'cd ..', '~': 'cd ~', q: 'exit', h: 'help', cls: 'clear', papers: 'publications', research: 'publications' }
+export const aliases: Record<string, string> = { ll: 'ls -l', la: 'ls -a', '..': 'cd ..', '~': 'cd ~', q: 'exit', h: 'help', cls: 'clear', papers: 'publications', research: 'publications', graph: 'contributions', gb: 'guestbook', cowsay: 'cowthink', html: 'gui' }
 
 export const cmd = (label: string, command: string) => `[${label}](cmd:${encodeURIComponent(command)})`
 const out = (text: string): NewLine => ({ type: 'output', text })
 const muted = (text: string): NewLine => ({ type: 'muted', text })
 const err = (text: string): NewLine => ({ type: 'error', text })
+const section = (name: string): NewLine => ({ type: 'section', section: name, text: sections[name]!.join('\n') })
 const fence = (text: string) => `\`\`\`text\n${text}\n\`\`\``
 const clean = (target: string) => target.replace(/^~\/?/, '').replace(/^\//, '').replace(/\/$/, '')
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+const didYouMean = (suggestion: string | undefined, command: string) => (suggestion ? [muted(`did you mean ${cmd(`\`${command}\``, command)}?`)] : [])
+export const siteUrl = (command: string) => `${profile.website}/?cmd=${encodeURIComponent(command)}`
+
+// The virtual filesystem: every top-level section is a directory holding <name>.md.
+export const fileNames = [...directories.filter((dir) => sections[dir]).map((dir) => `${dir}.md`), 'README.md', 'resume.md', '.zshrc']
+
+const zshrc = () => ['export EDITOR=vim', 'setopt autocd histignoredups', ...Object.entries(aliases).map(([name, value]) => `alias ${name}='${value}'`), 'eval "$(curiosity init zsh)"'].join('\n')
+
+export function resumeText(): string {
+  return [`# ${profile.name}`, `${profile.title} | ${profile.location}`, `${profile.email} | ${profile.linkedin} | ${profile.github}`, '', ...['about', 'experience', 'skills', 'education', 'publications'].flatMap((name) => [`## ${name[0]!.toUpperCase()}${name.slice(1)}`, ...sections[name]!.filter((line) => !line.includes('](cmd:') && !line.startsWith('# ')).map((line) => (line.startsWith('## ') ? `### ${toPlainText(line)}` : toPlainText(line))), ''])].join('\n').replace(/\n{3,}/g, '\n\n')
+}
+
+// Resolves a path to the plain text of a static file, or undefined.
+export function readFile(target: string, path = '~'): { name: string; text: string } | undefined {
+  const raw = clean(target)
+  const full = path !== '~' && !raw.includes('/') && !directories.includes(raw.replace(/\.md$/, '')) && !fileNames.includes(raw) ? `${path}/${raw}` : raw
+  const parts = full.split('/')
+  const base = (parts.at(-1) ?? '').replace(/\.(md|pdf|txt)$/, '')
+  if (parts.length > 2 || (parts.length === 2 && parts[0] !== base)) return undefined
+  if (base === 'README' || base === 'readme') return { name: 'README.md', text: sections.about!.map(toPlainText).join('\n') }
+  if (base === 'resume') return { name: 'resume.md', text: resumeText() }
+  if (base === '.zshrc') return { name: '.zshrc', text: zshrc() }
+  if (sections[base]) return { name: `${base}.md`, text: sections[base]!.map(toPlainText).join('\n') }
+  return undefined
+}
+
+function allFiles(): Array<{ name: string; text: string }> {
+  return fileNames.filter((name) => name !== '.zshrc' && name !== 'resume.md').map((name) => readFile(name)!).filter(Boolean)
+}
+
+// rm -rf /, rm -fr /*, rm -rf --no-preserve-root / and friends.
+export const isRootWipe = (args: string[]) => args.some((arg) => /^-[a-zA-Z]*r[a-zA-Z]*$/.test(arg) || arg === '--recursive') && args.some((arg) => arg === '/' || arg === '/*' || arg === '~' || arg === '~/' || arg === '*')
+
+const train = [
+  '      ====        ________                ___________',
+  '  _D _|  |_______/        \\__I_I_____===__|_________|',
+  '   |(_)---  |   H\\________/ |   |        =|___ ___|',
+  '   /     |  |   H  |  |     |   |         ||_| |_||',
+  '  |      |  |   H  |__--------------------| [___] |',
+  '  | ________|___H__/__|_____/[][]~\\_______|       |',
+  '  |/ |   |-----------I_____I [][] []  D   |=======|__',
+  '__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__',
+  ' |/-=|___|=    ||    ||    ||    |_____/~\\___/',
+  '  \\_/      \\O=====O=====O=====O_/      \\_/',
+].join('\n')
+
+const escapeMd = (text: string) => text.replace(/([\\`*_[\]<>#|~])/g, '\\$1')
 
 export function openExternal(url: string) {
   if (url.startsWith('mailto:')) window.location.href = url
@@ -57,10 +116,12 @@ async function showProjects(ctx: ShellContext, name?: string) {
     const projects = await ctx.projects()
     if (name) {
       const project = projects.find((item) => item.name.toLowerCase() === name.toLowerCase().replace(/\.md$/, ''))
-      ctx.print([project ? out(formatProject(project, true)) : err(`cat: projects/${name}: No such file or directory`)])
+      if (project) { ctx.print([{ type: 'projects', text: formatProject(project, true), projects: [project], detailed: true }]); return }
+      const guess = closest(name, projects.map((item) => item.name))
+      ctx.print([err(`cat: projects/${name}: No such file or directory`), ...didYouMean(guess, `cat projects/${guess}`)])
       return
     }
-    ctx.print([...projects.map((project) => out(formatProject(project))), muted(`${projects.length} public repositories. Try \`cat projects/<name>\` or \`open <name>\`.`)])
+    ctx.print([{ type: 'projects', text: projects.map((project) => formatProject(project)).join('\n\n'), projects }, muted(`${projects.length} public repositories. Try \`cat projects/<name>\` or \`open <name>\`.`)])
   } catch (error) {
     ctx.print([err(`projects: ${error instanceof Error ? error.message : 'GitHub is unreachable right now'}`), muted(`Browse them directly at ${profile.github}`)])
   }
@@ -87,8 +148,9 @@ async function listDirectory(ctx: ShellContext, target: string, long: boolean) {
     } catch { ctx.print([err('ls: screenshots: GitHub is unreachable right now')]) }
     return
   }
-  if (directories.includes(dir)) { ctx.print([out(`${dir}.md`)]); return }
-  ctx.print([err(`ls: ${target}: No such file or directory`)])
+  if (directories.includes(dir)) { ctx.print([out(cmd(`${dir}.md`, `cat ${dir}`))]); return }
+  const guess = closest(dir, directories)
+  ctx.print([err(`ls: ${target}: No such file or directory`), ...didYouMean(guess, `ls ${guess}`)])
 }
 
 async function viewMedia(ctx: ShellContext, target = 'architecture.svg') {
@@ -103,24 +165,108 @@ async function viewMedia(ctx: ShellContext, target = 'architecture.svg') {
   } catch { ctx.print([err('view: GitHub is unreachable right now')]) }
 }
 
-function neofetch(ctx: ShellContext) {
+export function neofetchInfo(theme: ThemeName): string[] {
   const uptime = Math.floor(performance.now() / 1000)
-  const info = [
-    `${profile.handle}@${profile.host}`,
-    '-'.repeat(28),
-    `OS:       DeepOS 26.10 (web)`,
+  return [
+    `OS:       DeepOS 26.10 LTS`,
     `Host:     AWS Lightsail nano, us-east-1`,
     `Kernel:   React 19 + Vite`,
     `Uptime:   ${Math.floor(uptime / 60)}m ${uptime % 60}s`,
     `Shell:    zsh (browser edition)`,
-    `Theme:    ${themes[ctx.theme].label}`,
+    `Theme:    ${themes[theme].label}`,
     `Role:     ${profile.title}`,
     `Focus:    Agentic AI for fraud & AML`,
     `Location: ${profile.location}`,
     `Cert:     AWS ML Engineer, Associate`,
   ]
-  const art = asciiLogo.split('\n')
-  ctx.print([{ type: 'ascii', text: art.join('\n') }, out(fence(info.join('\n')))])
+}
+
+const neofetch = (ctx: ShellContext) => ctx.print([{ type: 'neofetch', text: `${profile.handle}@${profile.host}`, info: neofetchInfo(ctx.theme) }])
+
+const relative = (iso: string) => {
+  const days = Math.floor((Date.now() - Date.parse(iso)) / 86_400_000)
+  return days <= 0 ? 'today' : days === 1 ? 'yesterday' : days < 30 ? `${days} days ago` : days < 365 ? `${Math.floor(days / 30)} months ago` : `${Math.floor(days / 365)} years ago`
+}
+
+async function contributions(ctx: ShellContext, quiet = false) {
+  if (!quiet) ctx.print([muted(`fetching github.com/${profile.handle === 'deepratna' ? 'deepratna-awale' : profile.handle} contributions ...`)])
+  try {
+    const data = await fetchContributions()
+    ctx.print([{ type: 'ascii', text: renderHeatmap(data.days) }, muted(`${data.total.toLocaleString()} contributions in the last year. Less · ░ ▒ ▓ █ More`)])
+  } catch (error) {
+    ctx.print([err(`contributions: ${error instanceof Error ? error.message : 'GitHub is unreachable right now'}`)])
+  }
+}
+
+async function now(ctx: ShellContext) {
+  ctx.print([{ type: 'success', text: `What I'm doing now (updated ${nowItems.updated})` }, out(nowItems.items.map((item) => `- ${item}`).join('\n'))])
+  try {
+    const recent = [...await ctx.projects()].sort((a, b) => Date.parse(b.pushedAt) - Date.parse(a.pushedAt)).slice(0, 3)
+    if (recent.length) ctx.print([out(`**Recently pushed**\n${recent.map((project) => `- ${cmd(project.name, `cat projects/${project.name}`)}  *${relative(project.pushedAt)}*`).join('\n')}`)])
+  } catch { /* projects are a bonus here */ }
+  await contributions(ctx, true)
+}
+
+async function meltdown(ctx: ShellContext) {
+  const victims = ['/usr/bin/zsh', '/etc/passwd', '/home/deepratna/projects', '/home/deepratna/resume.pdf', '/var/www/portfolio/index.html', '/opt/bedrock/claude', '/lib/react.so.19', '/boot/vmlinuz-deepos', '/dev/coffee']
+  const fast = reducedMotion()
+  for (const victim of victims) { ctx.print([muted(`removed '${victim}'`)]); if (!fast) await sleep(110) }
+  ctx.ui.meltdown()
+  ctx.print([err('rm: cannot remove \'/proc/self\': the portfolio is eating itself')])
+  if (!fast) await sleep(1600)
+  ctx.clear()
+  ctx.print([{ type: 'ascii', text: ['Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000dead', '', '---[ end Kernel panic - not syncing ]---', '', 'Relax: this site is immutable infrastructure. Redeploying from the last image ...'].join('\n') }])
+  if (!fast) await sleep(2400)
+  ctx.ui.replayBoot()
+}
+
+async function guestbook(args: string[], ctx: ShellContext) {
+  if (args[0] === 'sign') {
+    const nameIndex = args.findIndex((arg) => arg === '-n' || arg === '--name')
+    const name = nameIndex > 0 ? args[nameIndex + 1] ?? '' : ''
+    const message = args.slice(1).filter((_, index) => nameIndex < 0 || (index + 1 !== nameIndex && index + 1 !== nameIndex + 1)).join(' ').trim()
+    if (!message) { ctx.print([muted('usage: guestbook sign [-n <name>] <message>   e.g. guestbook sign -n Ada "love the terminal!"')]); return }
+    try {
+      const entry = await signGuestbook(name || 'guest', message)
+      ctx.print([{ type: 'success', text: `Signed. Thanks, ${entry.name}!` }, { type: 'plain', text: `${entry.name} · just now\n  ${entry.message}` }])
+    } catch (error) { ctx.print([err(`guestbook: ${error instanceof Error ? error.message : 'unavailable right now'}`)]) }
+    return
+  }
+  try {
+    const entries = await fetchGuestbook()
+    if (!entries.length) ctx.print([muted('The guestbook is empty. Be the first: `guestbook sign <message>`')])
+    else ctx.print([{ type: 'plain', text: entries.slice(0, Number(args[0]) || 12).map((entry) => `${entry.name} · ${relative(entry.at)}\n  ${entry.message}`).join('\n\n') }])
+    ctx.print([muted(`Leave a note: ${cmd('guestbook sign <message>', 'guestbook sign')}  (plain text, 280 characters, public)`)])
+  } catch (error) { ctx.print([err(`guestbook: ${error instanceof Error ? error.message : 'unavailable right now'}`)]) }
+}
+
+async function grepFiles(args: string[], ctx: ShellContext) {
+  const flags = args.filter((arg) => /^-[a-z]+$/.test(arg))
+  const [pattern, ...targets] = args.filter((arg) => !/^-[a-z]+$/.test(arg))
+  if (!pattern) { ctx.print([err('usage: grep [-iv] <pattern> [file ...]   (searches every file when none is given)')]); return }
+  const files = targets.length ? targets.map((target) => readFile(target, ctx.path) ?? { name: target, text: '' }) : allFiles()
+  const hits = files.flatMap((file) => {
+    const matched = grepLines(file.text.split('\n'), [...flags.filter((flag) => flag !== '-c'), pattern])
+    return Array.isArray(matched) ? matched.map((line) => `${cmd(file.name, `cat ${file.name.replace(/\.md$/, '')}`)}: ${escapeMd(line.trim())}`) : []
+  })
+  ctx.print([hits.length ? out(hits.join('\n')) : muted(`grep: no matches for '${pattern}'`)])
+}
+
+function fileFilter(name: string) {
+  return (args: string[], ctx: ShellContext) => {
+    const target = args.find((arg) => !arg.startsWith('-') && !/^\d+$/.test(arg))
+    const file = target ? readFile(target, ctx.path) : undefined
+    if (!file) { ctx.print([err(target ? `${name}: ${target}: No such file or directory` : `usage: ${name} <file>  (or pipe into it: cat about | ${name})`)]); return }
+    const result = filters[name]!(file.text.split('\n'), args.filter((arg) => arg !== target))
+    ctx.print([Array.isArray(result) ? out(fence(result.join('\n'))) : err(result.error)])
+  }
+}
+
+function openVim(args: string[], ctx: ShellContext) {
+  const target = args.find((arg) => !arg.startsWith('-') && !arg.startsWith('+'))
+  if (!target) { ctx.ui.vim('', ''); return }
+  const file = readFile(target, ctx.path)
+  ctx.ui.vim(file?.name ?? clean(target), file?.text ?? '')
 }
 
 export const commands: Record<string, Command> = {
@@ -132,13 +278,13 @@ export const commands: Record<string, Command> = {
       muted('zsh keys work: Tab, ^A ^E ^U ^K ^W ^Y ^L ^C ^R, ⌥B ⌥F, ↑↓, → accepts a suggestion, !! and !$. See `shortcuts`.'),
     ])
   } },
-  about: { group: 'Portfolio', summary: 'who I am', run: (_args, ctx) => ctx.print([out(sections.about!.join('\n'))]) },
-  experience: { group: 'Portfolio', summary: 'work history, including Nasdaq', run: (_args, ctx) => ctx.print([out(sections.experience!.join('\n'))]) },
+  about: { group: 'Portfolio', summary: 'who I am', run: (_args, ctx) => ctx.print([section('about')]) },
+  experience: { group: 'Portfolio', summary: 'work history, including Nasdaq', run: (_args, ctx) => ctx.print([section('experience')]) },
   projects: { group: 'Portfolio', summary: 'live from my public GitHub', usage: 'projects [name]', run: (args, ctx) => showProjects(ctx, args[0]) },
-  skills: { group: 'Portfolio', summary: 'tools and stacks', run: (_args, ctx) => ctx.print([out(sections.skills!.join('\n'))]) },
-  publications: { group: 'Portfolio', summary: 'research papers', run: (_args, ctx) => ctx.print([out(sections.publications!.join('\n'))]) },
-  education: { group: 'Portfolio', summary: 'degrees and certifications', run: (_args, ctx) => ctx.print([out(sections.education!.join('\n'))]) },
-  contact: { group: 'Portfolio', summary: 'ways to reach me', run: (_args, ctx) => ctx.print([out(sections.contact!.join('\n'))]) },
+  skills: { group: 'Portfolio', summary: 'tools and stacks', run: (_args, ctx) => ctx.print([section('skills')]) },
+  publications: { group: 'Portfolio', summary: 'research papers', run: (_args, ctx) => ctx.print([section('publications')]) },
+  education: { group: 'Portfolio', summary: 'degrees and certifications', run: (_args, ctx) => ctx.print([section('education')]) },
+  contact: { group: 'Portfolio', summary: 'ways to reach me', run: (_args, ctx) => ctx.print([section('contact')]) },
   resume: { group: 'Portfolio', summary: 'open my resume (PDF)', run: (args, ctx) => {
     ctx.print([{ type: 'success', text: `[Resume-Awale-Deepratna.pdf](${profile.resume}) (opening in a new tab)` }])
     if (!args.includes('--no-open')) openExternal(profile.resume)
@@ -158,7 +304,8 @@ export const commands: Record<string, Command> = {
     const dir = clean(destination)
     const resolved = ctx.path !== '~' && !destination.startsWith('~') && !destination.startsWith('/') && !directories.includes(dir) ? `${ctx.path}/${dir}` : dir
     if (directories.includes(resolved) || resolved === 'media/screenshots') { ctx.setPath(resolved); return }
-    ctx.print([err(`cd: no such file or directory: ${destination}`)])
+    const guess = closest(dir, directories)
+    ctx.print([err(`cd: no such file or directory: ${destination}`), ...didYouMean(guess, `cd ${guess}`)])
   } },
   pwd: { group: 'Navigation', summary: 'print working directory', run: (_args, ctx) => ctx.print([out(`/home/${profile.handle}${ctx.path === '~' ? '' : `/${ctx.path}`}`)]) },
   cat: { group: 'Navigation', summary: 'print a file', usage: 'cat <file>', run: (args, ctx) => {
@@ -169,21 +316,22 @@ export const commands: Record<string, Command> = {
     const base = dir!.replace(/\.md$/, '')
     if (base === 'README' || base === 'README.md') return commands.about!.run([], ctx)
     if (base === 'resume.pdf' || base === 'resume') return commands.resume!.run([], ctx)
-    if (base === '.zshrc') { ctx.print([out(fence(['export EDITOR=vim', 'setopt autocd histignoredups', ...Object.entries(aliases).map(([name, value]) => `alias ${name}='${value}'`), 'eval "$(curiosity init zsh)"'].join('\n')))]); return }
+    if (base === '.zshrc') { ctx.print([out(fence(zshrc()))]); return }
+    if (base === 'resume.md') { ctx.print([out(fence(resumeText()))]); return }
     if (base === 'projects' && file) return showProjects(ctx, file)
     if (base === 'media' && file) return viewMedia(ctx, file)
     if (commands[base] && directories.includes(base) && base !== 'projects' && base !== 'media') return commands[base]!.run([], ctx)
     if (base === 'projects') return showProjects(ctx)
-    ctx.print([err(`cat: ${target}: No such file or directory`)])
+    const guess = closest(base, [...directories, ...fileNames])
+    ctx.print([err(`cat: ${target}: No such file or directory`), ...didYouMean(guess, `cat ${guess}`)])
   } },
   tree: { group: 'Navigation', summary: 'show the whole site map', run: async (_args, ctx) => {
     let projectNames: string[] = []
     try { projectNames = (await ctx.projects()).map((project) => project.name) } catch { projectNames = ['(GitHub unreachable)'] }
-    const lines = ['~', ...directories.flatMap((dir, index) => {
-      const last = index === directories.length - 1
-      const children = dir === 'projects' ? projectNames : dir === 'media' ? [...Object.keys(mediaFiles), 'screenshots/'] : []
-      return [`${last ? '└──' : '├──'} ${dir}/`, ...children.map((child, childIndex) => `${last ? '    ' : '│   '}${childIndex === children.length - 1 ? '└──' : '├──'} ${child}`)]
-    }), '└── README.md']
+    const lines = ['~', ...directories.flatMap((dir) => {
+      const children = dir === 'projects' ? projectNames : dir === 'media' ? [...Object.keys(mediaFiles), 'screenshots/'] : [`${dir}.md`]
+      return [`├── ${dir}/`, ...children.map((child, childIndex) => `│   ${childIndex === children.length - 1 ? '└──' : '├──'} ${child}`)]
+    }), '├── .zshrc', '├── resume.md', '└── README.md']
     ctx.print([out(fence(lines.join('\n')))])
   } },
   view: { group: 'Navigation', summary: 'show an image, diagram or project screenshot', usage: 'view <file>', run: (args, ctx) => viewMedia(ctx, args[0]) },
@@ -199,10 +347,11 @@ export const commands: Record<string, Command> = {
   } },
   clear: { group: 'Terminal', summary: 'clear the screen (^L)', run: (_args, ctx) => ctx.clear() },
   history: { group: 'Terminal', summary: 'command history (^R to search)', run: (_args, ctx) => ctx.print([out(ctx.history.map((item, index) => `${String(index + 1).padStart(5)}  ${item}`).join('\n') || 'No commands yet.')]) },
-  theme: { group: 'Terminal', summary: `switch colours: ${themeNames.join(', ')}`, usage: 'theme [name]', run: (args, ctx) => {
+  theme: { group: 'Terminal', summary: `switch colours: ${themeNames.join(', ')}, crt`, usage: 'theme [name]', run: (args, ctx) => {
     const name = args[0]
-    if (!name) { ctx.print([out(themeNames.map((theme) => `${theme === ctx.theme ? '●' : '○'} ${cmd(theme, `theme ${theme}`)}  ${themes[theme].label}`).join('\n'))]); return }
-    if (!isThemeName(name)) { ctx.print([err(`theme: unknown theme '${name}'`)]); return }
+    if (!name) { ctx.print([out(themeNames.map((theme) => `${theme === ctx.theme ? '●' : '○'} ${cmd(theme, `theme ${theme}`)}  ${themes[theme].label}`).join('\n') + `\n${ctx.ui.crt ? '●' : '○'} ${cmd('crt', 'theme crt')}  CRT scanlines (toggle)`)]); return }
+    if (name === 'crt' || name === 'scanlines') return commands.crt!.run([], ctx)
+    if (!isThemeName(name)) { const guess = closest(name, themeNames); ctx.print([err(`theme: unknown theme '${name}'`), ...didYouMean(guess, `theme ${guess}`)]); return }
     ctx.ui.setTheme(name)
     ctx.print([{ type: 'success', text: `theme set to ${themes[name].label}` }])
   } },
@@ -222,7 +371,8 @@ export const commands: Record<string, Command> = {
   whoami: { group: 'Terminal', summary: 'print effective user', hidden: true, run: (_args, ctx) => ctx.print([out('guest  (but you can ask about deepratna)')]) },
   date: { group: 'Terminal', summary: 'print the date', hidden: true, run: (_args, ctx) => ctx.print([out(new Date().toString())]) },
   echo: { group: 'Terminal', summary: 'print text', hidden: true, run: (args, ctx) => ctx.print([out(args.join(' ').replace(/^['"]|['"]$/g, '').replace(/\$USER/g, 'guest').replace(/\$SHELL/g, '/bin/zsh').replace(/\$HOME/g, `/home/${profile.handle}`))]) },
-  uname: { group: 'Terminal', summary: 'system info', hidden: true, run: (args, ctx) => ctx.print([out(args.includes('-a') ? 'DeepOS deepratna-awale.dev 26.10 React-19 x86_64 Lightsail/nano zsh' : 'DeepOS')]) },
+  uname: { group: 'Terminal', summary: 'system info', hidden: true, run: (args, ctx) => ctx.print([out(args.includes('-a') ? 'DeepOS deepratna-awale.dev 26.10 LTS Kernel Version 26.10.0 React-19 x86_64 Lightsail/nano zsh' : 'DeepOS')]) },
+  sw_vers: { group: 'Terminal', summary: 'OS version', hidden: true, run: (_args, ctx) => ctx.print([out(fence('ProductName:\t\tDeepOS\nProductVersion:\t\t26.10 LTS\nBuildVersion:\t\t26K1004'))]) },
   alias: { group: 'Terminal', summary: 'list aliases', hidden: true, run: (_args, ctx) => ctx.print([out(Object.entries(aliases).map(([name, value]) => `${name}='${value}'`).join('\n'))]) },
   man: { group: 'Terminal', summary: 'manual for a command', usage: 'man <command>', hidden: true, run: (args, ctx) => {
     const command = commands[args[0] ?? '']
@@ -238,10 +388,46 @@ export const commands: Record<string, Command> = {
     try { ctx.print([out(fence(await fetchCowthink(args.join(' ').replace(/^['"]|['"]$/g, '') || 'moo')))]) } catch (error) { ctx.print([err(error instanceof Error ? error.message : 'cowthink is unavailable')]) }
   } },
   matrix: { group: 'Fun', summary: 'follow the white rabbit', run: (_args, ctx) => { ctx.print([{ type: 'success', text: 'Wake up, guest... (press any key to exit)' }]); ctx.ui.matrix() } },
-  sudo: { group: 'Fun', summary: 'try it', hidden: true, run: (args, ctx) => ctx.print([args.join(' ').includes('rm -rf') ? err('Nice try. This portfolio is immutable infrastructure: it would just redeploy itself.') : err('guest is not in the sudoers file. This incident will be reported to deepratna.')]) },
-  rm: { group: 'Fun', summary: 'remove files', hidden: true, run: (_args, ctx) => ctx.print([err('rm: permission denied: read-only portfolio filesystem')]) },
-  vim: { group: 'Fun', summary: 'editor', hidden: true, run: (_args, ctx) => ctx.print([muted('Opening vim... just kidding. Nobody here knows how to exit it either. Try `:q`.')]) },
-  ':q': { group: 'Fun', summary: 'quit vim', hidden: true, run: (_args, ctx) => ctx.print([{ type: 'success', text: 'You escaped vim. Achievement unlocked.' }]) },
+  sudo: { group: 'Fun', summary: 'try it', hidden: true, run: async (args, ctx) => {
+    const line = args.join(' ')
+    if (isRootWipe(args.slice(1)) && args[0] === 'rm') return meltdown(ctx)
+    if (line === 'make me a sandwich') { ctx.print([{ type: 'success', text: 'Okay.' }]); return }
+    ctx.print([muted('[sudo] password for guest: ********'), err('Nice try. guest is not in the sudoers file. This incident will be reported to deepratna.')])
+  } },
+  rm: { group: 'Fun', summary: 'remove files', hidden: true, run: (args, ctx) => isRootWipe(args) ? meltdown(ctx) : ctx.print([err(`rm: ${args.filter((arg) => !arg.startsWith('-')).join(' ') || 'file'}: Permission denied (read-only portfolio filesystem)`)]) },
+  make: { group: 'Fun', summary: 'build something', hidden: true, run: (args, ctx) => ctx.print([args.join(' ') === 'me a sandwich' ? err('What? Make it yourself.') : err(`make: *** No rule to make target '${args[0] ?? ''}'.  Stop.`)]) },
+  vim: { group: 'Navigation', summary: 'open a file in vim (try vim resume)', usage: 'vim <file>', run: openVim },
+  vi: { group: 'Navigation', summary: 'vim', hidden: true, run: openVim },
+  nvim: { group: 'Navigation', summary: 'vim', hidden: true, run: openVim },
+  nano: { group: 'Fun', summary: 'editor', hidden: true, run: (args, ctx) => { ctx.print([muted('nano? In this house we use vim.')]); openVim(args, ctx) } },
+  emacs: { group: 'Fun', summary: 'editor', hidden: true, run: (_args, ctx) => ctx.print([muted('emacs: a great operating system, lacking only a decent editor. Try `vim resume`.')]) },
+  less: { group: 'Navigation', summary: 'page through a file', hidden: true, run: (args, ctx) => commands.cat!.run(args, ctx) },
+  more: { group: 'Navigation', summary: 'page through a file', hidden: true, run: (args, ctx) => commands.cat!.run(args, ctx) },
+  ':q': { group: 'Fun', summary: 'quit vim', hidden: true, run: (_args, ctx) => ctx.print([{ type: 'success', text: 'You are not in vim, but the reflex is admirable. Achievement unlocked.' }]) },
+  sl: { group: 'Fun', summary: 'steam locomotive', hidden: true, run: (_args, ctx) => ctx.print([{ type: 'ascii', text: train }, muted('You meant `ls`. The train was faster.')]) },
+  xyzzy: { group: 'Fun', summary: 'magic word', hidden: true, run: (_args, ctx) => ctx.print([muted('Nothing happens.')]) },
+  snake: { group: 'Fun', summary: 'play snake (arrows / WASD / hjkl)', run: (_args, ctx) => { ctx.print([muted('starting snake ... press q to quit')]); ctx.ui.game('snake') } },
+  '2048': { group: 'Fun', summary: 'play 2048 (arrows / WASD / swipe)', run: (_args, ctx) => { ctx.print([muted('starting 2048 ... press q to quit')]); ctx.ui.game('2048') } },
+  crt: { group: 'Terminal', summary: 'toggle CRT scanlines', usage: 'crt [on|off]', run: (args, ctx) => {
+    const on = args[0] === 'on' ? true : args[0] === 'off' ? false : !ctx.ui.crt
+    ctx.ui.setCrt(on)
+    ctx.print([{ type: 'success', text: `CRT scanlines ${on ? 'on' : 'off'}` }])
+  } },
+  grep: { group: 'Navigation', summary: 'search every file (or pipe into it)', usage: 'grep [-iv] <pattern> [file]', run: grepFiles },
+  head: { group: 'Navigation', summary: 'first lines of a file', hidden: true, run: fileFilter('head') },
+  tail: { group: 'Navigation', summary: 'last lines of a file', hidden: true, run: fileFilter('tail') },
+  wc: { group: 'Navigation', summary: 'count lines, words, chars', hidden: true, run: fileFilter('wc') },
+  now: { group: 'Portfolio', summary: "what I'm up to right now", run: (_args, ctx) => now(ctx) },
+  contributions: { group: 'Portfolio', summary: 'my GitHub contribution graph, in ASCII', run: (_args, ctx) => contributions(ctx) },
+  guestbook: { group: 'Portfolio', summary: 'read or sign the guestbook', usage: 'guestbook [sign [-n name] <message>]', run: guestbook },
+  gui: { group: 'Portfolio', summary: 'open the standard portfolio website', run: (_args, ctx) => { ctx.print([muted('launching Chrome ...')]); ctx.ui.openBrowser() } },
+  share: { group: 'Terminal', summary: 'copy a link that runs a command', usage: 'share [command]', run: async (args, ctx) => {
+    const command = args.join(' ') || [...ctx.history].reverse().find((item) => !item.startsWith('share')) || 'help'
+    const url = siteUrl(command)
+    let copied = false
+    try { await navigator.clipboard.writeText(url); copied = true } catch { /* clipboard blocked */ }
+    ctx.print([out(`[${url}](${url})`), muted(copied ? 'copied to clipboard' : 'copy the link above to share it')])
+  } },
   ssh: { group: 'Fun', summary: 'connect to a host', hidden: true, run: (_args, ctx) => ctx.print([muted('You are already connected to deepratna-awale.dev. Run `reboot` to replay the login.')]) },
   hire: { group: 'Fun', summary: 'the best command', hidden: true, run: (_args, ctx) => ctx.print([{ type: 'success', text: `Great choice. ${cmd('email', 'email')} me or reach out on [LinkedIn](${profile.linkedin}).` }]) },
 }

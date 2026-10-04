@@ -100,12 +100,43 @@
 .dock-icon.in { color: #fff; background: linear-gradient(160deg, #1f80c9, #0a5a99); border-color: rgba(255,255,255,.25); text-shadow: none; font-family: Georgia, serif; font-size: 20px; }
 .dock-icon.mail { color: #fff; background: linear-gradient(160deg, #4fb4ff, #1a6fe0); border-color: rgba(255,255,255,.25); text-shadow: none; font-size: 20px; }
 
+/* Neofetch card */
+.terminal-line.neofetch { display: flex; flex-wrap: wrap; gap: 4px 3ch; align-items: flex-start; margin: 10px 0 8px; white-space: normal; }
+.neofetch-art { margin: 0; color: var(--accent); font: inherit; line-height: 1.25; white-space: pre; text-shadow: var(--glow); }
+.neofetch-info { min-width: 0; line-height: 1.45; }
+.neofetch-title { color: var(--success); font-weight: 600; } .neofetch-rule { color: var(--muted); }
+.neofetch-key { color: var(--accent); font-weight: 600; }
+.neofetch-swatches { display: flex; gap: 0; margin-top: 8px; } .neofetch-swatches span { width: 2.2ch; height: 1.1em; }
+.terminal-line.plain { margin: 4px 0; font: inherit; white-space: pre-wrap; overflow-x: auto; }
+
+/* Desktop icon that opens the standard website */
+.desktop-icon { position: fixed; z-index: 10; top: calc(var(--menubar-h) + 18px); right: 22px; width: 84px; display: grid; justify-items: center; gap: 6px; padding: 8px 4px; border-radius: 8px; color: #fff; text-decoration: none; font: 12px -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+.desktop-icon:hover, .desktop-icon:focus-visible { outline: 0; background: rgba(255,255,255,.14); }
+.desktop-icon .browser-icon { width: 52px; height: 52px; }
+.desktop-icon-label { padding: 1px 6px; border-radius: 4px; }
+.desktop-icon:focus-visible .desktop-icon-label { background: #2d6cdf; }
+.browser-icon { display: block; width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle, #4c8bf5 0 19%, #fff 20% 27%, transparent 28%), conic-gradient(from -60deg, #db4437 0 120deg, #f4b400 120deg 240deg, #0f9d58 240deg 360deg); box-shadow: 0 3px 10px rgba(0,0,0,.35); }
+.dock-icon.brand { padding: 7px; background: linear-gradient(160deg, #f6f7f9, #dfe2e7); border-color: rgba(255,255,255,.55); text-shadow: none; }
+.dock-icon.brand svg { width: 100%; height: 100%; display: block; }
+.dock-icon.brand.gh { padding: 8px; color: #fff; background: linear-gradient(160deg, #2b3137, #0d1117); border-color: rgba(255,255,255,.25); }
+.dock-icon.brand.in { padding: 0; overflow: hidden; background: #0A66C2; border-color: rgba(255,255,255,.3); }
+.dock-icon.brand.chrome { padding: 5px; }
+.dock-separator { width: 1px; margin: 4px 2px; background: rgba(255,255,255,.3); }
+.desktop-chrome { width: 54px; height: 54px; filter: drop-shadow(0 3px 8px rgba(0,0,0,.4)); }
+.desktop-chrome svg { width: 100%; height: 100%; }
+.dock-icon.browser { background: linear-gradient(160deg, #f4f5f7, #d9dce1); border-color: rgba(255,255,255,.5); }
+
+/* rm -rf / */
+.meltdown .terminal-window { animation: meltdown 1.9s ease-in both; }
+.meltdown .terminal-body { filter: hue-rotate(140deg) saturate(3) contrast(1.4); }
+
 .matrix-rain { position: fixed; z-index: 50; inset: 0; background: #000; cursor: pointer; }
 
 @keyframes window-in { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
 @keyframes line-in { from { opacity: 0; transform: translateX(-3px); } to { opacity: 1; transform: none; } }
 @keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 @keyframes blink { 50% { opacity: 0; } }
+@keyframes meltdown { 0% { transform: none; } 10% { transform: translate(-6px, 3px) rotate(-.6deg); } 20% { transform: translate(7px, -4px) rotate(.8deg); } 35% { transform: translate(-9px, 6px) skewX(4deg); } 55% { transform: translateY(40px) skewY(3deg) scaleY(.92); filter: blur(1px); } 80% { transform: translateY(160px) scaleY(.7) skewX(-8deg); opacity: .6; filter: blur(3px); } 100% { transform: translateY(260px) scaleY(.4); opacity: 0; filter: blur(6px); } }
 @keyframes flicker { 0%, 97%, 100% { opacity: 1; } 98% { opacity: .96; } }
 
 @media (max-width: 720px) {
@@ -121,6 +152,7 @@
   .traffic-lights { width: auto; } .window-actions { display: none; } .window-title { font-size: 11px; }
   .terminal-footer > span:nth-child(-n+3) { display: none; }
   .dock { display: none; }
+  .desktop-icon { display: none; }
   .menu-dropdown { position: fixed; left: 8px; right: 8px; top: calc(var(--menubar-h) + 2px); }
 }
 

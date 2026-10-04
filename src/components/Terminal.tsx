@@ -1,15 +1,19 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { askAssistant, fetchCowthink, fetchFortune, fetchProjects, type ChatTurn, type Project } from '../api'
+import { askAssistant, fetchCowthink, fetchProjects, type ChatTurn, type Project } from '../api'
 import { asciiLogo, profile } from '../content'
-import { commands, commandNames, openExternal, resolveAlias, tokenize, type Line, type NewLine, type ShellContext } from '../shell/commands'
+import { commands, commandNames, directories, neofetchInfo, openExternal, resolveAlias, tokenize, type Line, type NewLine, type ShellContext } from '../shell/commands'
+import { initialCommand, pipeSplit, unshareable } from '../shell/deeplink'
+import { filterNames, filters, toPlainText } from '../shell/pipes'
+import { closest, looksLikeCommand } from '../shell/typo'
 import { commonPrefix, complete, suggestion as suggest } from '../shell/completion'
+import { ProjectCards, SectionView } from './SectionView'
 import { applyEdit, bindingFor, expandHistory, reverseSearch, type LineState } from '../shell/lineEditor'
-import { themeNames, type ThemeName } from '../themes'
+import { themeNames, themes, type ThemeName } from '../themes'
 
-export type TerminalHandle = { run: (command: string) => void; clear: () => void; focus: () => void; replayBoot: () => void; paste: (text: string) => void; selectAll: () => void }
-type Props = { theme: ThemeName; ui: ShellContext['ui']; onStatus: (status: string) => void }
+export type TerminalHandle = { run: (command: string) => void; print: (lines: NewLine[]) => void; clear: () => void; focus: () => void; replayBoot: () => void; paste: (text: string) => void; selectAll: () => void }
+type Props = { theme: ThemeName; ui: ShellContext['ui']; onStatus: (status: string) => void; suspended?: boolean }
 
 const HISTORY_KEY = 'portfolio.history'
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -19,21 +23,7 @@ function loadHistory(): string[] {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]') as string[] } catch { return [] }
 }
 
-function distance(a: string, b: string): number {
-  const row = Array.from({ length: b.length + 1 }, (_, index) => index)
-  for (let i = 1; i <= a.length; i++) {
-    let previous = row[0]!
-    row[0] = i
-    for (let j = 1; j <= b.length; j++) {
-      const current = row[j]!
-      row[j] = Math.min(row[j]! + 1, row[j - 1]! + 1, previous + (a[i - 1] === b[j - 1] ? 0 : 1))
-      previous = current
-    }
-  }
-  return row[b.length]!
-}
-
-function bootScript(): Array<{ line: NewLine; delay: number; typed?: boolean }> {
+function bootScript(theme: ThemeName): Array<{ line: NewLine; delay: number; typed?: boolean }> {
   const fingerprint = 'SHA256:dA7r/MjQ9xP2nKfE0wq+Zs3vTbYc8LuHg5oVe1iN4Ws'
   return [
     { line: { type: 'command', text: 'guest@internet ~ % ssh guest@deepratna-awale.dev' }, delay: 250, typed: true },
@@ -44,13 +34,14 @@ function bootScript(): Array<{ line: NewLine; delay: number; typed?: boolean }> 
     { line: { type: 'muted', text: 'Authenticating as guest (publickey) ... accepted.' }, delay: 300 },
     { line: { type: 'muted', text: 'Allocating pty, starting zsh ... done.' }, delay: 260 },
     { line: { type: 'ascii', text: asciiLogo }, delay: 120 },
+    { line: { type: 'neofetch', text: `${profile.handle}@${profile.host}`, info: neofetchInfo(theme) }, delay: 160 },
     { line: { type: 'output', text: `Welcome to **DeepOS 26.10 LTS** on ${profile.host}` }, delay: 120 },
     { line: { type: 'muted', text: `  * ${profile.title}\n  * Building agentic AI for fraud and AML at Verafin\n  * Last login: ${new Date().toUTCString()} from your browser` }, delay: 120 },
     { line: { type: 'success', text: 'Type [`help`](cmd:help) to explore, [`projects`](cmd:projects) for my GitHub, or just ask a question in plain English.' }, delay: 0 },
   ]
 }
 
-export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ theme, ui, onStatus }, ref) {
+export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ theme, ui, onStatus, suspended = false }, ref) {
   const [transcript, setTranscript] = useState<Line[]>([])
   const [line, setLine] = useState<LineState>({ value: '', cursor: 0, killRing: '' })
   const [path, setPathState] = useState('~')
@@ -73,7 +64,14 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
   const bootRun = useRef(0)
   const skipBoot = useRef(false)
   const lastTab = useRef(0)
+  const suspendedRef = useRef(suspended)
+  const deepLinkDone = useRef(false)
   useEffect(() => { historyRef.current = history }, [history])
+  useEffect(() => {
+    suspendedRef.current = suspended
+    if (suspended) inputRef.current?.blur()
+    else if (!booting && !busy) inputRef.current?.focus({ preventScroll: true })
+  }, [suspended]) // oxlint-disable-line react-hooks/exhaustive-deps -- only react to overlays opening and closing
 
   const promptPath = path === '~' ? '~' : `~/${path}`
   const ghost = useMemo(() => (search || line.cursor !== line.value.length ? '' : suggest(line.value, history, path, projectNames, themeNames)), [line, history, path, projectNames, search])
@@ -138,29 +136,53 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
     setPath, print, clear: () => setTranscript([]), projects, ask, ui,
   }), [ask, print, projects, setPath, theme, ui])
 
-  const runSingle = useCallback(async (raw: string) => {
-    const segments = raw.split('|').map((part) => part.trim())
-    if (segments.length > 1) {
-      const target = segments.at(-1)!
-      if (!target.startsWith('cowthink')) { print([{ type: 'error', text: `zsh: command not found: ${target.split(' ')[0]}` }]); return }
-      const source = segments[0]!
-      try {
-        const text = source === 'fortune' ? await fetchFortune() : source.replace(/^echo\s+/, '').replace(/^['"]|['"]$/g, '')
-        print([{ type: 'output', text: `\`\`\`text\n${await fetchCowthink(text)}\n\`\`\`` }])
-      } catch (error) { print([{ type: 'error', text: error instanceof Error ? error.message : 'cowthink is unavailable' }]) }
-      return
+  const runPipeline = useCallback(async (stages: string[]) => {
+    const captured: NewLine[] = []
+    const base = context()
+    const [first = '', ...rest] = stages
+    const [name = '', ...args] = tokenize(resolveAlias(first))
+    const command = commands[name]
+    if (!command) { print([{ type: 'error', text: `zsh: command not found: ${name}` }]); return }
+    await command.run(args, { ...base, print: (lines) => {
+      captured.push(...lines.filter((line) => line.type !== 'muted' && line.type !== 'error'))
+      const errors = lines.filter((line) => line.type === 'error')
+      if (errors.length) print(errors)
+    } })
+    let lines = captured.flatMap((line) => (line.type === 'neofetch' ? [line.text, ...(line.info ?? [])] : toPlainText(line.text).split('\n')))
+    for (const stage of rest) {
+      const [filter = '', ...filterArgs] = tokenize(stage)
+      if (filter === 'cowthink' || filter === 'cowsay') {
+        try { lines = (await fetchCowthink(lines.join(' ').replace(/\s+/g, ' ').slice(0, 280))).split('\n') } catch (error) { print([{ type: 'error', text: error instanceof Error ? error.message : 'cowthink is unavailable' }]); return }
+        continue
+      }
+      if (filter === 'less' || filter === 'more' || filter === 'cat') continue
+      const apply = filters[filter]
+      if (!apply) { const guess = closest(filter, [...filterNames, 'cowthink']); print([{ type: 'error', text: `zsh: command not found: ${filter}` }, ...(guess ? [{ type: 'muted' as const, text: `did you mean \`${guess}\`? Pipes support: ${filterNames.join(', ')}, cowthink` }] : [])]); return }
+      const result = apply(lines, filterArgs)
+      if (!Array.isArray(result)) { print([{ type: 'error', text: result.error }]); return }
+      lines = result
     }
+    print([{ type: 'plain', text: lines.join('\n') || '(no output)' }])
+  }, [context, print])
+
+  const runSingle = useCallback(async (raw: string) => {
+    const segments = pipeSplit(raw)
+    if (segments.length > 1) { await runPipeline(segments); return }
     const expanded = resolveAlias(raw)
     const [name = '', ...args] = tokenize(expanded)
     const command = commands[name] ?? commands[name.toLowerCase()]
     if (command) { await command.run(args, context()); return }
-    const words = raw.trim().split(/\s+/)
-    if (words.length === 1 && raw.length < 16) {
-      const close = commandNames.find((candidate) => distance(candidate, name.toLowerCase()) <= (name.length > 4 ? 2 : 1))
-      if (close) { print([{ type: 'error', text: `zsh: command not found: ${name}` }, { type: 'muted', text: `did you mean [\`${close}\`](cmd:${encodeURIComponent(close)})?` }]); return }
+    if (looksLikeCommand(raw) && raw.length < 40) {
+      const guess = closest(name, commandNames.filter((candidate) => !commands[candidate]?.hidden || candidate.length > 2))
+      if (guess) {
+        const fixed = [guess, ...args].join(' ')
+        print([{ type: 'error', text: `zsh: command not found: ${name}` }, { type: 'muted', text: `did you mean [\`${fixed}\`](cmd:${encodeURIComponent(fixed)})?` }])
+        return
+      }
+      if (raw.trim().split(/\s+/).length === 1 && directories.includes(name.replace(/\/$/, ''))) { await commands.cd!.run([name], context()); return }
     }
     await ask(raw.trim())
-  }, [ask, context, print])
+  }, [ask, context, print, runPipeline])
 
   const run = useCallback(async (input: string, echo = true) => {
     const trimmed = input.trim()
@@ -174,6 +196,10 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
     setBusy(true)
     try {
       for (const part of value.split(/\s*(?:&&|;)\s*/).filter(Boolean)) await runSingle(part)
+      const first = tokenize(resolveAlias(value))[0] ?? ''
+      if (commands[first] && !commands[first]!.hidden && !unshareable.has(first) && !value.includes('|')) {
+        try { window.history.replaceState(null, '', `/?cmd=${encodeURIComponent(value)}`) } catch { /* sandboxed */ }
+      }
     } finally {
       setBusy(false)
     }
@@ -181,11 +207,16 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
 
   const boot = useCallback(async () => {
     const runId = ++bootRun.current
-    skipBoot.current = reducedMotion()
+    // A deep link skips the login animation, once per page load.
+    const initial = deepLinkDone.current ? null : initialCommand(window.location)
+    skipBoot.current = reducedMotion() || Boolean(initial)
+    // Yield once so a boot cancelled straight away (StrictMode remount) stops here.
+    await sleep(0)
+    if (runId !== bootRun.current) return
     setBooting(true)
     setTranscript([])
     onStatus('○ connecting ...')
-    for (const step of bootScript()) {
+    for (const step of bootScript(theme)) {
       if (runId !== bootRun.current) return
       if (step.typed && !skipBoot.current) {
         const id = nextId.current++
@@ -202,9 +233,8 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
     if (runId !== bootRun.current) return
     setBooting(false)
     onStatus('')
-    const initial = new URLSearchParams(window.location.search).get('cmd')
-    if (initial) run(initial)
-  }, [onStatus, print, run, updateLine])
+    if (initial) { deepLinkDone.current = true; run(initial) }
+  }, [onStatus, print, run, theme, updateLine])
 
   useEffect(() => {
     boot()
@@ -218,7 +248,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
   useEffect(() => {
     const redirect = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
-      if (event.metaKey || event.ctrlKey || event.altKey || target?.closest('input, textarea')) return
+      if (suspendedRef.current || event.metaKey || event.ctrlKey || event.altKey || target?.closest('input, textarea')) return
       if (target?.closest('button, a') && (event.key === 'Enter' || event.key === ' ')) return
       if (event.key.length === 1 || event.key === 'Enter' || event.key.startsWith('Arrow')) inputRef.current?.focus({ preventScroll: true })
     }
@@ -236,6 +266,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
 
   useImperativeHandle(ref, () => ({
     run: (command) => { run(command) },
+    print,
     clear: () => setTranscript([]),
     focus: () => inputRef.current?.focus(),
     replayBoot: () => { boot() },
@@ -248,7 +279,7 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
       window.getSelection()?.removeAllRanges()
       window.getSelection()?.addRange(range)
     },
-  }), [boot, run])
+  }), [boot, print, run])
 
   const setValue = (value: string) => setLine((current) => ({ ...current, value, cursor: value.length }))
 
@@ -355,6 +386,10 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
     }
     if (item.type === 'command') return <div key={item.id} className="terminal-line command">{item.text}</div>
     if (item.type === 'ascii') return <pre key={item.id} className="terminal-line ascii">{item.text}</pre>
+    if (item.type === 'section' && item.section) return <div key={item.id} className="terminal-line rich"><SectionView name={item.section} renderLink={renderLink} /></div>
+    if (item.type === 'projects' && item.projects) return <div key={item.id} className="terminal-line rich"><ProjectCards projects={item.projects} detailed={item.detailed} renderLink={renderLink} /></div>
+    if (item.type === 'plain') return <pre key={item.id} className="terminal-line plain">{item.text}</pre>
+    if (item.type === 'neofetch') return <Neofetch key={item.id} title={item.text} info={item.info ?? []} theme={theme} />
     return (
       <div key={item.id} className={`terminal-line ${item.type}`}>
         <ReactMarkdown remarkPlugins={[remarkGfm]} urlTransform={(url) => (url.startsWith('cmd:') ? url : defaultUrlTransform(url))} components={{ a: renderLink }}>{item.text}</ReactMarkdown>
@@ -408,3 +443,27 @@ export const Terminal = forwardRef<TerminalHandle, Props>(function Terminal({ th
     </>
   )
 })
+
+const neofetchArt = `    ____     ___
+   / __ \\   /   |
+  / / / /  / /| |
+ / /_/ /  / ___ |
+/_____/  /_/  |_|`
+
+function Neofetch({ title, info, theme }: { title: string; info: string[]; theme: ThemeName }) {
+  const swatches = ['--error', '--success', '--accent', '--link', '--command', '--accent-2', '--muted', '--fg']
+  return (
+    <div className="terminal-line neofetch">
+      <pre className="neofetch-art">{neofetchArt}</pre>
+      <div className="neofetch-info">
+        <div className="neofetch-title">{title}</div>
+        <div className="neofetch-rule">{'─'.repeat(title.length)}</div>
+        {info.map((row) => {
+          const [key, ...value] = row.split(':')
+          return <div key={row}><span className="neofetch-key">{key}</span>:{value.join(':')}</div>
+        })}
+        <div className="neofetch-swatches" aria-hidden="true">{swatches.map((name) => <span key={name} style={{ background: themes[theme].vars[name] }} />)}</div>
+      </div>
+    </div>
+  )
+}

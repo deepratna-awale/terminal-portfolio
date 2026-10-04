@@ -49,10 +49,16 @@ jobs:
         id: deploy
         env:
           IMAGE: ${{ steps.image.outputs.uri }}
+          GUESTBOOK_BUCKET: ${{ vars.GUESTBOOK_BUCKET }}
+          GUESTBOOK_ACCESS_KEY_ID: ${{ secrets.GUESTBOOK_ACCESS_KEY_ID }}
+          GUESTBOOK_SECRET_ACCESS_KEY: ${{ secrets.GUESTBOOK_SECRET_ACCESS_KEY }}
         run: |
+          # Guestbook settings are only passed when they are configured.
+          containers=$(jq -n --arg name "$CONTAINER_NAME" --arg image "$IMAGE" \
+            '{($name): {image: $image, ports: {"8080": "HTTP"}, environment: ({PORT: "8080"} + ($ENV | with_entries(select((.key | startswith("GUESTBOOK_")) and .value != ""))))}}')
           version=$(aws lightsail create-container-service-deployment \
             --service-name "$SERVICE_NAME" \
-            --containers "{\"$CONTAINER_NAME\":{\"image\":\"$IMAGE\",\"ports\":{\"8080\":\"HTTP\"},\"environment\":{\"PORT\":\"8080\"}}}" \
+            --containers "$containers" \
             --public-endpoint "{\"containerName\":\"$CONTAINER_NAME\",\"containerPort\":8080,\"healthCheck\":{\"path\":\"/health\",\"successCodes\":\"200\"}}" \
             --query 'containerService.nextDeployment.version' --output text)
           echo "version=$version" >> "$GITHUB_OUTPUT"

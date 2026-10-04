@@ -1,0 +1,33 @@
+.game-backdrop { position: fixed; z-index: 40; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(0,0,0,.55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); animation: game-fade .15s ease both; }
+.game-panel { width: min(560px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: auto; color: var(--fg, #c8f7c5); background: var(--term-bg, rgba(3,10,6,.92)); border: 1px solid var(--border, rgba(57,255,136,.28)); border-radius: 12px; box-shadow: 0 30px 80px rgba(0,0,0,.55); backdrop-filter: blur(22px) saturate(135%); -webkit-backdrop-filter: blur(22px) saturate(135%); font: 14px/1.5 var(--mono, monospace); text-shadow: var(--glow, none); outline: 0; }
+.game-chrome { display: flex; align-items: center; gap: 14px; padding: 8px 10px 8px 14px; background: var(--chrome-bg, rgba(10,22,14,.85)); border-bottom: 1px solid var(--border, rgba(57,255,136,.28)); font-size: 12px; user-select: none; }
+.game-title { flex: 1; color: var(--accent, #39ff88); font-weight: 600; }
+.game-score { color: var(--muted, #5f8a63); } .game-score b { color: var(--fg, #c8f7c5); font-weight: 600; }
+.game-close { width: 28px; height: 28px; padding: 0; border: 1px solid var(--border, rgba(57,255,136,.28)); border-radius: 6px; color: var(--fg, #c8f7c5); background: transparent; font: 18px/1 var(--mono, monospace); cursor: pointer; }
+.game-close:hover { color: var(--error, #ff7b72); border-color: var(--error, #ff7b72); }
+.game-close:focus-visible { outline: 2px solid var(--accent, #39ff88); outline-offset: 2px; }
+
+.game-board { position: relative; margin: 16px auto 0; touch-action: none; user-select: none; -webkit-user-select: none; }
+.game-status { position: absolute; inset: auto 0 50%; transform: translateY(50%); margin: 0 auto; width: max-content; max-width: 90%; padding: 6px 12px; color: var(--accent, #39ff88); background: var(--chrome-bg, rgba(10,22,14,.9)); border: 1px solid var(--border, rgba(57,255,136,.28)); border-radius: 6px; text-align: center; pointer-events: none; }
+.game-hint { margin: 10px 16px 14px; color: var(--muted, #5f8a63); font-size: 11px; text-align: center; }
+
+.game-snake { width: calc(100% - 32px); display: grid; grid-template-columns: repeat(var(--cols), 1fr); grid-template-rows: repeat(var(--rows), 1fr); aspect-ratio: var(--cols) / var(--rows); gap: 1px; padding: 1px; background: var(--code-bg, rgba(57,255,136,.08)); border: 1px solid var(--border, rgba(57,255,136,.28)); border-radius: 4px; }
+.game-cell { border-radius: 2px; }
+.game-cell.body { background: color-mix(in srgb, var(--accent, #39ff88) 70%, transparent); }
+.game-cell.head { background: var(--accent, #39ff88); box-shadow: 0 0 6px color-mix(in srgb, var(--accent, #39ff88) 60%, transparent); }
+.game-cell.food { margin: 15%; border-radius: 50%; background: var(--error, #ff7b72); animation: game-pulse 1s ease-in-out infinite alternate; }
+.game-snake.dead .game-cell.head { background: var(--error, #ff7b72); }
+
+.game-2048 { width: min(340px, calc(100% - 32px)); display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; aspect-ratio: 1; padding: 8px; background: var(--code-bg, rgba(57,255,136,.08)); border: 1px solid var(--border, rgba(57,255,136,.28)); border-radius: 6px; }
+.game-tile { display: grid; place-items: center; border-radius: 4px; background: color-mix(in srgb, var(--fg, #c8f7c5) 6%, transparent); font-size: clamp(16px, 6vw, 26px); font-weight: 700; }
+.game-tile.filled { color: var(--fg, #c8f7c5); background: color-mix(in srgb, var(--accent, #39ff88) var(--tile-mix), var(--code-bg, #102016)); border: 1px solid var(--border, rgba(57,255,136,.28)); animation: game-pop .14s ease both; }
+.game-tile.hot { color: var(--term-solid, #08110b); text-shadow: none; }
+.game-tile.small { font-size: clamp(13px, 4.5vw, 20px); }
+
+@keyframes game-fade { from { opacity: 0; } }
+@keyframes game-pop { from { transform: scale(.8); } }
+@keyframes game-pulse { to { opacity: .55; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .game-backdrop, .game-tile.filled, .game-cell.food { animation: none; }
+}

@@ -1,0 +1,15 @@
+.vim { position: fixed; z-index: 40; inset: 0; display: flex; flex-direction: column; color: var(--fg); background: color-mix(in srgb, var(--term-bg) 70%, #000); font: var(--font-size, 15px)/1.45 var(--mono); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.vim-body { flex: 1; min-height: 0; overflow: hidden; padding: 8px 12px 0; white-space: pre; }
+.vim-line { display: flex; white-space: pre-wrap; overflow-wrap: anywhere; }
+.vim-line > span:last-child { flex: 1; min-width: 0; }
+.vim-number { color: var(--muted); }
+.vim-heading { color: var(--accent); font-weight: 600; }
+.vim-bullet { color: var(--fg); }
+.vim-tilde { color: var(--link); opacity: .7; }
+.vim-splash { padding: 4vh 0 2vh; color: var(--muted); text-align: center; white-space: pre-wrap; }
+.vim-splash > div:nth-child(3) { color: var(--accent); }
+.vim-status { flex: none; display: flex; justify-content: space-between; padding: 0 12px; color: var(--term-solid, #000); background: var(--accent); font-weight: 600; }
+.vim-command { flex: none; min-height: 1.45em; padding: 0 12px 6px; white-space: pre; overflow: hidden; }
+.vim-cursor { background: var(--fg); animation: blink 1.05s steps(2) infinite; }
+.vim-close { position: absolute; top: 10px; right: 12px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); background: transparent; font: 12px var(--mono); cursor: pointer; }
+.vim-close:hover { color: var(--fg); }
