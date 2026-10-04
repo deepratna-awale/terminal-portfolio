@@ -20,8 +20,8 @@ GitHub Actions deploys every push to `main`.
 
 ## Golden rule: content is data
 
-**All site content comes from [`ABOUT.md`](ABOUT.md)** and the files in
-`public/`. Never hardcode a name, link, domain, job, icon or label in code.
+**All site content comes from [`ABOUT.md`](ABOUT.md)**, colour themes from
+[`themes/`](themes), and images from `public/`. Never hardcode a name, link, domain, job, icon or label in code.
 If a change needs new content, add a frontmatter key or a section to ABOUT.md
 and read it through `src/content.ts` (client) or `server/about.mjs` (server).
 
@@ -55,7 +55,8 @@ client, server and Vite config share it). Its tests are in
 | `src/shell/commands.ts` | Every built-in command; section commands are generated from ABOUT.md |
 | `src/shell/completion.ts`, `lineEditor.ts`, `pipes.ts`, `vim.ts`, `deeplink.ts` | Tab completion, zsh keys, pipes, vim motions, `?cmd=` links |
 | `src/gui/Portfolio.tsx`, `parse.ts`, `address.ts` | `/gui` page, section parsers, in-site address bar rules |
-| `src/themes.ts` | Terminal colour themes |
+| `themes/*.json` | Colour themes, one file each, shared by the terminal and `/gui` (shadcn/tweakcn exports work as-is) |
+| `src/themes.ts` | Loads `themes/` with `import.meta.glob` and turns each file into CSS variables |
 | `src/games/` | Snake and 2048 logic |
 | `server/index.mjs` | HTTP server, security headers, `/api/chat`, `/api/projects`, `/api/guestbook`, `/api/contributions`, `/gui` |
 | `server/about.mjs` | Server view of ABOUT.md: profile, featured repos, assistant rules and facts |
@@ -133,8 +134,9 @@ if it needs a custom layout: add a renderer for its id in
 `run`). It appears in `help` and completion automatically. Add a test in
 `src/shell/features.test.ts` or `shell.test.ts`.
 
-**Add or change a theme.** Edit `src/themes.ts` (CSS variables per theme);
-the `theme` command and menu pick it up.
+**Add or change a theme.** Drop a JSON file into `themes/` (the file name is
+the theme id; see the README's Themes section for the format). The `theme`
+command, completion and menus pick it up. No code change.
 
 **Change the assistant's behaviour.** Facts and owner-specific rules go in the
 `# Assistant` section of ABOUT.md. Generic rules and limits are in
