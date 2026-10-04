@@ -4,7 +4,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { StringDecoder } from 'node:string_decoder'
 import { askAssistant, fetchProjects, type ChatTurn, type Project } from '../src/api'
 import { asciiLogo, motd, os, profile, sshHost } from '../src/content'
-import { commandNames, commands, neofetchInfo, openTargets, type NewLine, type ShellContext } from '../src/shell/commands'
+import { commandNames, commands, formatProject, neofetchInfo, openTargets, type NewLine, type ShellContext } from '../src/shell/commands'
 import { commonPrefix, complete, suggestion } from '../src/shell/completion'
 import { applyEdit, bindingFor, expandHistory, reverseSearch, type LineState } from '../src/shell/lineEditor'
 import { runInput } from '../src/shell/runner'
@@ -105,6 +105,7 @@ export class Session {
   print(lines: NewLine[]) {
     for (const line of lines.map(sshEdition)) {
       if (line.type === 'media' && line.media) { this.showImage(line.media.src, line.media.alt, line.media.href); continue }
+      if (line.type === 'projects' && line.projects?.length) { this.showProjects(line.projects, Boolean(line.detailed)); continue }
       this.writeLines(this.render(line))
     }
   }
@@ -117,6 +118,17 @@ export class Session {
     const link = href ?? url
     this.writeLines([`${this.colors.muted}${alt} · ${RESET}${this.colors.link}${hyperlink(link, link, this.graphics.hyperlinks)}${RESET}`])
     if (image && !['kitty', 'iterm', 'sixel'].includes(this.graphics.images)) this.writeLines([`${this.colors.muted}Sharper images: \`graphics kitty\`, \`graphics iterm\` or \`graphics sixel\` if your terminal supports them.${RESET}`.replace(/`([^`]+)`/g, `${this.colors.command}$1${RESET}${this.colors.muted}`)])
+  }
+
+  // Each project's share image above its summary, as on the site: thumbnails in
+  // the list, full width for a single project.
+  private showProjects(projects: Project[], detailed: boolean) {
+    projects.forEach((project, index) => {
+      if (index) this.write('\r\n')
+      const image = project.image && hasImage(project.image) ? renderImage(project.image, this.graphics.images, this.columns, this.graphics.color, this.graphics.multipart, !detailed) : null
+      if (image) this.write(image)
+      this.writeLines(this.markdown(formatProject(project, detailed)))
+    })
   }
 
   clear() { this.write('\x1b[H\x1b[2J\x1b[3J') }

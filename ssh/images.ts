@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { bg, fg, RESET, type ColorDepth, type RGB } from './ansi'
 import type { ImageMode } from './terminal'
 
-type Asset = { png: string; width: number; height: number; sixel: string; grid: { file: string; width: number; height: number } }
+type Asset = { png: string; width: number; height: number; sixel: string; sixelThumb?: string; grid: { file: string; width: number; height: number } }
 export type Grid = { width: number; height: number; data: Uint8Array }
 
 let directory = process.env.SSH_IMAGES_DIR ?? ''
@@ -114,13 +114,14 @@ function iterm(png: Buffer, columns: number, multipart: boolean): string {
 }
 
 // Returns the text to write (with \r\n line ends), or null when there is no such image.
-export function renderImage(src: string, mode: ImageMode, columns: number, depth: ColorDepth, multipart = false): string | null {
+// `thumbnail` draws it about half as wide, for lists.
+export function renderImage(src: string, mode: ImageMode, columns: number, depth: ColorDepth, multipart = false, thumbnail = false): string | null {
   const asset = assets()[src]
   if (!asset) return null
-  const width = Math.max(10, Math.min(columns - 2, mode === 'ascii' ? 100 : 80))
+  const width = Math.max(10, Math.min(columns - 2, thumbnail ? 40 : mode === 'ascii' ? 100 : 80))
   if (mode === 'kitty') return `${kitty(read(asset.png), width)}\r\n`
   if (mode === 'iterm') return `${iterm(read(asset.png), width, multipart)}\r\n`
-  if (mode === 'sixel') return `${read(asset.sixel).toString('latin1')}\r\n`
+  if (mode === 'sixel') return `${read(thumbnail && asset.sixelThumb ? asset.sixelThumb : asset.sixel).toString('latin1')}\r\n`
   const grid = { width: asset.grid.width, height: asset.grid.height, data: new Uint8Array(read(asset.grid.file)) }
   const lines = mode === 'blocks' ? halfBlocks(scale(grid, width, 2), depth) : ascii(scale(grid, width, 1))
   return lines.map((line) => `${line}\r\n`).join('')
