@@ -1,7 +1,8 @@
 # Guardrail applied to every portfolio assistant call (chat and README summaries).
-# There is deliberately no AML topic: Deep's job is AML, so a topic filter on
-# output blocks normal answers about his work. AML evasion requests are caught
-# by the MISCONDUCT filter, and the system prompt refuses internal details.
+# Denied topics also run on the assistant's output, so avoid a topic that
+# overlaps with your own work (an AML topic blocked normal answers about an AML
+# job); MISCONDUCT already catches evasion requests and the system prompt
+# refuses confidential details.
 # It blocks jailbreaks and prompt injection, harmful content, secrets and
 # personal data, and topics the assistant has no business answering.
 
@@ -33,12 +34,12 @@ locals {
     }
   }
 
-  guardrail_blocked = "I can only help with questions about Deep's work, projects and experience. Try `help` for the built-in commands."
+  guardrail_blocked = "I can only help with questions about ${var.owner_name}'s work, projects and experience. Try `help` for the built-in commands."
 }
 
 resource "aws_bedrock_guardrail" "portfolio" {
   name                      = "${var.service_name}-assistant"
-  description               = "Guardrail for the deepratna-awale.dev portfolio assistant."
+  description               = "Guardrail for the ${var.domain_name} portfolio assistant."
   blocked_input_messaging   = local.guardrail_blocked
   blocked_outputs_messaging = local.guardrail_blocked
 
@@ -69,7 +70,7 @@ resource "aws_bedrock_guardrail" "portfolio" {
       }
     }
 
-    # Deep's phone number must never appear in answers.
+    # The owner's phone number must never appear in answers.
     pii_entities_config {
       type   = "PHONE"
       action = "ANONYMIZE"
@@ -90,25 +91,14 @@ resource "aws_bedrock_guardrail" "portfolio" {
   }
 
   topic_policy_config {
-    topics_config {
-      name       = "FinancialAdvice"
-      type       = "DENY"
-      definition = "Personalized investment, trading, tax or financial advice, including stock picks and opinions on Nasdaq or other companies' share prices."
-      examples   = ["Should I buy Nasdaq stock?", "Which crypto will go up next week?"]
-    }
-
-    topics_config {
-      name       = "MedicalOrLegalAdvice"
-      type       = "DENY"
-      definition = "Diagnosis, treatment or legal advice for a person's specific situation."
-      examples   = ["What medication should I take for my headache?", "How do I get out of my lease?"]
-    }
-
-    topics_config {
-      name       = "Politics"
-      type       = "DENY"
-      definition = "Opinions on political parties, candidates, elections or contested political issues."
-      examples   = ["Who should I vote for?", "What does Deep think about the election?"]
+    dynamic "topics_config" {
+      for_each = var.guardrail_denied_topics
+      content {
+        name       = topics_config.value.name
+        type       = "DENY"
+        definition = topics_config.value.definition
+        examples   = topics_config.value.examples
+      }
     }
   }
 
@@ -119,8 +109,8 @@ resource "aws_bedrock_guardrail" "portfolio" {
   }
 }
 
-# Publishing a new version on every change means server/bedrock.mjs must be
-# pointed at the new number (guardrail_version output).
+# Publishing a new version on every change means the BEDROCK_GUARDRAIL_VERSION
+# repository variable must be set to the new number (guardrail_version output).
 resource "aws_bedrock_guardrail_version" "portfolio" {
   guardrail_arn = aws_bedrock_guardrail.portfolio.guardrail_arn
   description   = "Published by Terraform"

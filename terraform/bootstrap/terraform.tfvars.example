@@ -1,0 +1,3 @@
+# Optional: copy to terraform.tfvars to change the state bucket name prefix.
+# The bucket is named <prefix>-<account id>.
+state_bucket_prefix = "terminal-portfolio-tfstate"

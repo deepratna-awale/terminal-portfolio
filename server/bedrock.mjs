@@ -7,16 +7,17 @@ export const modelId = process.env.BEDROCK_MODEL_ID ?? 'us.anthropic.claude-haik
 
 // Bedrock Guardrail from terraform/guardrail.tf: jailbreak and prompt-attack
 // filters, harmful content, secrets and phone numbers, and denied topics.
-const guardrail = {
-  guardrailIdentifier: process.env.BEDROCK_GUARDRAIL_ID ?? 'ta1wl9ipbs1x',
-  guardrailVersion: process.env.BEDROCK_GUARDRAIL_VERSION ?? '5',
-}
+// The assistant stays offline unless a guardrail is configured.
+const guardrail = () => ({
+  guardrailIdentifier: process.env.BEDROCK_GUARDRAIL_ID,
+  guardrailVersion: process.env.BEDROCK_GUARDRAIL_VERSION,
+})
 
-export const bedrockConfigured = () => Boolean(process.env.AWS_BEARER_TOKEN_BEDROCK)
+export const bedrockConfigured = () => Boolean(process.env.AWS_BEARER_TOKEN_BEDROCK && process.env.BEDROCK_GUARDRAIL_ID && process.env.BEDROCK_GUARDRAIL_VERSION)
 
 export async function converse({ system, messages, maxTokens = 400, temperature = 0.4, timeoutMs = 20_000 }) {
   const token = process.env.AWS_BEARER_TOKEN_BEDROCK
-  if (!token) throw Object.assign(new Error('the assistant is offline (Bedrock is not configured)'), { status: 503 })
+  if (!bedrockConfigured()) throw Object.assign(new Error('the assistant is offline (Bedrock is not configured)'), { status: 503 })
   const response = await fetch(`https://bedrock-runtime.${region}.amazonaws.com/model/${encodeURIComponent(modelId)}/converse`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -24,7 +25,7 @@ export async function converse({ system, messages, maxTokens = 400, temperature 
       system: [{ text: system }],
       messages: messages.map((message) => ({ role: message.role, content: [{ text: message.content }] })),
       inferenceConfig: { maxTokens, temperature },
-      guardrailConfig: { ...guardrail, trace: 'disabled' },
+      guardrailConfig: { ...guardrail(), trace: 'disabled' },
     }),
     signal: AbortSignal.timeout(timeoutMs),
   })

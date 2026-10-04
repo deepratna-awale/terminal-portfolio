@@ -37,3 +37,5 @@ dist-ssr
 crash.log
 tfplan
 .DS_Store
+# Terraform backend and per-deployment values (see *.example files)
+backend.hcl
