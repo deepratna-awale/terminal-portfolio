@@ -62,6 +62,7 @@ client, server and Vite config share it). Its tests are in
 | `src/games/` | Snake and 2048 logic |
 | `server/index.mjs` | HTTP server, security headers, `/api/chat`, `/api/projects`, `/api/guestbook`, `/api/contributions`, `/gui` |
 | `server/about.mjs` | Server view of ABOUT.md: profile, featured repos, assistant rules and facts |
+| `server/prompt.mjs` | The assistant's system prompt: generic rules, site features, ABOUT.md facts and the featured projects |
 | `server/bedrock.mjs`, `s3.mjs`, `rateLimit.mjs` | Bedrock Converse client, S3 SigV4 signing, rate limits |
 | `scripts/prerender.mjs` | Writes `dist/gui.html` from the SSR build |
 | `docs/social/` | Link preview source (`og.html`) and `render.mjs`, which writes `public/og.png` and the GitHub social preview `repo-preview.png` |
@@ -206,8 +207,9 @@ the theme id; see the README's Themes section for the format). The `theme`
 command, completion and menus pick it up. No code change.
 
 **Change the assistant's behaviour.** Facts and owner-specific rules go in the
-`# Assistant` section of ABOUT.md. Generic rules and limits are in
-`systemPrompt()` and the rate limiters in `server/index.mjs`. What it refuses
+`# Assistant` section of ABOUT.md. Generic rules and the description of the
+site's features are in `systemPrompt()` in `server/prompt.mjs` (update it when
+you add a notable command); limits are the rate limiters in `server/index.mjs`. What it refuses
 at the model level is the Bedrock Guardrail in `terraform/guardrail.tf`
 (`guardrail_denied_topics` in tfvars); denied topics also check answers, so
 avoid topics that overlap the owner's own work.

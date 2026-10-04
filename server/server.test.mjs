@@ -127,3 +127,16 @@ describe('guestbook delete keys', () => {
     expect((await listEntries()).map((entry) => entry.name)).toEqual(['Bob'])
   })
 })
+
+describe('assistant prompt', () => {
+  it('describes the current site from ABOUT.md, even before GitHub answers', async () => {
+    const { featured } = await import('./about.mjs')
+    const { systemPrompt } = await import('./prompt.mjs')
+    const prompt = systemPrompt()
+    for (const name of featured) expect(prompt).toContain(`- ${name}: `)
+    expect(prompt).toContain('ssh ssh.deepratna-awale.dev')
+    expect(prompt).toContain('guestbook delete')
+    expect(prompt).toContain('/media/Resume-Awale-Deepratna.pdf')
+    expect(prompt).not.toContain('still loading')
+  })
+})
