@@ -12,10 +12,11 @@ RUN apt-get update \
 # Debian installs fortune and cowsay under /usr/games
 ENV PATH="/usr/games:${PATH}" \
 	NODE_ENV=production \
-	PORT=80
+	PORT=8080
 WORKDIR /app
 COPY --from=build /app/dist ./dist
 COPY server ./server
-EXPOSE 80
+EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s CMD node -e "fetch('http://localhost:'+process.env.PORT+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+USER node
 CMD ["node", "server/index.mjs"]

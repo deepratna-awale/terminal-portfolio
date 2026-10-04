@@ -25,17 +25,17 @@ jobs:
     if: vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - id: ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Build and push image
         id: image
@@ -52,8 +52,8 @@ jobs:
         run: |
           version=$(aws lightsail create-container-service-deployment \
             --service-name "$SERVICE_NAME" \
-            --containers "{\"$CONTAINER_NAME\":{\"image\":\"$IMAGE\",\"ports\":{\"80\":\"HTTP\"},\"environment\":{\"PORT\":\"80\"}}}" \
-            --public-endpoint "{\"containerName\":\"$CONTAINER_NAME\",\"containerPort\":80,\"healthCheck\":{\"path\":\"/health\",\"successCodes\":\"200\"}}" \
+            --containers "{\"$CONTAINER_NAME\":{\"image\":\"$IMAGE\",\"ports\":{\"8080\":\"HTTP\"},\"environment\":{\"PORT\":\"8080\"}}}" \
+            --public-endpoint "{\"containerName\":\"$CONTAINER_NAME\",\"containerPort\":8080,\"healthCheck\":{\"path\":\"/health\",\"successCodes\":\"200\"}}" \
             --query 'containerService.nextDeployment.version' --output text)
           echo "version=$version" >> "$GITHUB_OUTPUT"
 

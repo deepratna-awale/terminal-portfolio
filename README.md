@@ -14,7 +14,7 @@ npm run build && npm run api   # production build served by the Node server on :
 
 ```bash
 docker build --platform linux/amd64 -t terminal-portfolio .
-docker run --rm -p 8080:80 terminal-portfolio
+docker run --rm -p 8080:8080 terminal-portfolio
 ```
 
 ## Infrastructure
