@@ -554,7 +554,7 @@ commands.gui = { ...commands.gui!, summary: 'link to the standard portfolio webs
 commands.crt = { ...commands.crt!, hidden: true, run: (_args, ctx) => ctx.print([{ type: 'muted', text: `CRT scanlines need the browser: ${profile.website}/?cmd=crt` }]) }
 commands.maximize = { ...commands.maximize!, hidden: true }
 commands.fullscreen = { ...commands.fullscreen!, hidden: true }
-commands.ssh = { ...commands.ssh!, run: (_args, ctx) => ctx.print([{ type: 'muted', text: 'You are already here, over real SSH this time.' }]) }
+commands.ssh = { ...commands.ssh!, hidden: true, run: (_args, ctx) => ctx.print([{ type: 'muted', text: 'You are already here, over real SSH this time.' }]) }
 const openTarget = commands.open!
 commands.open = { ...openTarget, summary: 'link to a project, github, linkedin or the source', run: async (args, ctx) => {
   const target = (args[0] ?? '').toLowerCase()
