@@ -198,7 +198,7 @@ function Guestbook({ live }: { live: boolean }) {
     setSending(true); setStatus(null)
     signGuestbook(name.trim(), message.trim())
       .then((entry) => { setEntries((list) => [entry, ...(list ?? [])]); setMessage(''); setStatus({ ok: true, text: 'Signed. Thank you for stopping by!' }) })
-      .catch((reason: unknown) => setStatus({ ok: false, text: reason instanceof Error ? reason.message : 'could not sign the guestbook' }))
+      .catch((reason: unknown) => { const text = reason instanceof Error ? reason.message : 'could not sign the guestbook'; setStatus({ ok: false, text: text[0]!.toUpperCase() + text.slice(1) }) })
       .finally(() => setSending(false))
   }
 
