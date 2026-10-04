@@ -13,10 +13,12 @@ permissions:
   id-token: write
   contents: read
 
+# Account-specific values come from repository variables (Settings, Secrets and
+# variables, Actions, Variables). See README, "Deploy your own".
 env:
-  AWS_REGION: us-east-1
-  AWS_ROLE_ARN: arn:aws:iam::888577021874:role/terminal-portfolio-github-deploy
-  SERVICE_NAME: terminal-portfolio
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  AWS_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+  SERVICE_NAME: ${{ vars.SERVICE_NAME || 'terminal-portfolio' }}
   CONTAINER_NAME: portfolio
 
 jobs:
@@ -24,8 +26,13 @@ jobs:
     # Set the repository variable DEPLOY_ENABLED=true once the Terraform stack is applied.
     if: vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
+    # Restrict this environment to the main branch in the repository settings;
+    # the deploy role only trusts this environment and the main branch.
+    environment: production
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
@@ -54,10 +61,12 @@ jobs:
           GUESTBOOK_SECRET_ACCESS_KEY: ${{ secrets.GUESTBOOK_SECRET_ACCESS_KEY }}
           # Bedrock API key of the one-model terminal-portfolio-bedrock-chat user.
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.BEDROCK_API_KEY }}
+          BEDROCK_GUARDRAIL_ID: ${{ vars.BEDROCK_GUARDRAIL_ID }}
+          BEDROCK_GUARDRAIL_VERSION: ${{ vars.BEDROCK_GUARDRAIL_VERSION }}
         run: |
           # Guestbook and Bedrock settings are only passed when they are configured.
           containers=$(jq -n --arg name "$CONTAINER_NAME" --arg image "$IMAGE" \
-            '{($name): {image: $image, ports: {"8080": "HTTP"}, environment: ({PORT: "8080"} + ($ENV | with_entries(select(((.key | startswith("GUESTBOOK_")) or .key == "AWS_BEARER_TOKEN_BEDROCK") and .value != ""))))}}')
+            '{($name): {image: $image, ports: {"8080": "HTTP"}, environment: ({PORT: "8080"} + ($ENV | with_entries(select(((.key | startswith("GUESTBOOK_")) or (.key | startswith("BEDROCK_")) or .key == "AWS_BEARER_TOKEN_BEDROCK") and .value != ""))))}}')
           version=$(aws lightsail create-container-service-deployment \
             --service-name "$SERVICE_NAME" \
             --containers "$containers" \

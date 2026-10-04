@@ -1,4 +1,19 @@
-# Keyless deploys from GitHub Actions on pushes to main.
+# Keyless deploys from GitHub Actions. Only the configured repository, running
+# on the deploy branch or in the deploy environment, can assume the role:
+# pull requests (including from forks) get a pull_request subject and are refused.
+locals {
+  github_subject_prefixes = compact([
+    var.github_immutable_subject_prefix,
+    "repo:${var.github_repository}",
+  ])
+  github_subjects = flatten([
+    for prefix in local.github_subject_prefixes : [
+      "${prefix}:ref:refs/heads/${var.github_deploy_branch}",
+      "${prefix}:environment:${var.github_deploy_environment}",
+    ]
+  ])
+}
+
 resource "aws_iam_openid_connect_provider" "github" {
   url            = "https://token.actions.githubusercontent.com"
   client_id_list = ["sts.amazonaws.com"]
@@ -22,7 +37,7 @@ data "aws_iam_policy_document" "github_assume" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = [for prefix in var.github_oidc_subject_prefixes : "${prefix}:ref:refs/heads/main"]
+      values   = local.github_subjects
     }
   }
 }

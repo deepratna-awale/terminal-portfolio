@@ -21,10 +21,16 @@ variable "aws_region" {
   default = "us-east-1"
 }
 
+variable "state_bucket_prefix" {
+  type        = string
+  description = "Prefix of the state bucket name; the account ID is appended to keep it globally unique."
+  default     = "terminal-portfolio-tfstate"
+}
+
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "state" {
-  bucket = "deepratna-portfolio-tfstate-${data.aws_caller_identity.current.account_id}"
+  bucket = "${var.state_bucket_prefix}-${data.aws_caller_identity.current.account_id}"
 
   lifecycle {
     prevent_destroy = true

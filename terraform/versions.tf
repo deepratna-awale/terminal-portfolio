@@ -8,13 +8,9 @@ terraform {
     }
   }
 
-  backend "s3" {
-    bucket       = "deepratna-portfolio-tfstate-888577021874"
-    key          = "terminal-portfolio/terraform.tfstate"
-    region       = "us-east-1"
-    encrypt      = true
-    use_lockfile = true
-  }
+  # Partial configuration: the bucket comes from backend.hcl
+  # (terraform init -backend-config=backend.hcl). See backend.hcl.example.
+  backend "s3" {}
 }
 
 provider "aws" {
@@ -22,7 +18,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project   = "terminal-portfolio"
+      Project   = var.service_name
       ManagedBy = "terraform"
     }
   }
