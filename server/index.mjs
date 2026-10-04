@@ -4,7 +4,7 @@ import { createServer } from 'node:http'
 import { extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { about, assistantRules, knowledge, profile } from './about.mjs'
-import { bedrockConfigured, converse, guardrailBlocks } from './bedrock.mjs'
+import { bedrockConfigured, converse, guardrailVerdict } from './bedrock.mjs'
 import { getActivity } from './activity.mjs'
 import { getContributions } from './contributions.mjs'
 import { addEntry, isDuplicate, listEntries, validate } from './guestbook.mjs'
@@ -26,7 +26,7 @@ const guestbookLimit = createLimiter({
   perMinute: 1,
   perDay: Number(process.env.GUESTBOOK_PER_DAY ?? 3),
   globalPerDay: Number(process.env.GUESTBOOK_GLOBAL_PER_DAY ?? 300),
-  messages: { global: 'the guestbook is full for today, try again tomorrow', day: "you've signed enough for today, thank you!", minute: 'one note a minute, please' },
+  messages: { global: 'the guestbook is full for today', day: "you've signed the guestbook enough for today, thank you", minute: 'one note a minute, please' },
 })
 const mimeTypes = { '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.pdf': 'application/pdf', '.txt': 'text/plain', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json' }
 const securityHeaders = {
@@ -119,9 +119,11 @@ async function handleChat(request, response) {
 // Every note passes the Bedrock Guardrail (hate, insults, sexual content,
 // profanity, prompt attacks, secrets and addresses). Production fails closed;
 // local development without Bedrock skips the check.
+const waitText = (seconds) => (seconds < 90 ? `in ${seconds}s` : seconds < 5400 ? `in ${Math.ceil(seconds / 60)} minutes` : seconds < 86400 * 1.5 ? `in ${Math.ceil(seconds / 3600)} hours` : 'tomorrow')
+
 async function screenNote(entry) {
-  if (!bedrockConfigured() && process.env.NODE_ENV !== 'production') return false
-  return guardrailBlocks(`${entry.name}: ${entry.message}`)
+  if (!bedrockConfigured() && process.env.NODE_ENV !== 'production') return null
+  return guardrailVerdict(`${entry.name}: ${entry.message}`)
 }
 
 async function handleGuestbook(request, response) {
@@ -137,9 +139,10 @@ async function handleGuestbook(request, response) {
     const { entry, error } = validate(await readJson(request, 2048))
     if (error) return sendJson(response, 400, { error })
     const limit = guestbookLimit(clientIp(request))
-    if (!limit.ok) return sendJson(response, 429, { error: limit.reason }, { 'Retry-After': String(limit.retryAfter) })
+    if (!limit.ok) return sendJson(response, 429, { error: `${limit.reason}: try again ${waitText(limit.retryAfter)}` }, { 'Retry-After': String(limit.retryAfter) })
     if (await isDuplicate(entry.message)) return sendJson(response, 400, { error: 'someone already left that exact note' })
-    if (await screenNote(entry)) return sendJson(response, 400, { error: "sorry, that note can't be posted. Keep it friendly and leave out personal details." })
+    const reason = await screenNote(entry)
+    if (reason) return sendJson(response, 400, { error: `sorry, that note can't be posted: ${reason}. Please rephrase it and try again.` })
     sendJson(response, 201, await addEntry(entry))
   } catch (error) {
     if (error.status) return sendJson(response, error.status, { error: error.message })

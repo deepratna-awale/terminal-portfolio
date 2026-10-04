@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { latestContribution } from './activity.mjs'
+import { guardrailReason } from './bedrock.mjs'
 import { parseContributions } from './contributions.mjs'
 import { clean, validate } from './guestbook.mjs'
 import { clientIp } from './rateLimit.mjs'
@@ -87,5 +88,14 @@ describe('client addresses', () => {
     expect(clientIp(request('198.51.100.9, 203.0.113.7'), relays)).toBe('198.51.100.9')
     expect(clientIp(request('203.0.113.7'), relays)).toBe('203.0.113.7')
     expect(clientIp(request('198.51.100.9, 192.0.2.1'), relays)).toBe('192.0.2.1')
+  })
+})
+
+describe('guardrail reasons', () => {
+  it('names a broad category without the rule', () => {
+    expect(guardrailReason([{ wordPolicy: { managedWordLists: [{ type: 'PROFANITY', match: 'x', action: 'BLOCKED', detected: true }] } }])).toBe('it contains profanity')
+    expect(guardrailReason([{ contentPolicy: { filters: [{ type: 'PROMPT_ATTACK', action: 'BLOCKED', detected: true }] } }])).toMatch(/instructions/)
+    expect(guardrailReason([{ sensitiveInformationPolicy: { piiEntities: [{ type: 'CREDIT_DEBIT_CARD_NUMBER', action: 'BLOCKED', detected: true }], regexes: [] } }])).toMatch(/personal/)
+    expect(guardrailReason([])).toMatch(/rules/)
   })
 })

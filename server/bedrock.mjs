@@ -40,8 +40,9 @@ export async function converse({ system, messages, maxTokens = 400, temperature 
 }
 
 // Screens visitor text (guestbook notes) with the same guardrail, without
-// calling a model. Returns true when the guardrail would intervene.
-export async function guardrailBlocks(text, timeoutMs = 8000) {
+// calling a model. Returns null when the text passes, or a broad, visitor-facing
+// reason when the guardrail intervenes (never the exact rule that matched).
+export async function guardrailVerdict(text, timeoutMs = 8000) {
   if (!bedrockConfigured()) throw Object.assign(new Error('content checks are offline'), { status: 503 })
   const { guardrailIdentifier, guardrailVersion } = guardrail()
   const response = await fetch(`https://bedrock-runtime.${region}.amazonaws.com/guardrail/${encodeURIComponent(guardrailIdentifier)}/version/${encodeURIComponent(guardrailVersion)}/apply`, {
@@ -55,5 +56,24 @@ export async function guardrailBlocks(text, timeoutMs = 8000) {
     console.error(`guardrail ${response.status}: ${body.message ?? 'unknown error'}`)
     throw Object.assign(new Error('content checks are unavailable right now'), { status: 503 })
   }
-  return body.action === 'GUARDRAIL_INTERVENED'
+  return body.action === 'GUARDRAIL_INTERVENED' ? guardrailReason(body.assessments) : null
+}
+
+const filterReasons = {
+  PROMPT_ATTACK: 'it reads like instructions for the site\'s AI',
+  HATE: 'it reads as hateful',
+  INSULTS: 'it reads as insulting',
+  SEXUAL: 'it contains sexual content',
+  VIOLENCE: 'it contains violent content',
+  MISCONDUCT: 'it reads as encouraging harm or wrongdoing',
+}
+
+export function guardrailReason(assessments = []) {
+  const found = (Array.isArray(assessments) ? assessments : []).flatMap((assessment) => [
+    ...(assessment.sensitiveInformationPolicy?.piiEntities ?? []).concat(assessment.sensitiveInformationPolicy?.regexes ?? []).filter((item) => item.detected !== false).map(() => 'it contains personal or sensitive details'),
+    ...(assessment.contentPolicy?.filters ?? []).filter((item) => item.detected !== false).map((item) => filterReasons[item.type] ?? 'it breaks the guestbook rules'),
+    ...(assessment.wordPolicy?.managedWordLists ?? []).concat(assessment.wordPolicy?.customWords ?? []).filter((item) => item.detected !== false).map(() => 'it contains profanity'),
+    ...(assessment.topicPolicy?.topics ?? []).filter((item) => item.detected !== false).map(() => 'it strays into advice or politics'),
+  ])
+  return found[0] ?? 'it breaks the guestbook rules'
 }
