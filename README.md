@@ -67,7 +67,7 @@ All optional; the deploy workflow sets the ones marked *deploy*.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `PORT` | `8787` (`8080` in the container) | Listen port |
-| `ALLOWED_ORIGINS` | the site, `www` and localhost | Comma-separated origins allowed to call `POST` APIs |
+| `ALLOWED_ORIGINS` | the `domain` from ABOUT.md, its `www` and localhost | Comma-separated origins allowed to call `POST` APIs |
 | `AWS_BEARER_TOKEN_BEDROCK` | none (*deploy*) | Bedrock API key; the assistant is offline without it |
 | `BEDROCK_GUARDRAIL_ID`, `BEDROCK_GUARDRAIL_VERSION` | none (*deploy*) | Guardrail applied to every call; the assistant is offline without them |
 | `BEDROCK_MODEL_ID` | `us.anthropic.claude-haiku-4-5-20251001-v1:0` | Inference profile |
@@ -77,7 +77,7 @@ All optional; the deploy workflow sets the ones marked *deploy*.
 | `GUESTBOOK_REGION` | `us-east-1` | Bucket region |
 | `GUESTBOOK_PER_DAY`, `GUESTBOOK_GLOBAL_PER_DAY` | 3, 300 | Guestbook rate limits |
 | `GUESTBOOK_FILE` | temp file in development | Local guestbook file |
-| `GITHUB_OWNER` | the site owner | Account whose repositories and contributions are shown |
+| `GITHUB_OWNER` | `github` from ABOUT.md | Account whose repositories and contributions are shown |
 | `GITHUB_TOKEN` | none | Optional token for a higher GitHub API rate limit |
 
 ## Architecture
@@ -99,7 +99,8 @@ GitHub Actions (push to main)
 | Path | Contents |
 | --- | --- |
 | `src/` | React 19 client: `components/` (terminal, menu bar, windows), `shell/` (line editor, completion, commands), `gui/` (standard portfolio page), `games/` |
-| `src/content.ts`, `server/knowledge.md` | Site content and the assistant's facts (see [Make it yours](#make-it-yours)) |
+| `ABOUT.md` | All site content and the assistant's facts (see [Make it yours](#make-it-yours)) |
+| `shared/about.js` | Parses ABOUT.md for the client, the server and the build |
 | `server/` | Dependency-free Node server: static files, APIs, rate limits, Bedrock client, S3 signing |
 | `scripts/prerender.mjs` | Renders `/gui` to static HTML at build time |
 | `terraform/` | All AWS infrastructure; `terraform/bootstrap/` creates the state bucket |
@@ -277,19 +278,71 @@ you.
 
 ## Make it yours
 
-Content currently lives in a few places:
+Everything a visitor sees comes from one file, [`ABOUT.md`](ABOUT.md), plus the
+images in `public/media/`. Edit it, run `npm run dev` to preview, and push.
 
-| What | Where |
+**Frontmatter** (between the `---` lines) holds the profile and site settings:
+
+| Key | Used for |
 | --- | --- |
-| Name, role, links, experience, skills, education, papers, terminal command output | `src/content.ts` |
-| The assistant's background facts and rules | `server/knowledge.md` and the system prompt in `server/index.mjs` |
-| Standard portfolio page sections | `src/gui/Portfolio.tsx` |
-| Domain in page metadata and prerender | `index.html`, `scripts/prerender.mjs`, `src/gui/address.ts` |
-| Résumé, background image, icons | `public/media/`, `public/` |
+| `name`, `short_name`, `handle`, `initials` | Page titles, prompt (`guest@domain`), home directory, favicon and logo |
+| `title`, `tagline`, `location` | Hero, neofetch, login banner |
+| `email`, `domain`, `github`, `linkedin`, `source`, `resume` | Links, `open`, `email`, `resume`, GitHub projects and contributions, allowed origins |
+| `seo` | Meta description and link-preview text for `/` and `/gui` |
+| `os`, `os_version`, `motd`, `neofetch`, `ascii_logo` | The fake OS, login banner, `neofetch` rows and boot logo |
+| `example_question` | The assistant example shown by `help` |
+| `links` | Extra `open <name>` targets |
+| `focus_dirs`, `contact_heading`, `contact_note` | Standard-site hero card and contact block |
+| `featured` | GitHub repositories shown under Projects, in order |
+| `media` | Files in `public/media/` that `view` can show, with alt text |
 
-Keep `src/content.ts` and `server/knowledge.md` in sync so the assistant answers
-from the same facts the site shows. After changing the guardrail's wording or
-topics, follow the version note in step 6.
+`name`, `email`, `domain` and `github` are required; the rest are optional.
+The format is a small YAML subset: `key: value`, `key: [a, b]`, an indented
+`- item` list, an indented `key: value` map, or `key: |` for multi-line text.
+
+**Sections.** Every `# Heading` in the body is a section, in order. Each one is:
+
+- a terminal command named after the heading (`# Talks` becomes `talks`), listed
+  in `help` and tab completion, and a file for `ls`, `cat`, `grep` and `vim`;
+- a section of the standard site at `/gui`, with a nav link.
+
+So adding a section is just adding a heading and some markdown. An optional
+comment on the line after the heading sets the details:
+
+```markdown
+# Education & certifications
+<!-- command: education | nav: Education | help: degrees and certifications -->
+```
+
+`command` overrides the command name (default: the heading in lowercase with
+dashes), `nav` the nav label (default: the heading) and `help` the description
+in `help`. A heading that matches a built-in command such as `ls` keeps the
+built-in.
+
+These section names have their own layouts and expect the format shown in
+ABOUT.md: `about` (`**Label:** value` lines become facts), `experience`
+(`## Role`, then `**Company** suffix [dates] | place`, then `- bullets`),
+`skills` (`**Category**` followed by items separated by two spaces),
+`publications` (`## Title`, a `Venue, year.` line, then links), `education`
+(`**Degree**  School, year`, then a `Certifications` line and indented
+certificates), `contact` (`label     value` rows), `projects` (live from GitHub;
+the body is the intro line on `/gui`), `now` (an `Updated: <when>` line and
+bullets) and `guestbook`. Any other heading renders as plain markdown.
+
+**Assistant.** The `# Assistant` section never appears on the site. Its
+`## Rules` list is added to the assistant's rules, and anything else in it is
+extra background. The assistant also reads every visible section, so it answers
+from the same facts the site shows.
+
+**Media.** Replace `public/media/` (résumé, profile and architecture images,
+project thumbnails named `<repository>.jpg`), `public/og.png` (link preview),
+`public/apple-touch-icon.png` and `public/media/golden-dark.jpg` (desktop
+background). The favicon, `robots.txt` and `sitemap.xml` are generated from
+ABOUT.md at build time.
+
+The guardrail's refusal message and denied topics are set in
+`terraform/terraform.tfvars` (`owner_name`, `guardrail_denied_topics`); see
+step 6 of [Deploy your own](#deploy-your-own).
 
 ## Security
 
