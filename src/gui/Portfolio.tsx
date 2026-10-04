@@ -362,7 +362,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
                   <div>
                     <h3>{degree.title}</h3>
                     <p>{name}{degreeYear && <span className="pf-date"> · {degreeYear}</span>}</p>
-                    {degree.notes.map((note) => <p key={note} className="pf-muted">{note}</p>)}
+                    {degree.notes.map((note) => <p key={note} className="pf-muted"><Md inline>{note}</Md></p>)}
                   </div>
                 </article>
               )

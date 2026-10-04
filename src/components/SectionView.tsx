@@ -139,7 +139,7 @@ function Education({ renderLink }: { renderLink: LinkRenderer }) {
           <div key={degree} className="degree">
             <div className="role-head"><span className="role-title">{degree}</span><span className="role-dates">{year}</span></div>
             <div className="role-company">{place}</div>
-            {block.slice(1).filter((line) => line.trim()).map((line) => <div key={line} className="role-extra">{line.trim()}</div>)}
+            {block.slice(1).filter((line) => line.trim()).map((line) => <div key={line} className="role-extra"><Inline text={line.trim()} renderLink={renderLink} /></div>)}
           </div>
         )
       })}
