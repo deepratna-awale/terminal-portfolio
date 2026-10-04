@@ -90,7 +90,8 @@
 .cb-tiles a { width: 104px; display: grid; justify-items: center; gap: 10px; padding: 14px 6px 12px; border-radius: 8px; color: var(--cb-text); text-decoration: none; }
 .cb-tiles a:hover { background: var(--cb-hover); }
 .cb-tile-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--cb-omni); font: 700 14px sans-serif; }
-.cb-tile-icon.gh { background: #fff; } .cb-tile-icon.in { background: #fff; } .cb-tile-icon.cv { background: #d93025; } .cb-tile-icon.src { background: #188038; font-family: ui-monospace, monospace; font-size: 13px; }
+.cb-tile-icon.image { background: #fff; }
+.cb-tile-icon:not(.image) { font-family: ui-monospace, monospace; font-size: 13px; }
 .cb-tile-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
 
 /* Stacking with the terminal window: the clicked window comes to the front. */

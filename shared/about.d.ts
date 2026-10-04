@@ -1,5 +1,5 @@
 export type AboutSection = { id: string; title: string; nav: string; help: string; lines: string[] }
-export type FrontmatterValue = string | string[] | Record<string, string | string[]>
+export type FrontmatterValue = string | string[] | Record<string, string | string[]> | Array<Record<string, string | string[]>>
 export type AboutData = { meta: Record<string, FrontmatterValue>; sections: AboutSection[]; assistant: string }
 export type SiteProfile = {
   name: string

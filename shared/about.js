@@ -23,8 +23,32 @@ function scalar(value) {
 
 const indentOf = (line) => /^ */.exec(line)[0].length
 
+const content = (block) => block.filter((item) => item.trim() && !item.trim().startsWith('#'))
+const pairOf = (text, key) => {
+  const pair = /^([^:]+?):\s+(.*)$/.exec(text.trim())
+  if (!pair) throw new Error(`ABOUT.md frontmatter: cannot read "${text.trim()}" under ${key}`)
+  return [unquote(pair[1]), scalar(pair[2])]
+}
+
+// A list of maps: "- name: GitHub" followed by more "key: value" lines indented under it.
+const isMapList = (block) => {
+  const lines = content(block)
+  return lines.length > 0 && /^- [\w-]+:\s/.test(lines[0].trim()) && lines.some((item) => !item.trim().startsWith('- '))
+}
+
+function mapList(block, key) {
+  const items = []
+  for (const line of content(block)) {
+    const text = line.trim()
+    if (text.startsWith('- ')) items.push(Object.fromEntries([pairOf(text.slice(2), key)]))
+    else Object.assign(items.at(-1), Object.fromEntries([pairOf(text, key)]))
+  }
+  return items
+}
+
 // key: value, key: [a, b], key: | (indented block), key: followed by an
-// indented list (- item) or map (sub: value). Lines starting with # are comments.
+// indented list (- item), a list of maps (- key: value with more key: value
+// lines under it) or a map (sub: value). Lines starting with # are comments.
 export function parseFrontmatter(text) {
   const lines = text.split('\n')
   const data = {}
@@ -42,6 +66,8 @@ export function parseFrontmatter(text) {
       data[key] = block.map((item) => item.slice(indent)).join('\n')
     } else if (rest.trim()) {
       data[key] = scalar(rest)
+    } else if (isMapList(block)) {
+      data[key] = mapList(block, key)
     } else if (block.every((item) => !item.trim() || item.trim().startsWith('- '))) {
       data[key] = block.filter((item) => item.trim()).map((item) => scalar(item.trim().slice(2)))
     } else {

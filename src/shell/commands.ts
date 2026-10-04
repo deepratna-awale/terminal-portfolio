@@ -1,6 +1,6 @@
 import type { Project } from '../api'
 import { fetchContributions, fetchCowthink, fetchFortune, fetchGuestbook, signGuestbook } from '../api'
-import { exampleQuestion, extraLinks, linkLabel, liveSections, mediaFiles, neofetchRows, nowItems, os, profile, sectionList, sections } from '../content'
+import { exampleQuestion, linkLabel, links, liveSections, mediaFiles, neofetchRows, nowItems, os, profile, sectionList, sections } from '../content'
 import { isThemeName, themeNames, themes, type ThemeName } from '../themes'
 import { renderHeatmap } from './heatmap'
 import { filters, grepLines, toPlainText } from './pipes'
@@ -292,7 +292,7 @@ function openVim(args: string[], ctx: ShellContext) {
 }
 
 export function openTargets(): Record<string, string> {
-  return { github: profile.github, ...(profile.linkedin ? { linkedin: profile.linkedin } : {}), source: profile.source, ...extraLinks, email: `mailto:${profile.email}` }
+  return { github: profile.github, ...(profile.linkedin ? { linkedin: profile.linkedin } : {}), source: profile.source, email: `mailto:${profile.email}`, ...Object.fromEntries(links.filter((link) => link.id).map((link) => [link.id.toLowerCase(), link.url])) }
 }
 
 // One command per ABOUT.md section. Known sections keep their live behaviour;
