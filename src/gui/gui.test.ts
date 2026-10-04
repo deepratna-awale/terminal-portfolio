@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { sections } from '../content'
-import { HOME, NEWTAB, resolveAddress } from './address'
+import { DINO, HOME, NEWTAB, URLS, VERSION, pageTitle, resolveAddress } from './address'
 import { parseEducation, parseExperience, parsePublications, parseSkills } from './parse'
 
 describe('address bar', () => {
@@ -22,6 +22,18 @@ describe('address bar', () => {
     expect(resolveAddress('mailto:a@b.c', origin)).toEqual({ kind: 'mail', url: 'mailto:a@b.c' })
     expect(resolveAddress('agentic ai', origin)).toEqual({ kind: 'external', url: 'https://www.google.com/search?q=agentic%20ai' })
     expect(resolveAddress('   ', origin)).toBeNull()
+  })
+
+  it('opens chrome:// pages and search easter eggs in place', () => {
+    expect(resolveAddress('chrome://dino', origin)).toEqual({ kind: 'page', url: DINO })
+    expect(resolveAddress('chrome://version/', origin)).toEqual({ kind: 'page', url: VERSION })
+    expect(resolveAddress('about:about', origin)).toEqual({ kind: 'page', url: URLS })
+    expect(resolveAddress('chrome://nope', origin)).toEqual({ kind: 'page', url: URLS })
+    expect(pageTitle(VERSION)).toBe('About Version')
+    expect(resolveAddress('Do a barrel roll!', origin)).toEqual({ kind: 'egg', egg: 'roll' })
+    expect(resolveAddress('askew', origin)).toEqual({ kind: 'egg', egg: 'askew' })
+    expect(resolveAddress('flip a coin', origin)).toEqual({ kind: 'egg', egg: 'coin' })
+    expect(resolveAddress('roll a die', origin)).toEqual({ kind: 'egg', egg: 'die' })
   })
 })
 
