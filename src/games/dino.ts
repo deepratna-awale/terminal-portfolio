@@ -5,7 +5,7 @@ export type DinoState = { y: number; vy: number; cacti: Cactus[]; speed: number;
 
 export const DINO_WIDTH = 600
 export const DINO_X = 24
-export const REX = { width: 40, height: 36 }
+export const REX = { width: 38, height: 42 }
 const GRAVITY = 2600
 const JUMP = 760
 const START_SPEED = 360
