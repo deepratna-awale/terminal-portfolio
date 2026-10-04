@@ -1,5 +1,5 @@
 import { mediaFiles } from '../content'
-import { commandNames, directories } from './commands'
+import { commandNames, directories, openTargets } from './commands'
 
 export type Completion = { prefix: string; fragment: string; candidates: string[] }
 
@@ -8,7 +8,7 @@ const pathCommands = new Set(['cd', 'cat', 'ls', 'll', 'la', 'view', 'open', 'pr
 function argumentOptions(command: string, path: string, projectNames: string[], themeNames: string[]): string[] {
   if (command === 'theme') return themeNames
   if (command === 'man') return commandNames
-  if (command === 'open') return ['github', 'linkedin', 'source', 'verafin', 'email', ...projectNames]
+  if (command === 'open') return [...Object.keys(openTargets()), ...projectNames]
   if (command === 'projects') return projectNames
   const here = path === '~' ? '' : path
   if (here === 'projects') return projectNames

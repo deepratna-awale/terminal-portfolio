@@ -1,6 +1,6 @@
 import type { Project } from '../api'
 import { fetchContributions, fetchCowthink, fetchFortune, fetchGuestbook, signGuestbook } from '../api'
-import { mediaFiles, nowItems, profile, sections } from '../content'
+import { exampleQuestion, extraLinks, linkLabel, liveSections, mediaFiles, neofetchRows, nowItems, os, profile, sectionList, sections } from '../content'
 import { isThemeName, themeNames, themes, type ThemeName } from '../themes'
 import { renderHeatmap } from './heatmap'
 import { filters, grepLines, toPlainText } from './pipes'
@@ -38,7 +38,8 @@ export type ShellContext = {
 
 type Command = { summary: string; group: 'Portfolio' | 'Navigation' | 'Terminal' | 'Fun'; usage?: string; hidden?: boolean; run: (args: string[], ctx: ShellContext) => void | Promise<void> }
 
-export const directories = ['about', 'experience', 'projects', 'skills', 'publications', 'education', 'contact', 'media']
+// Every ABOUT.md section is a directory holding <name>.md, except the interactive now and guestbook.
+export const directories = [...sectionList.map((item) => item.id).filter((id) => id !== 'now' && id !== 'guestbook'), 'media']
 export const aliases: Record<string, string> = { ll: 'ls -l', la: 'ls -a', '..': 'cd ..', '~': 'cd ~', q: 'exit', h: 'help', cls: 'clear', papers: 'publications', research: 'publications', graph: 'contributions', gb: 'guestbook', cowsay: 'cowthink', html: 'gui' }
 
 export const cmd = (label: string, command: string) => `[${label}](cmd:${encodeURIComponent(command)})`
@@ -54,12 +55,12 @@ const didYouMean = (suggestion: string | undefined, command: string) => (suggest
 export const siteUrl = (command: string) => `${profile.website}/?cmd=${encodeURIComponent(command)}`
 
 // The virtual filesystem: every top-level section is a directory holding <name>.md.
-export const fileNames = [...directories.filter((dir) => sections[dir]).map((dir) => `${dir}.md`), 'README.md', 'resume.md', '.zshrc']
+export const fileNames = [...directories.filter((dir) => sections[dir] && !liveSections.has(dir)).map((dir) => `${dir}.md`), 'README.md', 'resume.md', '.zshrc']
 
 const zshrc = () => ['export EDITOR=vim', 'setopt autocd histignoredups', ...Object.entries(aliases).map(([name, value]) => `alias ${name}='${value}'`), 'eval "$(curiosity init zsh)"'].join('\n')
 
 export function resumeText(): string {
-  return [`# ${profile.name}`, `${profile.title} | ${profile.location}`, `${profile.email} | ${profile.linkedin} | ${profile.github}`, '', ...['about', 'experience', 'skills', 'education', 'publications'].flatMap((name) => [`## ${name[0]!.toUpperCase()}${name.slice(1)}`, ...sections[name]!.filter((line) => !line.includes('](cmd:') && !line.startsWith('# ')).map((line) => (line.startsWith('## ') ? `### ${toPlainText(line)}` : toPlainText(line))), ''])].join('\n').replace(/\n{3,}/g, '\n\n')
+  return [`# ${profile.name}`, `${profile.title} | ${profile.location}`, `${profile.email} | ${profile.linkedin} | ${profile.github}`, '', ...sectionList.filter((item) => !liveSections.has(item.id) && item.id !== 'contact').flatMap(({ id: name, title }) => [`## ${title}`, ...sections[name]!.filter((line) => !line.includes('](cmd:') && !line.startsWith('# ')).map((line) => (line.startsWith('## ') ? `### ${toPlainText(line)}` : toPlainText(line))), ''])].join('\n').replace(/\n{3,}/g, '\n\n')
 }
 
 // Resolves a path to the plain text of a static file, or undefined.
@@ -72,7 +73,7 @@ export function readFile(target: string, path = '~'): { name: string; text: stri
   if (base === 'README' || base === 'readme') return { name: 'README.md', text: sections.about!.map(toPlainText).join('\n') }
   if (base === 'resume') return { name: 'resume.md', text: resumeText() }
   if (base === '.zshrc') return { name: '.zshrc', text: zshrc() }
-  if (sections[base]) return { name: `${base}.md`, text: sections[base]!.map(toPlainText).join('\n') }
+  if (sections[base] && !liveSections.has(base)) return { name: `${base}.md`, text: sections[base]!.map(toPlainText).join('\n') }
   return undefined
 }
 
@@ -111,7 +112,7 @@ export function formatProject(project: Project, detailed = false): string {
 }
 
 async function showProjects(ctx: ShellContext, name?: string) {
-  ctx.print([muted(name ? `fetching ${name} from github.com/deepratna-awale ...` : 'fetching public repositories from github.com/deepratna-awale ...')])
+  ctx.print([muted(name ? `fetching ${name} from ${linkLabel(profile.github)} ...` : `fetching public repositories from ${linkLabel(profile.github)} ...`)])
   try {
     const projects = await ctx.projects()
     if (name) {
@@ -169,16 +170,13 @@ async function viewMedia(ctx: ShellContext, target = 'architecture.svg') {
 export function neofetchInfo(theme: ThemeName): string[] {
   const uptime = Math.floor(performance.now() / 1000)
   return [
-    `OS:       DeepOS 26.10 LTS`,
+    `OS:       ${os.name} ${os.version}`,
     `Host:     AWS Lightsail nano, us-east-1`,
     `Kernel:   React 19 + Vite`,
     `Uptime:   ${Math.floor(uptime / 60)}m ${uptime % 60}s`,
     `Shell:    zsh (browser edition)`,
     `Theme:    ${themes[theme].label}`,
-    `Role:     ${profile.title}`,
-    `Focus:    Agentic AI for fraud & AML`,
-    `Location: ${profile.location}`,
-    `Cert:     AWS ML Engineer, Associate`,
+    ...Object.entries(neofetchRows).map(([label, value]) => `${`${label}:`.padEnd(10)}${value}`),
   ]
 }
 
@@ -190,7 +188,7 @@ const relative = (iso: string) => {
 }
 
 async function contributions(ctx: ShellContext, quiet = false) {
-  if (!quiet) ctx.print([muted(`fetching github.com/${profile.handle === 'deepratna' ? 'deepratna-awale' : profile.handle} contributions ...`)])
+  if (!quiet) ctx.print([muted(`fetching ${linkLabel(profile.github)} contributions ...`)])
   try {
     const data = await fetchContributions()
     ctx.print([{ type: 'ascii', text: renderHeatmap(data.days) }, muted(`${data.total.toLocaleString()} contributions in the last year. Less · ░ ▒ ▓ █ More`)])
@@ -209,7 +207,7 @@ async function now(ctx: ShellContext) {
 }
 
 async function meltdown(ctx: ShellContext) {
-  const victims = ['/usr/bin/zsh', '/etc/passwd', '/home/deepratna/projects', '/home/deepratna/resume.pdf', '/var/www/portfolio/index.html', '/opt/bedrock/claude', '/lib/react.so.19', '/boot/vmlinuz-deepos', '/dev/coffee']
+  const victims = ['/usr/bin/zsh', '/etc/passwd', `/home/${profile.handle}/projects`, `/home/${profile.handle}/resume.pdf`, '/var/www/portfolio/index.html', '/opt/bedrock/claude', '/lib/react.so.19', `/boot/vmlinuz-${os.name.toLowerCase()}`, '/dev/coffee']
   const fast = reducedMotion()
   for (const victim of victims) { ctx.print([muted(`removed '${victim}'`)]); if (!fast) await sleep(110) }
   ctx.ui.meltdown()
@@ -270,24 +268,34 @@ function openVim(args: string[], ctx: ShellContext) {
   ctx.ui.vim(file?.name ?? clean(target), file?.text ?? '')
 }
 
+export function openTargets(): Record<string, string> {
+  return { github: profile.github, ...(profile.linkedin ? { linkedin: profile.linkedin } : {}), source: profile.source, ...extraLinks, email: `mailto:${profile.email}` }
+}
+
+// One command per ABOUT.md section. Known sections keep their live behaviour;
+// any other heading prints its markdown.
+const sectionRunners: Record<string, Pick<Command, 'run' | 'usage'>> = {
+  projects: { usage: 'projects [name]', run: (args, ctx) => showProjects(ctx, args[0]) },
+  now: { run: (_args, ctx) => now(ctx) },
+  guestbook: { usage: 'guestbook [sign [-n name] <message>]', run: guestbook },
+}
+
+function sectionCommands(): Record<string, Command> {
+  return Object.fromEntries(sectionList.filter(({ id }) => id !== 'help').map(({ id, help }) => [id, { group: 'Portfolio', summary: help, ...(sectionRunners[id] ?? { run: (_args: string[], ctx: ShellContext) => ctx.print([section(id)]) }) } satisfies Command]))
+}
+
 export const commands: Record<string, Command> = {
   help: { group: 'Terminal', summary: 'list commands', run: (_args, ctx) => {
     const groups = ['Portfolio', 'Navigation', 'Terminal', 'Fun'] as const
     ctx.print([
       ...groups.flatMap((group) => [{ type: 'success' as const, text: group }, out(Object.entries(commands).filter(([, command]) => command.group === group && !command.hidden).map(([name, command]) => `  ${cmd(name.padEnd(13), name)}${command.summary}`).join('\n'))]),
-      muted('Anything that is not a command goes to my AI assistant, e.g. "what are you working on at Nasdaq?"'),
+      muted(`Anything that is not a command goes to my AI assistant, e.g. "${exampleQuestion}"`),
       muted('zsh keys work: Tab, ^A ^E ^U ^K ^W ^Y ^L ^C ^R, ⌥B ⌥F, ↑↓, → accepts a suggestion, !! and !$. See `shortcuts`.'),
     ])
   } },
-  about: { group: 'Portfolio', summary: 'who I am', run: (_args, ctx) => ctx.print([section('about')]) },
-  experience: { group: 'Portfolio', summary: 'work history, including Nasdaq', run: (_args, ctx) => ctx.print([section('experience')]) },
-  projects: { group: 'Portfolio', summary: 'live from my public GitHub', usage: 'projects [name]', run: (args, ctx) => showProjects(ctx, args[0]) },
-  skills: { group: 'Portfolio', summary: 'tools and stacks', run: (_args, ctx) => ctx.print([section('skills')]) },
-  publications: { group: 'Portfolio', summary: 'research papers', run: (_args, ctx) => ctx.print([section('publications')]) },
-  education: { group: 'Portfolio', summary: 'degrees and certifications', run: (_args, ctx) => ctx.print([section('education')]) },
-  contact: { group: 'Portfolio', summary: 'ways to reach me', run: (_args, ctx) => ctx.print([section('contact')]) },
+  ...sectionCommands(),
   resume: { group: 'Portfolio', summary: 'open my resume (PDF)', run: (args, ctx) => {
-    ctx.print([{ type: 'success', text: `[Resume-Awale-Deepratna.pdf](${profile.resume}) (opening in a new tab)` }])
+    ctx.print([{ type: 'success', text: `[${profile.resume.split('/').pop()}](${profile.resume}) (opening in a new tab)` }])
     if (!args.includes('--no-open')) openExternal(profile.resume)
   } },
   email: { group: 'Portfolio', summary: 'open a new email to me', run: (_args, ctx) => { ctx.print([muted(`opening mailto:${profile.email} ...`)]); openExternal(`mailto:${profile.email}`) } },
@@ -338,13 +346,13 @@ export const commands: Record<string, Command> = {
   view: { group: 'Navigation', summary: 'show an image, diagram or project screenshot', usage: 'view <file>', run: (args, ctx) => viewMedia(ctx, args[0]) },
   open: { group: 'Navigation', summary: 'open a project, github, linkedin or the source', usage: 'open <target>', run: async (args, ctx) => {
     const target = (args[0] ?? '').toLowerCase()
-    const known: Record<string, string> = { github: profile.github, linkedin: profile.linkedin, source: profile.source, verafin: profile.product, email: `mailto:${profile.email}` }
+    const known = openTargets()
     if (known[target]) { ctx.print([muted(`opening ${known[target]} ...`)]); openExternal(known[target]!); return }
     try {
       const project = (await ctx.projects()).find((item) => item.name.toLowerCase() === target)
       if (project) { ctx.print([muted(`opening ${project.url} ...`)]); openExternal(project.url); return }
     } catch { /* fall through to the error below */ }
-    ctx.print([err(`open: ${args[0] ?? ''}: unknown target. Try github, linkedin, source, verafin or a project name.`)])
+    ctx.print([err(`open: ${args[0] ?? ''}: unknown target. Try ${Object.keys(known).filter((key) => key !== 'email').join(', ')} or a project name.`)])
   } },
   clear: { group: 'Terminal', summary: 'clear the screen (^L)', run: (_args, ctx) => ctx.clear() },
   history: { group: 'Terminal', summary: 'command history (^R to search)', run: (_args, ctx) => ctx.print([out(ctx.history.map((item, index) => `${String(index + 1).padStart(5)}  ${item}`).join('\n') || 'No commands yet.')]) },
@@ -369,11 +377,11 @@ export const commands: Record<string, Command> = {
     '^L           clear screen           ^C   cancel line',
     '^D           exit on an empty line  !! !$ !n !-n !prefix  history expansion',
   ].join('\n')))]) },
-  whoami: { group: 'Terminal', summary: 'print effective user', hidden: true, run: (_args, ctx) => ctx.print([out('guest  (but you can ask about deepratna)')]) },
+  whoami: { group: 'Terminal', summary: 'print effective user', hidden: true, run: (_args, ctx) => ctx.print([out(`guest  (but you can ask about ${profile.handle})`)]) },
   date: { group: 'Terminal', summary: 'print the date', hidden: true, run: (_args, ctx) => ctx.print([out(new Date().toString())]) },
   echo: { group: 'Terminal', summary: 'print text', hidden: true, run: (args, ctx) => ctx.print([out(args.join(' ').replace(/^['"]|['"]$/g, '').replace(/\$USER/g, 'guest').replace(/\$SHELL/g, '/bin/zsh').replace(/\$HOME/g, `/home/${profile.handle}`))]) },
-  uname: { group: 'Terminal', summary: 'system info', hidden: true, run: (args, ctx) => ctx.print([out(args.includes('-a') ? 'DeepOS deepratna-awale.dev 26.10 LTS Kernel Version 26.10.0 React-19 x86_64 Lightsail/nano zsh' : 'DeepOS')]) },
-  sw_vers: { group: 'Terminal', summary: 'OS version', hidden: true, run: (_args, ctx) => ctx.print([out(fence('ProductName:\t\tDeepOS\nProductVersion:\t\t26.10 LTS\nBuildVersion:\t\t26K1004'))]) },
+  uname: { group: 'Terminal', summary: 'system info', hidden: true, run: (args, ctx) => ctx.print([out(args.includes('-a') ? `${os.name} ${profile.host} ${os.version} Kernel Version ${os.version.split(' ')[0]}.0 React-19 x86_64 Lightsail/nano zsh` : os.name)]) },
+  sw_vers: { group: 'Terminal', summary: 'OS version', hidden: true, run: (_args, ctx) => ctx.print([out(fence(`ProductName:\t\t${os.name}\nProductVersion:\t\t${os.version}\nBuildVersion:\t\t26K1004`))]) },
   alias: { group: 'Terminal', summary: 'list aliases', hidden: true, run: (_args, ctx) => ctx.print([out(Object.entries(aliases).map(([name, value]) => `${name}='${value}'`).join('\n'))]) },
   man: { group: 'Terminal', summary: 'manual for a command', usage: 'man <command>', hidden: true, run: (args, ctx) => {
     const command = commands[args[0] ?? '']
@@ -393,7 +401,7 @@ export const commands: Record<string, Command> = {
     const line = args.join(' ')
     if (isRootWipe(args.slice(1)) && args[0] === 'rm') return meltdown(ctx)
     if (line === 'make me a sandwich') { ctx.print([{ type: 'success', text: 'Okay.' }]); return }
-    ctx.print([muted('[sudo] password for guest: ********'), err('Nice try. guest is not in the sudoers file. This incident will be reported to deepratna.')])
+    ctx.print([muted('[sudo] password for guest: ********'), err(`Nice try. guest is not in the sudoers file. This incident will be reported to ${profile.handle}.`)])
   } },
   rm: { group: 'Fun', summary: 'remove files', hidden: true, run: (args, ctx) => isRootWipe(args) ? meltdown(ctx) : ctx.print([err(`rm: ${args.filter((arg) => !arg.startsWith('-')).join(' ') || 'file'}: Permission denied (read-only portfolio filesystem)`)]) },
   make: { group: 'Fun', summary: 'build something', hidden: true, run: (args, ctx) => ctx.print([args.join(' ') === 'me a sandwich' ? err('What? Make it yourself.') : err(`make: *** No rule to make target '${args[0] ?? ''}'.  Stop.`)]) },
@@ -418,9 +426,7 @@ export const commands: Record<string, Command> = {
   head: { group: 'Navigation', summary: 'first lines of a file', hidden: true, run: fileFilter('head') },
   tail: { group: 'Navigation', summary: 'last lines of a file', hidden: true, run: fileFilter('tail') },
   wc: { group: 'Navigation', summary: 'count lines, words, chars', hidden: true, run: fileFilter('wc') },
-  now: { group: 'Portfolio', summary: "what I'm up to right now", run: (_args, ctx) => now(ctx) },
   contributions: { group: 'Portfolio', summary: 'my GitHub contribution graph, in ASCII', run: (_args, ctx) => contributions(ctx) },
-  guestbook: { group: 'Portfolio', summary: 'read or sign the guestbook', usage: 'guestbook [sign [-n name] <message>]', run: guestbook },
   gui: { group: 'Portfolio', summary: 'open the standard portfolio website', run: (_args, ctx) => { ctx.print([muted('launching Chrome ...')]); ctx.ui.openBrowser() } },
   share: { group: 'Terminal', summary: 'copy a link that runs a command', usage: 'share [command]', run: async (args, ctx) => {
     const command = args.join(' ') || [...ctx.history].reverse().find((item) => !item.startsWith('share')) || 'help'
@@ -429,7 +435,7 @@ export const commands: Record<string, Command> = {
     try { await navigator.clipboard.writeText(url); copied = true } catch { /* clipboard blocked */ }
     ctx.print([out(`[${url}](${url})`), muted(copied ? 'copied to clipboard' : 'copy the link above to share it')])
   } },
-  ssh: { group: 'Fun', summary: 'connect to a host', hidden: true, run: (_args, ctx) => ctx.print([muted('You are already connected to deepratna-awale.dev. Run `reboot` to replay the login.')]) },
+  ssh: { group: 'Fun', summary: 'connect to a host', hidden: true, run: (_args, ctx) => ctx.print([muted(`You are already connected to ${profile.host}. Run \`reboot\` to replay the login.`)]) },
   hire: { group: 'Fun', summary: 'the best command', hidden: true, run: (_args, ctx) => ctx.print([{ type: 'success', text: `Great choice. ${cmd('email', 'email')} me or reach out on [LinkedIn](${profile.linkedin}).` }]) },
 }
 

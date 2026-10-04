@@ -1,7 +1,8 @@
 // GitHub's public contribution calendar, scraped from the same HTML fragment
 // the profile page loads. No token needed; cached for a few hours.
+import { profile } from './about.mjs'
 
-const owner = process.env.GITHUB_OWNER ?? 'deepratna-awale'
+const owner = process.env.GITHUB_OWNER ?? profile.githubUser
 const REFRESH_MS = 3 * 60 * 60 * 1000
 let cache = { value: null, fetchedAt: 0 }
 let inflight = null
@@ -26,7 +27,7 @@ export function parseContributions(html) {
 }
 
 async function refresh() {
-  const response = await fetch(`https://github.com/users/${owner}/contributions`, { headers: { 'User-Agent': 'deepratna-awale.dev', Accept: 'text/html' }, signal: AbortSignal.timeout(10_000) })
+  const response = await fetch(`https://github.com/users/${owner}/contributions`, { headers: { 'User-Agent': profile.host, Accept: 'text/html' }, signal: AbortSignal.timeout(10_000) })
   if (!response.ok) throw new Error(`GitHub returned ${response.status}`)
   const value = parseContributions(await response.text())
   if (!value.days.length) throw new Error('GitHub changed its contribution markup')

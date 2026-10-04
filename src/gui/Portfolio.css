@@ -102,6 +102,9 @@ html:has(.pf-standalone) { scroll-behavior: smooth; }
 .pf-about { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 32px; align-items: start; }
 .pf-prose { display: grid; gap: 14px; color: var(--text-2); font-size: 17px; }
 .pf-prose strong { color: var(--text); font-weight: 600; }
+.pf-generic ul { padding-left: 1.2em; list-style: disc; }
+.pf-generic ol { padding-left: 1.4em; list-style: decimal; }
+.pf-generic :where(h2, h3) { color: var(--text); }
 .pf-facts { display: grid; gap: 14px; }
 .pf-facts div { display: grid; gap: 2px; }
 .pf-facts dt { color: var(--muted); font: 500 11.5px var(--mono-f); letter-spacing: .06em; text-transform: uppercase; }

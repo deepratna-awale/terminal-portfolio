@@ -1,103 +1,43 @@
-// Static portfolio content. Projects come live from GitHub via /api/projects.
+// Site content, parsed from ABOUT.md at the repository root (the single source:
+// edit that file, not this one). Projects come live from GitHub via /api/projects.
+import source from '../ABOUT.md?raw'
+import { parseAboutMarkdown, siteProfile, type AboutSection } from '../shared/about.js'
 
-export const profile = {
-  name: 'Deepratna Awale',
-  handle: 'deepratna',
-  host: 'deepratna-awale.dev',
-  title: 'Senior Software Engineer @ Nasdaq',
-  location: "St. John's, NL, Canada",
-  email: 'awale.deep@gmail.com',
-  github: 'https://github.com/deepratna-awale',
-  linkedin: 'https://www.linkedin.com/in/deepratna-awale',
-  website: 'https://deepratna-awale.dev',
-  source: 'https://github.com/deepratna-awale/terminal-portfolio',
-  product: 'https://verafin.com/product/agentic-ai-workforce/',
-  resume: '/media/Resume-Awale-Deepratna.pdf',
-}
+const about = parseAboutMarkdown(source)
+const meta = about.meta
+const text = (value: unknown) => (typeof value === 'string' ? value : '')
+const list = (value: unknown) => (Array.isArray(value) ? value.map(String) : typeof value === 'string' && value ? [value] : [])
+const map = (value: unknown): Record<string, string> => (value && typeof value === 'object' && !Array.isArray(value) ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, String(item)])) : {})
 
-export const sections: Record<string, string[]> = {
-  about: [
-    `# ${profile.name}`,
-    '',
-    `**${profile.title}** building production agentic AI that helps bank BSA analysts spend their time on real fraud and money laundering, not noise.`,
-    '',
-    'I like turning research-grade models into reliable, fast, observable systems: data pipelines, prompt engineering, evaluation, and the cloud infrastructure that lets other engineers ship agents safely.',
-    '',
-    '**Certification:** AWS Certified Machine Learning Engineer, Associate',
-    '**Education:** MASc Computer Engineering, Memorial University of Newfoundland',
-    '',
-    'Try [`projects`](cmd:projects), [`experience`](cmd:experience), or just ask me something in plain English.',
-  ],
-  experience: [
-    '## Senior Software Engineer',
-    `**Nasdaq** (Verafin) [May 2026 to Present] | ${profile.location}`,
-    `Product: [Verafin Agentic AI Workforce](${profile.product})`,
-    '',
-    '- Building an end to end, production ready agent creation pipeline and process: data preprocessing, prompt engineering, and infrastructure that lets other developers easily deploy agents with tools and skills.',
-    '- Optimized an agent to increase specificity and recall while cutting its response time in half.',
-    '- Developing agents on AWS Bedrock AgentCore that autonomously work BSA/AML cases and recommend Acknowledge or Investigate dispositions, cutting false positives so analysts spend their attention on real fraud.',
-    '',
-    '## Generative AI Associate',
-    '**Innodata Inc.** [August 2025 to May 2026] | Toronto, ON',
-    '',
-    '- Evaluated and rated AI model outputs for quality, relevance, and accuracy for Meta.',
-    '- Contributed to open-source tooling like Redlite for toxicity testing and benchmark metrics.',
-    '- Supported dataset development through data collection and augmentation to reduce overfitting.',
-  ],
-  skills: [
-    '**Agentic AI**     Bedrock AgentCore  LangChain  prompt engineering  evals  RAG',
-    '**ML / DL**        PyTorch  TensorFlow  scikit-learn  OpenCV  diffusion models',
-    '**Cloud / Infra**  AWS  Terraform  Docker  CI/CD  Lightsail  SageMaker',
-    '**Data**           PySpark  pandas  ETL pipelines  Neo4j  SQL',
-    '**Languages**      Python  TypeScript  Java  C++  SQL',
-  ],
-  publications: [
-    '## Semantic Analysis of Long Answers',
-    'IRJCS, 2021. Evaluates long-form exam answers by encoding sentences with a Deep Averaging Network and comparing them to an answer key.',
-    '[academia.edu](https://www.academia.edu/48840919/SEMANTIC_ANALYSIS_OF_LONG_ANSWERS)  [ResearchGate](https://www.researchgate.net/publication/358861646_SEMANTIC_ANALYSIS_OF_LONG_ANSWERS)',
-    '',
-    '## Theoretical Answer Evaluation System [T.A.E.S]',
-    'IJSRP, 2022. NLP system for automated scoring of theory answers with plagiarism detection and grammar penalties.',
-    '[academia.edu](https://www.academia.edu/81925526/Theoretical_Answer_Evaluation_System_T_A_E_S_)',
-  ],
-  contact: [
-    `email     [${profile.email}](mailto:${profile.email})`,
-    `linkedin  [linkedin.com/in/deepratna-awale](${profile.linkedin})`,
-    `github    [github.com/deepratna-awale](${profile.github})`,
-    `web       [deepratna-awale.dev](${profile.website})`,
-    '',
-    'Email is the fastest route. Run [`email`](cmd:email) to open your mail client, or [`resume`](cmd:resume) for the PDF.',
-  ],
-  education: [
-    '**MASc, Computer Engineering**  Memorial University of Newfoundland, 2024',
-    '  Thesis work: hybrid CNN + MLP to estimate ocean wave height from Wamos II radar images.',
-    '**BEng, Information Technology**  RGCER, Nagpur, 2021',
-    '',
-    'Certifications',
-    '  AWS Certified Machine Learning Engineer, Associate (2025)',
-    '  IBM Data Science Professional Specialization (2019)',
-    '  IIT Madras Programming and DSA Using Python (2019)',
-  ],
-}
+export const profile = siteProfile(meta)
 
-// Shown by `now`. Keep it short and current; recent GitHub pushes are added live.
+// Sections in ABOUT.md order. Each `# Heading` is a terminal command, a
+// directory/file and a section of the standard site.
+export const sectionList: AboutSection[] = about.sections.map((section) => (section.id === 'about' ? { ...section, lines: [`# ${profile.name}`, '', ...section.lines] } : section))
+export const sections: Record<string, string[]> = Object.fromEntries(sectionList.map((section) => [section.id, section.lines]))
+
+// Sections with their own live behaviour; every other heading is static markdown.
+export const liveSections = new Set(['projects', 'now', 'guestbook'])
+
+// Shown by `now`: an `Updated: <when>` line and a bullet list. Recent GitHub pushes are added live.
+const nowLines = sections.now ?? []
 export const nowItems = {
-  updated: 'October 2026',
-  items: [
-    'Building agents on AWS Bedrock AgentCore at Nasdaq (Verafin) that work BSA/AML cases and cut false positives.',
-    'Building the pipeline that lets other engineers ship agents with tools and skills safely.',
-    `Running this portfolio in the open: Terraform, Lightsail and Bedrock. Source: [GitHub](${profile.source}).`,
-  ],
+  updated: nowLines.map((line) => /^Updated:\s*(.+)$/i.exec(line.trim())?.[1]).find(Boolean) ?? '',
+  items: nowLines.filter((line) => line.startsWith('- ')).map((line) => line.slice(2)),
 }
 
-export const mediaFiles: Record<string, { src: string; alt: string }> = {
-  'profile.svg': { src: '/media/profile.svg', alt: 'Abstract profile illustration for Deepratna Awale' },
-  'architecture.svg': { src: '/media/architecture.svg', alt: 'Architecture diagram of this portfolio: browser, Lightsail container, Bedrock and GitHub' },
-}
+export const os = { name: text(meta.os) || 'PortfolioOS', version: text(meta.os_version) || '1.0 LTS' }
+export const motd = list(meta.motd)
+export const neofetchRows = map(meta.neofetch)
+export const exampleQuestion = text(meta.example_question) || 'what are you working on?'
+export const extraLinks = map(meta.links)
+export const focusDirs = list(meta.focus_dirs)
+export const contactCopy = { heading: text(meta.contact_heading), note: text(meta.contact_note) }
 
-export const asciiLogo = `██████╗ ███████╗███████╗██████╗ ██████╗  █████╗ ████████╗███╗   ██╗ █████╗
-██╔══██╗██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝████╗  ██║██╔══██╗
-██║  ██║█████╗  █████╗  ██████╔╝██████╔╝███████║   ██║   ██╔██╗ ██║███████║
-██║  ██║██╔══╝  ██╔══╝  ██╔═══╝ ██╔══██╗██╔══██║   ██║   ██║╚██╗██║██╔══██║
-██████╔╝███████╗███████╗██║     ██║  ██║██║  ██║   ██║   ██║ ╚████║██║  ██║
-╚═════╝ ╚══════╝╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═══╝╚═╝  ╚═╝`
+const media = map(meta.media)
+export const mediaFiles: Record<string, { src: string; alt: string }> = Object.fromEntries(Object.entries(media).map(([file, alt]) => [file, { src: `/media/${file}`, alt }]))
+
+export const asciiLogo = text(meta.ascii_logo).replace(/\n+$/, '')
+
+// "github.com/user" style labels for links shown as text.
+export const linkLabel = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')

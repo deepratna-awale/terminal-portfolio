@@ -7,7 +7,7 @@ import { MenuBar, type Menu } from './components/MenuBar'
 import { Terminal, type TerminalHandle } from './components/Terminal'
 import { TrafficLights } from './components/TrafficLights'
 import { Vim } from './components/Vim'
-import { profile } from './content'
+import { os, profile } from './content'
 import { openExternal, readFile, type ShellContext } from './shell/commands'
 import { isThemeName, themeNames, themes, type ThemeName } from './themes'
 
@@ -146,10 +146,10 @@ function App() {
 
   const menus: Menu[] = [
     { label: 'Terminal', items: [
-      { label: 'About DeepOS 26.10 LTS', action: () => run('neofetch') },
+      { label: `About ${os.name} ${os.version}`, action: () => run('neofetch') },
       { label: 'View source on GitHub', action: () => openExternal(profile.source) },
       { separator: true },
-      { label: 'Email Deepratna', action: () => openExternal(`mailto:${profile.email}`) },
+      { label: `Email ${profile.name.split(' ')[0]}`, action: () => openExternal(`mailto:${profile.email}`) },
       { label: 'Download resume', action: () => openExternal(profile.resume) },
     ] },
     { label: 'Shell', items: [

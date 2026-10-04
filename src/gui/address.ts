@@ -1,8 +1,9 @@
 // Address bar logic for the in-site browser: what stays inside, what opens for real.
+import { profile } from '../content'
 
-export const HOME = 'deepratna-awale.dev/gui'
+export const HOME = `${profile.host}/gui`
 export const NEWTAB = 'chrome://newtab'
-const SITE = 'https://deepratna-awale.dev'
+const SITE = profile.website
 
 export type Target =
   | { kind: 'page'; url: string }
@@ -11,7 +12,7 @@ export type Target =
   | { kind: 'mail'; url: string }
 
 const hostOf = (origin: string) => { try { return new URL(origin).host.toLowerCase() } catch { return '' } }
-const ownHosts = (origin: string) => new Set(['deepratna-awale.dev', 'www.deepratna-awale.dev', hostOf(origin)])
+const ownHosts = (origin: string) => new Set([profile.host, `www.${profile.host}`, hostOf(origin)])
 
 function ownPath(path: string, origin: string): Target {
   const [rawPath = '', hash = ''] = path.split('#')
@@ -38,5 +39,5 @@ export function resolveAddress(input: string, origin = SITE): Target | null {
   return { kind: 'external', url: `https://www.google.com/search?q=${encodeURIComponent(text)}` }
 }
 
-export const pageTitle = (url: string) => (url === NEWTAB ? 'New Tab' : 'Deepratna Awale | Portfolio')
+export const pageTitle = (url: string) => (url === NEWTAB ? 'New Tab' : `${profile.name} | Portfolio`)
 export const pageHash = (url: string) => (url.startsWith(HOME) ? url.slice(HOME.length + 1) : '')
