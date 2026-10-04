@@ -387,6 +387,7 @@ export class Session {
     return {
       path: this.path,
       previousPath: this.previousPath,
+      columns: this.columns,
       history: this.history,
       theme: this.theme,
       setPath: (next) => { this.previousPath = this.path; this.path = next },
