@@ -180,8 +180,9 @@ IJSRP, 2022. NLP system for automated scoring of theory answers with plagiarism 
 <!-- command: education | nav: Education | help: degrees and certifications -->
 
 **MASc, Computer Engineering**  Memorial University of Newfoundland, 2024
-  Thesis work: hybrid CNN + MLP to estimate ocean wave height from Wamos II radar images.
+  Capstone Project: Hybrid CNN + MLP to estimate ocean wave height from WaMoS II radar images.
 **BEng, Information Technology**  RGCER, Nagpur, 2021
+  Thesis: [Theoretical Answer Evaluation System (T.A.E.S)](https://github.com/deepratna-awale/TAES2), automated scoring of theory answers.
 
 Certifications
   AWS Certified Machine Learning Engineer, Associate (2025)
