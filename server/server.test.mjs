@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { latestContribution } from './activity.mjs'
 import { parseContributions } from './contributions.mjs'
 import { clean, validate } from './guestbook.mjs'
+import { clientIp } from './rateLimit.mjs'
 import { signRequest } from './s3.mjs'
 
 describe('s3 signing', () => {
@@ -70,5 +71,21 @@ describe('recent activity', () => {
     expect(latestContribution(events)).toEqual({ repo: 'deepratna-awale/terminal-portfolio', url: 'https://github.com/deepratna-awale/terminal-portfolio', action: 'pushed to', at: '2026-10-04T11:00:00Z' })
     expect(latestContribution([])).toBeNull()
     expect(latestContribution({ message: 'rate limited' })).toBeNull()
+  })
+})
+
+describe('client addresses', () => {
+  const request = (forwarded) => ({ headers: { 'x-forwarded-for': forwarded }, socket: { remoteAddress: '10.0.0.1' } })
+  const relays = new Set(['203.0.113.7'])
+
+  it('takes the hop the load balancer added', () => {
+    expect(clientIp(request('1.1.1.1, 198.51.100.2'), relays)).toBe('198.51.100.2')
+    expect(clientIp(request(undefined), relays)).toBe('10.0.0.1')
+  })
+
+  it('trusts the forwarded visitor only from a relay', () => {
+    expect(clientIp(request('198.51.100.9, 203.0.113.7'), relays)).toBe('198.51.100.9')
+    expect(clientIp(request('203.0.113.7'), relays)).toBe('203.0.113.7')
+    expect(clientIp(request('198.51.100.9, 192.0.2.1'), relays)).toBe('192.0.2.1')
   })
 })

@@ -39,3 +39,6 @@ tfplan
 .DS_Store
 # Terraform backend and per-deployment values (see *.example files)
 backend.hcl
+
+# SSH server build and local development host key
+ssh/.dev_host_ed25519

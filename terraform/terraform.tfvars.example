@@ -24,3 +24,8 @@ github_repository = "your-github-user/terminal-portfolio"
 #   },
 # Topics are checked on answers too, so avoid one that overlaps your own work.
 # ]
+
+# SSH edition at ssh.<domain_name> (a Lightsail nano instance, about $5 a month).
+# ssh_enabled = true
+# Open the instance's own sshd (key-only, port 22022) to your address only while you need it.
+# ssh_admin_cidrs = ["203.0.113.7/32"]

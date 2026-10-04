@@ -3,7 +3,7 @@ import ReactMarkdown, { defaultUrlTransform, type Components } from 'react-markd
 import remarkGfm from 'remark-gfm'
 import { ArrowUpRight, Award, BookOpen, Check, FileText, GraduationCap, Mail, MapPin, Menu, Palette, RotateCw, Send, SquareTerminal, Star, X } from 'lucide-react'
 import { fetchActivity, fetchContributions, fetchGuestbook, fetchProjects, signGuestbook, type Activity, type Contributions, type GuestbookEntry, type Project } from '../api'
-import { contactCopy, focusDirs, linkLabel, nowItems, profile, sectionList, sections } from '../content'
+import { contactCopy, focusDirs, linkLabel, nowItems, profile, sectionList, sections, sshHost } from '../content'
 import { parseAbout, parseEducation, parseExperience, parsePublications, parseSkills, splitYear } from './parse'
 import { saveMode } from '../modeStore'
 import { onThemeChange, readTheme, saveTheme, siteThemes, type SiteTheme } from '../themeStore'
@@ -436,6 +436,7 @@ export function Portfolio({ embedded = false, prerender = false, anchor, onExter
             {profile.linkedin && <li><LinkedInIcon /><a href={profile.linkedin} {...linkAttrs(profile.linkedin)}>{linkLabel(profile.linkedin)}</a></li>}
             <li><Mail size={16} aria-hidden="true" /><a href={`mailto:${profile.email}`}>{profile.email}</a></li>
             <li><SquareTerminal size={16} aria-hidden="true" /><a href="/">Terminal version of this site</a></li>
+            {sshHost && <li><SquareTerminal size={16} aria-hidden="true" /><code>ssh {sshHost}</code></li>}
           </ul>
         </div>
       </Section>

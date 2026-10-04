@@ -1,0 +1,65 @@
+name: SSH server
+
+# Builds the SSH edition on every push to main and publishes it to the
+# ssh-latest release. The Lightsail instance polls that release and installs
+# new builds itself, so this workflow needs no AWS access.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ssh-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_TAG: ssh-latest
+
+jobs:
+  release:
+    # Set the repository variable SSH_ENABLED=true once the instance exists (terraform ssh_enabled).
+    if: vars.SSH_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci && npm ci --prefix ssh
+      - run: npm run ssh:build
+      - name: Smoke test
+        run: |
+          PORT=2299 node ssh/dist/main.js &
+          sleep 2
+          node ssh/smoke.mjs 2299
+      - name: Package
+        run: |
+          mkdir -p build/app/deploy
+          cp ssh/dist/main.js build/app/
+          cp -r ssh/dist/images build/app/
+          cp ssh/package.json ssh/package-lock.json build/app/
+          cp ssh/deploy/portfolio-ssh.service build/app/deploy/
+          (cd build/app && npm ci --omit=dev --omit=optional --ignore-scripts --no-audit --no-fund)
+          tar -czf portfolio-ssh.tar.gz -C build/app .
+          sha256sum portfolio-ssh.tar.gz > portfolio-ssh.sha256
+          cat portfolio-ssh.sha256
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || gh release create "$RELEASE_TAG" --prerelease --target "$GITHUB_SHA" \
+            --title "SSH server build" --notes "Rolling build of the SSH edition, installed automatically by the SSH instance. Not a versioned release."
+          # Archive first, checksum last: the instance only installs when the checksum changes.
+          gh release upload "$RELEASE_TAG" portfolio-ssh.tar.gz --clobber
+          gh release upload "$RELEASE_TAG" portfolio-ssh.sha256 --clobber
+          gh release edit "$RELEASE_TAG" --notes "Rolling build of the SSH edition from $GITHUB_SHA, installed automatically by the SSH instance. Not a versioned release."

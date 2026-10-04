@@ -12,7 +12,7 @@ export type ThemeColors = {
 type NativeTheme = { name: string; scheme: Scheme; colors: ThemeColors; terminal?: { background?: string; chrome?: string; code?: string; border?: string; glow?: string } }
 type ShadcnTheme = { name?: string; cssVars: { light?: Record<string, string>; dark?: Record<string, string> } }
 export type ThemeFile = NativeTheme | ShadcnTheme
-export type Theme = { id: ThemeName; label: string; scheme: Scheme; vars: Record<string, string>; site: Record<string, string> }
+export type Theme = { id: ThemeName; label: string; scheme: Scheme; colors: ThemeColors; vars: Record<string, string>; site: Record<string, string> }
 
 const mix = (color: string, percent: number, other = 'transparent') => `color-mix(in srgb, ${color} ${percent}%, ${other})`
 // Old shadcn files store bare HSL triples ("222 47% 11%").
@@ -33,7 +33,7 @@ export function buildTheme(id: string, label: string, scheme: Scheme, colors: Th
   const { background: bg, surface, foreground: fg, muted, accent } = colors
   const accent2 = colors.accent2 ?? mix(accent, 60, fg)
   return {
-    id, label, scheme,
+    id, label, scheme, colors,
     vars: {
       '--fg': fg, '--muted': muted, '--accent': accent, '--accent-2': accent2, '--link': colors.link ?? accent2,
       '--error': colors.error ?? '#ef4444', '--success': colors.success ?? accent2, '--command': colors.command ?? accent,

@@ -29,6 +29,8 @@ export const nowItems = {
 export const os = { name: text(meta.os) || 'PortfolioOS', version: text(meta.os_version) || '1.0 LTS' }
 export const motd = list(meta.motd)
 export const neofetchRows = map(meta.neofetch)
+// Host name of the SSH edition, if there is one.
+export const sshHost = text(meta.ssh)
 export const exampleQuestion = text(meta.example_question) || 'what are you working on?'
 
 // Links from ABOUT.md: dock, desktop and new-tab entries, and `open` targets.

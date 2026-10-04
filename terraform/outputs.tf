@@ -81,3 +81,12 @@ output "github_actions_variables" {
     BEDROCK_GUARDRAIL_VERSION = aws_bedrock_guardrail_version.portfolio.version
   }
 }
+
+output "ssh_host" {
+  value = var.ssh_enabled ? local.ssh_host : null
+}
+
+output "ssh_relay_ips" {
+  description = "Set as the SSH_RELAY_IPS repository variable so the site trusts the SSH server's forwarded visitor addresses."
+  value       = var.ssh_enabled ? join(",", concat([aws_lightsail_static_ip.ssh[0].ip_address], aws_lightsail_instance.ssh[0].ipv6_addresses)) : null
+}

@@ -1,0 +1,48 @@
+# Installed on the SSH instance by /usr/local/sbin/portfolio-ssh-update
+# (terraform/ssh-bootstrap.sh) from each release build.
+[Unit]
+Description=Terminal portfolio over SSH
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=portfolio-ssh
+Group=portfolio-ssh
+WorkingDirectory=/opt/portfolio-ssh/app
+Environment=NODE_ENV=production PORT=22 SSH_HOST_KEY=/var/lib/portfolio-ssh/host_ed25519
+# Optional overrides such as API_BASE or SSH_MAX_SESSIONS.
+EnvironmentFile=-/etc/portfolio-ssh.env
+ExecStart=/usr/local/bin/node --max-old-space-size=160 main.js
+Restart=always
+RestartSec=2
+
+# Port 22 without root, and nothing else.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+ProcSubset=pid
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+UMask=0077
+MemoryMax=320M
+TasksMax=64
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

@@ -98,3 +98,45 @@ variable "monthly_budget_usd" {
   description = "Monthly AWS spend that triggers a budget alert (actual or forecast)."
   default     = 25
 }
+
+variable "ssh_enabled" {
+  type        = bool
+  description = "Serve the portfolio over SSH from a Lightsail instance at ssh_subdomain.domain_name (about $5 a month)."
+  default     = false
+}
+
+variable "ssh_subdomain" {
+  type        = string
+  description = "Host name visitors SSH to, under domain_name."
+  default     = "ssh"
+}
+
+variable "ssh_bundle" {
+  type        = string
+  description = "Lightsail instance bundle. nano_3_0 is the cheapest with a public IPv4 address."
+  default     = "nano_3_0"
+}
+
+variable "ssh_blueprint" {
+  type        = string
+  description = "Lightsail OS image. The launch script expects Debian."
+  default     = "debian_13"
+}
+
+variable "ssh_release_tag" {
+  type        = string
+  description = "GitHub release the instance installs builds from (published by the SSH server workflow)."
+  default     = "ssh-latest"
+}
+
+variable "ssh_admin_port" {
+  type        = number
+  description = "Port of the instance's own sshd (key-only), since the portfolio takes port 22."
+  default     = 22022
+}
+
+variable "ssh_admin_cidrs" {
+  type        = list(string)
+  description = "IPv4 ranges allowed to reach ssh_admin_port, for example [\"203.0.113.7/32\"]. Empty keeps it closed."
+  default     = []
+}
