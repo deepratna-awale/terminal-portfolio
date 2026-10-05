@@ -21,7 +21,83 @@ conventional portfolio page one click away. Live at
   for the guestbook bucket), provisioned with Terraform and deployed by GitHub
   Actions through OIDC with no stored AWS keys.
 
-MIT licensed. Fork it and make it yours: see [Deploy your own](#deploy-your-own).
+MIT licensed. Fork it and make it yours: see [Make your own](#make-your-own).
+
+## Make your own
+
+Everything about the owner lives in content files, not code, so a fork is
+mostly writing your own `ABOUT.md`. You can do the first three steps with no
+AWS account at all; the site runs locally with the assistant and guestbook
+switched off.
+
+1. **Fork and run it.** Fork this repository on GitHub, clone your fork, and
+   start it (Node 22 or newer):
+
+   ```bash
+   git clone https://github.com/YOUR-USER/terminal-portfolio.git
+   cd terminal-portfolio
+   npm install
+   npm run dev          # http://localhost:5173
+   npm run api          # in a second terminal, for /api/*
+   ```
+
+2. **Replace the content.** Rewrite [`ABOUT.md`](ABOUT.md) with your own
+   profile and sections; every `# Heading` becomes a terminal command and a
+   `/gui` section, and the `links` list drives the dock, desktop and new-tab
+   icons. [Make it yours](#make-it-yours) documents every key and section
+   format, and [Themes](#themes) covers adding or removing colour themes.
+   Delete the `ssh:` line from the frontmatter unless you plan to run the
+   [SSH edition](#ssh-edition).
+
+3. **Replace the original owner's files.** A few files outside ABOUT.md still
+   carry the original owner's name, face or domain:
+
+   | File | Change |
+   | --- | --- |
+   | `LICENSE` | Copyright line (keep the MIT notice itself) |
+   | `SECURITY.md` | Reporting link and site URL |
+   | `public/site.webmanifest` | `name` and `short_name` |
+   | `public/media/` | Résumé PDF (point `resume` in ABOUT.md at it), `profile.svg`, `architecture.svg`, `golden-dark.jpg` and `projects/<repository>.jpg` thumbnails |
+   | `public/icons/` | Only the icons your `links` use; add your own here |
+   | `public/favicon-*.png`, `icon-*.png`, `apple-touch-icon.png` | PNG icons with the original initials (the SVG favicon is generated from yours) |
+   | `docs/social/og.html` | Link preview; re-render `public/og.png` with `npx -y -p playwright node docs/social/render.mjs` |
+   | `themes/theme.schema.json` | The `$id` URL |
+   | `README.md`, `docs/screenshots/` | Your own description and screenshots |
+
+   To find anything left over, search for the old name and domain:
+   `git grep -i -e deepratna -e awale`.
+
+4. **Push and let CI check it.** Enable GitHub Actions on your fork (forks start
+   with workflows disabled, under the Actions tab). CI lints, tests, builds and
+   validates Terraform without any AWS access, and the tests read your ABOUT.md,
+   so they pass with your content. The Deploy and SSH workflows stay skipped
+   until you set `DEPLOY_ENABLED` and `SSH_ENABLED`.
+
+5. **Deploy.** Follow [Deploy your own](#deploy-your-own). The core is steps
+   1 to 5 and 8 (Terraform state, the Lightsail container service, DNS and the
+   certificate, the OIDC deploy role and the `production` environment), about
+   $7 a month. The rest is optional and can be added later:
+
+   | Optional piece | Step | Without it |
+   | --- | --- | --- |
+   | Bedrock assistant and Guardrail | [6](#6-bedrock-key-and-guardrail) | Questions get an "assistant offline" reply |
+   | Guestbook bucket | [7](#7-guestbook-bucket-key) | The guestbook is disabled |
+   | SSH edition | [9](#9-ssh-edition-optional) | No `ssh` command or host |
+   | Budget alert email | `budget_alert_email` in `terraform.tfvars` | No spend alert |
+
+Every setting that names your account, domain or repository (`terraform.tfvars`,
+`backend.hcl`, repository variables and secrets) stays out of git; nothing in the
+repository needs your AWS account ID.
+
+To pull in later improvements from this repository, add it as a remote and merge
+it; conflicts are usually limited to ABOUT.md and the files above, where you
+keep your own version:
+
+```bash
+git remote add upstream https://github.com/deepratna-awale/terminal-portfolio.git
+git fetch upstream
+git merge upstream/main
+```
 
 ## Local development
 

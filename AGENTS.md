@@ -96,6 +96,10 @@ Before opening a PR: `npx tsc -b`, `npm test`, `npm run lint` and
 changed). CI runs the same plus server and SSH smoke tests and
 `terraform fmt -check` / `terraform validate`.
 
+Tests must keep passing in a fork that rewrites ABOUT.md: read names, domains
+and hosts from `profile`/`about` instead of hardcoding the owner's, and give
+parser tests their own inline sample markdown.
+
 ## The SSH edition
 
 `ssh/` reuses `src/shell/` (commands, completion, line editor, pipes, vim

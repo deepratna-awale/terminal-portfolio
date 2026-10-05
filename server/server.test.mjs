@@ -130,13 +130,13 @@ describe('guestbook delete keys', () => {
 
 describe('assistant prompt', () => {
   it('describes the current site from ABOUT.md, even before GitHub answers', async () => {
-    const { featured } = await import('./about.mjs')
+    const { about, featured, profile } = await import('./about.mjs')
     const { systemPrompt } = await import('./prompt.mjs')
     const prompt = systemPrompt()
     for (const name of featured) expect(prompt).toContain(`- ${name}: `)
-    expect(prompt).toContain('ssh ssh.deepratna-awale.dev')
+    if (about.meta.ssh) expect(prompt).toContain(`ssh ${about.meta.ssh}`)
     expect(prompt).toContain('guestbook delete')
-    expect(prompt).toContain('/media/Resume-Awale-Deepratna.pdf')
+    if (profile.resume) expect(prompt).toContain(profile.resume)
     expect(prompt).not.toContain('still loading')
   })
 })
