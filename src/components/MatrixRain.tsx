@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { profile } from '../content'
 
 export function MatrixRain({ onDone }: { onDone: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -9,7 +10,7 @@ export function MatrixRain({ onDone }: { onDone: () => void }) {
     if (!canvas || !context) return
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight }
     resize()
-    const glyphs = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄ01DEEPRATNA<>/{}$#'
+    const glyphs = `ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄ01${profile.name.split(' ')[0]!.toUpperCase()}<>/{}$#`
     const size = 16
     const drops = Array.from({ length: Math.ceil(canvas.width / size) }, () => Math.random() * -50)
     let frame = 0

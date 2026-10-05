@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { initialCommand } from './deeplink'
+import { sshHost } from '../content'
 import { isRootWipe, parseSign, readFile, sshHint } from './commands'
 import { renderHeatmap } from './heatmap'
 import { filters, grepLines, toPlainText } from './pipes'
@@ -21,10 +22,10 @@ describe('typo suggestions', () => {
 })
 
 describe('ssh hint', () => {
-  it('offers the SSH command from ABOUT.md as a copy link', () => {
+  it.skipIf(!sshHost)('offers the SSH command from ABOUT.md as a copy link', () => {
     const [line] = sshHint()
-    expect(line?.text).toContain('[`ssh ssh.deepratna-awale.dev`](copy:ssh%20ssh.deepratna-awale.dev)')
-    expect(toPlainText(line!.text)).toContain('ssh ssh.deepratna-awale.dev (click to copy)')
+    expect(line?.text).toContain(`[\`ssh ${sshHost}\`](copy:ssh%20${sshHost})`)
+    expect(toPlainText(line!.text)).toContain(`ssh ${sshHost} (click to copy)`)
   })
 })
 
