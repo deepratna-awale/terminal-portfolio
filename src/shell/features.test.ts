@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { initialCommand } from './deeplink'
-import { sshHost } from '../content'
-import { isRootWipe, parseSign, readFile, sshHint } from './commands'
+import { profile, sshHost } from '../content'
+import { fakeIp, hackTarget, isOwnTarget, isRootWipe, parseSign, readFile, sshHint } from './commands'
 import { renderHeatmap } from './heatmap'
 import { filters, grepLines, toPlainText } from './pipes'
 import { closest, looksLikeCommand } from './typo'
@@ -93,5 +93,26 @@ describe('guestbook sign', () => {
     expect(parseSign(['great', 'site', '-n', 'Ada'])).toEqual({ name: 'Ada', message: 'great site' })
     expect(parseSign(['--name=Ada'])).toEqual({ name: 'Ada', message: '' })
     expect(parseSign([])).toEqual({ name: '', message: '' })
+  })
+})
+
+describe('hack', () => {
+  it('takes a host or URL and rejects junk', () => {
+    expect(hackTarget('https://User@Example.com:8443/path?q=1')).toBe('example.com')
+    expect(hackTarget('example.com.')).toBe('example.com')
+    expect(hackTarget('8.8.8.8')).toBe('8.8.8.8')
+    expect(hackTarget('localhost')).toBeNull()
+    expect(hackTarget('not a site')).toBeNull()
+  })
+
+  it('refuses to hack the owner', () => {
+    for (const target of [profile.host, `https://www.${profile.host}/gui`, `ssh.${profile.host}`, `github.com/${profile.handle}`, 'localhost', '127.0.0.1:8787']) expect(isOwnTarget(target)).toBe(true)
+    if (sshHost) expect(isOwnTarget(sshHost)).toBe(true)
+    for (const target of ['github.com', 'example.com', '8.8.8.8']) expect(isOwnTarget(target)).toBe(false)
+  })
+
+  it('makes up a stable public-looking address', () => {
+    expect(fakeIp('example.com')).toBe(fakeIp('example.com'))
+    expect(fakeIp('example.com')).toMatch(/^(23|45|52|104|142|151|185)\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
   })
 })
