@@ -1,5 +1,5 @@
 import type { Project } from '../api'
-import { deleteGuestbookNote, fetchActivity, fetchContributions, fetchCowthink, fetchFortune, fetchGuestbook, signGuestbook } from '../api'
+import { deleteGuestbookNote, fetchActivity, fetchContributions, fetchCowthink, fetchFortune, fetchGuestbook, resolveHost, signGuestbook } from '../api'
 import { exampleQuestion, linkLabel, links, liveSections, mediaFiles, neofetchRows, nowItems, os, profile, sectionList, sections, sshHost } from '../content'
 import { isThemeName, themeNames, themes, type ThemeName } from '../themes'
 import { renderHeatmap } from './heatmap'
@@ -232,6 +232,52 @@ async function meltdown(ctx: ShellContext) {
   ctx.print([{ type: 'ascii', text: ['Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000dead', '', '---[ end Kernel panic - not syncing ]---', '', 'Relax: this site is immutable infrastructure. Redeploying from the last image ...'].join('\n') }])
   if (!fast) await sleep(2400)
   ctx.ui.replayBoot()
+}
+
+// `hack <website>`: the target's real address from a DNS lookup (made by the site's server), then pure theatre.
+export const hackTarget = (raw = '') => {
+  const host = raw.trim().toLowerCase().replace(/^[a-z][a-z0-9+.-]*:\/\//, '').replace(/^[^@/]*@/, '').split(/[/?#:]/)[0]!.replace(/\.$/, '')
+  return /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9-]{1,63}$/.test(host) ? host : null
+}
+const isIpv4 = (host: string) => /^\d{1,3}(\.\d{1,3}){3}$/.test(host) && host.split('.').every((part) => Number(part) <= 255)
+// A plausible stand-in when the lookup fails, stable per host so a rerun matches.
+export function fakeIp(host: string) {
+  let hash = 2166136261
+  for (const char of host) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0
+  return [[23, 45, 52, 104, 142, 151, 185][hash % 7], (hash >>> 3) % 256, (hash >>> 11) % 256, 1 + ((hash >>> 19) % 254)].join('.')
+}
+const bar = (percent: number) => `[${'█'.repeat(Math.round(percent / 5))}${'░'.repeat(20 - Math.round(percent / 5))}] ${String(percent).padStart(3)}%`
+
+async function hack(args: string[], ctx: ShellContext) {
+  const host = hackTarget(args[0])
+  if (!args[0]) { ctx.print([err('usage: hack <website>')]); return }
+  if (!host) { ctx.print([err(`hack: could not resolve host: ${args[0]}`)]); return }
+  const fast = reducedMotion()
+  const pause = (ms: number) => fast ? Promise.resolve() : sleep(ms)
+  ctx.print([muted(`resolving ${host} ...`)])
+  const ip = isIpv4(host) ? host : await resolveHost(host).then((found) => found.ip, () => fakeIp(host))
+  ctx.print([{ type: 'success', text: `${host} has address ${ip}` }])
+  await pause(500)
+  const steps: Array<[string, number]> = [
+    [`[*] nmap -sS -T4 -Pn ${ip}`, 600],
+    ['    22/tcp   open   ssh       OpenSSH 9.7\n    80/tcp   open   http      nginx 1.27\n    443/tcp  open   https     nginx 1.27\n    3306/tcp open   mysql     (suspiciously)', 700],
+    ['[*] fingerprinting ... CVE-2026-31337 looks promising', 500],
+    ['[*] bypassing firewall with double rot13 ...', 600],
+    [`[*] uploading payload  ${bar(15)}`, 350],
+    [`[*] uploading payload  ${bar(55)}`, 350],
+    [`[*] uploading payload  ${bar(100)}`, 400],
+    [`[*] cracking /etc/shadow ... root:${'*'.repeat(7)} (hunter2)`, 600],
+    [`[*] escalating privileges  ${bar(42)}`, 350],
+    [`[*] escalating privileges  ${bar(87)}`, 900],
+  ]
+  for (const [text, ms] of steps) { ctx.print([{ type: 'ascii', text }]); await pause(ms) }
+  ctx.print([err('!! HONEYPOT DETECTED')])
+  await pause(400)
+  ctx.print([err('!! TRACE ACTIVE: reverse trace locked on to your connection')])
+  await pause(400)
+  ctx.print([err('!! Terminating operation. Wiping logs ... done.')])
+  await pause(700)
+  ctx.print([err('We almost got caught, best not do that again.')])
 }
 
 // `guestbook sign [--name <name>] [message]`; anything missing is asked for.
@@ -484,6 +530,7 @@ export const commands: Record<string, Command> = {
     ctx.print([muted('[sudo] password for guest: ********'), err(`Nice try. guest is not in the sudoers file. This incident will be reported to ${profile.handle}.`)])
   } },
   rm: { group: 'Fun', summary: 'remove files', hidden: true, run: (args, ctx) => isRootWipe(args) ? meltdown(ctx) : ctx.print([err(`rm: ${args.filter((arg) => !arg.startsWith('-')).join(' ') || 'file'}: Permission denied (read-only portfolio filesystem)`)]) },
+  hack: { group: 'Fun', summary: 'hack a website (not really)', usage: 'hack <website>', hidden: true, run: hack },
   make: { group: 'Fun', summary: 'build something', hidden: true, run: (args, ctx) => ctx.print([args.join(' ') === 'me a sandwich' ? err('What? Make it yourself.') : err(`make: *** No rule to make target '${args[0] ?? ''}'.  Stop.`)]) },
   vim: { group: 'Navigation', summary: 'open a file in vim (try vim resume)', usage: 'vim <file>', run: openVim },
   vi: { group: 'Navigation', summary: 'vim', hidden: true, run: openVim },

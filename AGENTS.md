@@ -60,10 +60,10 @@ client, server and Vite config share it). Its tests are in
 | `themes/*.json` | Colour themes, one file each, shared by the terminal and `/gui` (shadcn/tweakcn exports work as-is) |
 | `src/themes.ts` | Loads `themes/` with `import.meta.glob` and turns each file into CSS variables |
 | `src/games/` | Snake and 2048 logic |
-| `server/index.mjs` | HTTP server, security headers, `/api/chat`, `/api/projects`, `/api/guestbook`, `/api/contributions`, `/gui` |
+| `server/index.mjs` | HTTP server, security headers, `/api/chat`, `/api/projects`, `/api/guestbook`, `/api/contributions`, `/api/resolve`, `/gui` |
 | `server/about.mjs` | Server view of ABOUT.md: profile, featured repos, assistant rules and facts |
 | `server/prompt.mjs` | The assistant's system prompt: generic rules, site features, ABOUT.md facts and the featured projects |
-| `server/bedrock.mjs`, `s3.mjs`, `rateLimit.mjs` | Bedrock Converse client, S3 SigV4 signing, rate limits |
+| `server/bedrock.mjs`, `s3.mjs`, `rateLimit.mjs`, `resolve.mjs` | Bedrock Converse client, S3 SigV4 signing, rate limits, DNS-only lookup for `hack` |
 | `scripts/prerender.mjs` | Writes `dist/gui.html` from the SSR build |
 | `docs/social/` | Link preview source (`og.html`) and `render.mjs`, which writes `public/og.png` and the GitHub social preview `repo-preview.png` |
 | `vite.config.ts` | Fills `index.html` tokens and generates favicon, robots.txt and sitemap.xml from ABOUT.md |

@@ -4,6 +4,7 @@ import { guardrailReason } from './bedrock.mjs'
 import { parseContributions } from './contributions.mjs'
 import { clean, validate } from './guestbook.mjs'
 import { clientIp } from './rateLimit.mjs'
+import { hostName, isPublicIpv4, lookupHost } from './resolve.mjs'
 import { signRequest } from './s3.mjs'
 
 describe('s3 signing', () => {
@@ -138,5 +139,24 @@ describe('assistant prompt', () => {
     expect(prompt).toContain('guestbook delete')
     if (profile.resume) expect(prompt).toContain(profile.resume)
     expect(prompt).not.toContain('still loading')
+  })
+})
+
+describe('resolve', () => {
+  it('accepts hosts and URLs only', () => {
+    expect(hostName('https://Example.com/x')).toBe('example.com')
+    expect(hostName('a.b')).toBe('a.b')
+    expect(hostName('localhost')).toBeNull()
+    expect(hostName('1.2.3.4')).toBeNull()
+    expect(hostName('bad_host.com')).toBeNull()
+    expect(hostName('x'.repeat(300) + '.com')).toBeNull()
+  })
+
+  it('shows public IPv4 addresses only', async () => {
+    for (const ip of ['10.0.0.1', '127.0.0.1', '169.254.169.254', '172.20.1.1', '192.168.1.1', '100.64.0.1', '0.0.0.0', '224.0.0.1']) expect(isPublicIpv4(ip)).toBe(false)
+    expect(isPublicIpv4('93.184.215.14')).toBe(true)
+    expect(await lookupHost('example.com', async () => ['10.0.0.5', '93.184.215.14'])).toEqual({ host: 'example.com', ip: '93.184.215.14' })
+    expect(await lookupHost('internal.example', async () => ['10.0.0.5'])).toBeNull()
+    expect(await lookupHost('gone.example', async () => { throw new Error('ENOTFOUND') })).toBeNull()
   })
 })

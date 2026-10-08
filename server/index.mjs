@@ -10,6 +10,7 @@ import { getContributions } from './contributions.mjs'
 import { addEntry, deleteEntry, isDuplicate, listEntries, validate } from './guestbook.mjs'
 import { getProjects } from './projects.mjs'
 import { systemPrompt } from './prompt.mjs'
+import { lookupHost } from './resolve.mjs'
 import { clientIp, createLimiter } from './rateLimit.mjs'
 
 const root = fileURLToPath(new URL('../dist', import.meta.url))
@@ -31,6 +32,7 @@ const guestbookLimit = createLimiter({
 })
 const deleteLimit = createLimiter({ perMinute: 10, perDay: 100, globalPerDay: 5000, messages: { global: 'the guestbook is busy today', day: "that's enough deletes for today", minute: 'too many tries, slow down a little' } })
 const screenLimit = createLimiter({ perMinute: 6, perDay: 40, globalPerDay: 2000, messages: { global: 'the guestbook is busy today', day: "that's enough tries for today", minute: 'too many tries, slow down a little' } })
+const resolveLimit = createLimiter({ perMinute: 10, perDay: 200, globalPerDay: 20_000, messages: { global: 'the hacking budget is spent for today', day: "that's enough hacking for today", minute: 'slow down, hacker, try again in a minute' } })
 const mimeTypes = { '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.pdf': 'application/pdf', '.txt': 'text/plain', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json' }
 const securityHeaders = {
   'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
@@ -159,6 +161,14 @@ async function removeNote(request, response) {
   }
 }
 
+async function handleResolve(request, response, host) {
+  const limit = resolveLimit(clientIp(request))
+  if (!limit.ok) return sendJson(response, 429, { error: limit.reason }, { 'Retry-After': String(limit.retryAfter) })
+  const found = await lookupHost(host)
+  if (!found) return sendJson(response, 404, { error: 'no public address found' })
+  sendJson(response, 200, found, { 'Cache-Control': 'public, max-age=300' })
+}
+
 async function handleContributions(response) {
   try {
     sendJson(response, 200, await getContributions(), { 'Cache-Control': 'public, max-age=1800' })
@@ -238,6 +248,7 @@ createServer((request, response) => {
   if (pathname === '/api/contributions' && request.method === 'GET') return handleContributions(response)
   if (pathname === '/api/activity' && request.method === 'GET') return getActivity().then((value) => sendJson(response, 200, value ?? {}, { 'Cache-Control': 'public, max-age=600' }), (error) => { console.error(`activity failed: ${error.message}`); sendJson(response, 502, { error: 'GitHub is unreachable right now' }) })
   if (pathname === '/api/guestbook') return handleGuestbook(request, response)
+  if (pathname === '/api/resolve' && request.method === 'GET') return handleResolve(request, response, requestUrl.searchParams.get('host'))
   if ((pathname === '/gui' || pathname === '/gui/') && (request.method === 'GET' || request.method === 'HEAD')) return handleGui(response)
   if (pathname === '/api/fortune' && request.method === 'GET') return runGame(request, response, 'fortune', ['-s'])
   if (pathname === '/api/cowthink' && request.method === 'GET') return runGame(request, response, 'cowthink', ['-f', 'tux', '--', cowthinkText(requestUrl.searchParams.get('text'))])

@@ -88,3 +88,7 @@ export type Activity = { repo?: string; url?: string; action?: string; at?: stri
 export async function fetchActivity(): Promise<Activity> {
   return jsonOrThrow<Activity>(await fetch('/api/activity'))
 }
+
+export async function resolveHost(host: string): Promise<{ host: string; ip: string }> {
+  return jsonOrThrow<{ host: string; ip: string }>(await fetch(`/api/resolve?host=${encodeURIComponent(host)}`))
+}
