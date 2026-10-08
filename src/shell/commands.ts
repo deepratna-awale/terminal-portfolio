@@ -239,6 +239,13 @@ export const hackTarget = (raw = '') => {
   const host = raw.trim().toLowerCase().replace(/^[a-z][a-z0-9+.-]*:\/\//, '').replace(/^[^@/]*@/, '').split(/[/?#:]/)[0]!.replace(/\.$/, '')
   return /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9-]{1,63}$/.test(host) ? host : null
 }
+// The owner's own sites: the domain and its subdomains, the SSH host, this machine, and any URL naming the handle.
+export function isOwnTarget(raw: string) {
+  const text = raw.trim().toLowerCase()
+  const host = hackTarget(text) ?? text.replace(/^[a-z][a-z0-9+.-]*:\/\//, '').split(/[/?#]/)[0]!
+  const ours = [profile.host, sshHost].filter(Boolean).map((item) => item!.toLowerCase())
+  return ours.some((item) => host === item || host.endsWith(`.${item}`)) || /^(localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|\[?::1\]?)(:\d+)?$/.test(host) || text.split(/[/.@:?#]+/).includes(profile.handle.toLowerCase())
+}
 const isIpv4 = (host: string) => /^\d{1,3}(\.\d{1,3}){3}$/.test(host) && host.split('.').every((part) => Number(part) <= 255)
 // A plausible stand-in when the lookup fails, stable per host so a rerun matches.
 export function fakeIp(host: string) {
@@ -251,6 +258,7 @@ const bar = (percent: number) => `[${'█'.repeat(Math.round(percent / 5))}${'�
 async function hack(args: string[], ctx: ShellContext) {
   const host = hackTarget(args[0])
   if (!args[0]) { ctx.print([err('usage: hack <website>')]); return }
+  if (isOwnTarget(args[0])) { ctx.print([err("Nice Try! Please don't hack me. 😭")]); return }
   if (!host) { ctx.print([err(`hack: could not resolve host: ${args[0]}`)]); return }
   const fast = reducedMotion()
   const pause = (ms: number) => fast ? Promise.resolve() : sleep(ms)
