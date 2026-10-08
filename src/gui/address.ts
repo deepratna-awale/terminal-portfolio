@@ -55,6 +55,14 @@ export function resolveAddress(input: string, origin = SITE): Target | null {
   return { kind: 'external', url: `https://www.google.com/search?q=${encodeURIComponent(text)}` }
 }
 
+// A web search for the site's owner (any part of their name, handle or GitHub user).
+const ownerWords = () => [...profile.name.toLowerCase().split(/\s+/).filter((word) => word.length >= 4), profile.handle.toLowerCase(), profile.githubUser.toLowerCase()]
+export const searchesOwner = (target: Target, input: string) => {
+  if (target.kind !== 'external' || !target.url.startsWith('https://www.google.com/search?')) return false
+  const query = input.trim().toLowerCase()
+  return query === profile.shortName.toLowerCase() || ownerWords().some((word) => query.includes(word))
+}
+
 export const pageTitle = (url: string) => chromePages[url] ?? `${profile.name} | Portfolio`
 export const internal = (url: string) => url in chromePages
 export const pageHash = (url: string) => (url.startsWith(HOME) ? url.slice(HOME.length + 1) : '')

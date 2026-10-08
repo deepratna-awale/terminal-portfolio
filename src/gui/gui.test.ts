@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { profile } from '../content'
-import { DINO, HOME, NEWTAB, URLS, VERSION, pageTitle, resolveAddress } from './address'
+import { DINO, HOME, NEWTAB, URLS, VERSION, pageTitle, resolveAddress, searchesOwner } from './address'
 import { parseEducation, parseExperience, parsePublications, parseSkills } from './parse'
 
 describe('address bar', () => {
@@ -35,6 +35,16 @@ describe('address bar', () => {
     expect(resolveAddress('askew', origin)).toEqual({ kind: 'egg', egg: 'askew' })
     expect(resolveAddress('flip a coin', origin)).toEqual({ kind: 'egg', egg: 'coin' })
     expect(resolveAddress('roll a die', origin)).toEqual({ kind: 'egg', egg: 'die' })
+  })
+
+  it('spots a search for the site owner', () => {
+    const owner = (input: string) => searchesOwner(resolveAddress(input, origin)!, input)
+    expect(owner('Deepratna Awale')).toBe(true)
+    expect(owner('who is awale')).toBe(true)
+    expect(owner('deep')).toBe(true)
+    expect(owner('deep learning')).toBe(false)
+    expect(owner('github.com/deepratna-awale')).toBe(false)
+    expect(owner('agentic ai')).toBe(false)
   })
 })
 

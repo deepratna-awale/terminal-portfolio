@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type RefObject, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react'
 import { ArrowLeft, ArrowRight, CircleUserRound, EllipsisVertical, ExternalLink, Globe, Info, Lock, Plus, RotateCw, Search, SquareTerminal, Star, VenetianMask, X } from 'lucide-react'
 import { linksFor, profile } from '../content'
-import { DINO, HOME, INCOGNITO, NEWTAB, URLS, VERSION, internal, pageHash, pageTitle, resolveAddress, type Egg } from '../gui/address'
+import { DINO, HOME, INCOGNITO, NEWTAB, URLS, VERSION, internal, pageHash, pageTitle, resolveAddress, searchesOwner, type Egg } from '../gui/address'
 import { Portfolio } from '../gui/Portfolio'
 import './Browser.css'
+import { Achievement } from './Achievement'
 import { Toss, type TossResult } from './Toss'
 import { DinoPage, IncognitoPage, UrlsPage, VersionPage } from './ChromePages'
 import { TrafficLights } from './TrafficLights'
@@ -69,6 +70,7 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
   const [menu, setMenu] = useState(false)
   const [starred, setStarred] = useState(readStarred)
   const [fx, setFx] = useState<'roll' | 'askew' | null>(null)
+  const [achievement, setAchievement] = useState(0)
   const [toss, setToss] = useState<{ result: TossResult; key: number } | null>(null)
   const root = useRef<HTMLElement>(null)
   const addressInput = useRef<HTMLInputElement>(null)
@@ -134,7 +136,7 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
     if (target.kind === 'page') push(id, target.url)
     else if (target.kind === 'terminal') toTerminal()
     else if (target.kind === 'egg') playEgg(target.egg)
-    else openReal(target.url)
+    else { if (searchesOwner(target, input)) setAchievement(Date.now()); openReal(target.url) }
   }, [activeId, openReal, playEgg, push, toTerminal])
 
   const go = (delta: number) => {
@@ -327,6 +329,7 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
             </div>
           )
         })}
+        {achievement > 0 && <Achievement key={achievement} title="Sherlock" onDone={() => setAchievement(0)} />}
         {toss && <Toss key={toss.key} result={toss.result} onDone={() => setToss(null)} />}
         {toast && <div className="cb-toast" role="status" key={toast.key}>{toast.text}</div>}
       </div>
