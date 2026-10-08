@@ -7,9 +7,9 @@
   animation: achievement 4.6s cubic-bezier(.2,.8,.2,1) both;
 }
 .achievement-icon {
-  flex: none; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%;
-  color: #2b1d0e; background: radial-gradient(circle at 35% 30%, #ffe9a8, #e0a63a 60%, #a8701c);
-  box-shadow: 0 0 0 2px rgba(255,214,120,.5), 0 0 18px rgba(255,190,80,.45);
+  flex: none; width: 56px; height: 56px; display: grid; place-items: center; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #2f5a4e, #1d3b33 65%, #12261f);
+  box-shadow: 0 0 0 2px #d9a640, 0 0 18px rgba(255,190,80,.4);
   animation: achievement-pop .5s .35s cubic-bezier(.3,1.6,.5,1) both;
 }
 .achievement-text { display: grid; gap: 2px; }
