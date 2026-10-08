@@ -4,6 +4,7 @@ import { linksFor, profile } from '../content'
 import { DINO, HOME, INCOGNITO, NEWTAB, URLS, VERSION, internal, pageHash, pageTitle, resolveAddress, type Egg } from '../gui/address'
 import { Portfolio } from '../gui/Portfolio'
 import './Browser.css'
+import { Toss, type TossResult } from './Toss'
 import { DinoPage, IncognitoPage, UrlsPage, VersionPage } from './ChromePages'
 import { TrafficLights } from './TrafficLights'
 import { useWindowFrame } from './useWindowFrame'
@@ -68,6 +69,7 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
   const [menu, setMenu] = useState(false)
   const [starred, setStarred] = useState(readStarred)
   const [fx, setFx] = useState<'roll' | 'askew' | null>(null)
+  const [toss, setToss] = useState<{ result: TossResult; key: number } | null>(null)
   const root = useRef<HTMLElement>(null)
   const addressInput = useRef<HTMLInputElement>(null)
   const focused = useRef(true)
@@ -107,9 +109,8 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
   const playEgg = useCallback((egg: Egg) => {
     if (egg === 'roll') { setFx('roll'); later(() => setFx((value) => (value === 'roll' ? null : value)), 1200) }
     else if (egg === 'askew') { setFx((value) => (value === 'askew' ? null : 'askew')) }
-    else if (egg === 'coin') flash(Math.random() < 0.5 ? 'Heads' : 'Tails')
-    else flash(`You rolled a ${1 + Math.floor(Math.random() * 6)}`)
-  }, [flash, later])
+    else setToss({ key: Date.now(), result: egg === 'coin' ? { kind: 'coin', heads: Math.random() < 0.5 } : { kind: 'die', value: 1 + Math.floor(Math.random() * 6) } })
+  }, [later])
 
   const toTerminal = useCallback(() => {
     setMode('minimized')
@@ -326,6 +327,7 @@ export function BrowserWindow({ url, onClose, onOpenTerminal, stamp, onFront, co
             </div>
           )
         })}
+        {toss && <Toss key={toss.key} result={toss.result} onDone={() => setToss(null)} />}
         {toast && <div className="cb-toast" role="status" key={toast.key}>{toast.text}</div>}
       </div>
       {mode === 'normal' && frame.handles}
