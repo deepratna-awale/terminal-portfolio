@@ -100,13 +100,15 @@ contact_heading: Let's build something reliable.
 contact_note: Email is the fastest way to reach me.
 
 # GitHub repositories shown under Projects, in order. Each needs a share image
-# at public/media/projects/<name>.jpg (the repository's social preview).
+# at public/media/projects/<name>.jpg (the repository's social preview). A
+# private repository shows only when its `## <name>` below has a `live:` link.
 featured:
   - terminal-portfolio
   - open-wallpaper-engine-mac
   - AutoExpress
-  - sd-parsers
+  - image-tools
   - Polar-Image-Inspector
+  - py-auto-digitize
 
 # Files in public/media/ that `view` can show, with their alt text.
 media:
@@ -172,15 +174,22 @@ Pulled live from GitHub. Each card links to the code and, where there is one, a 
 - Inpaints each face with the After Detailer extension, for anime and realistic styles.
 - Ships as pre-built releases and a Docker image.
 
-## sd-parsers
-- TypeScript library and CLI that reads prompts and generation settings embedded in Stable Diffusion images.
-- Supports Automatic1111, Fooocus, ComfyUI, InvokeAI and NovelAI.
-- A typed, async port of the Python sd-parsers, published on npm.
+## image-tools
+<!-- live: https://imagetools.top | language: TypeScript -->
+- Free image tools in the browser: background removal and replacement, sky swap, resize and convert, passport photos, watermarks and images to PDF.
+- Prompt Reader shows the settings saved in Stable Diffusion images; AI Shield cloaks art against img2img mimicry and tags it as not for AI training.
+- Next.js frontend, FastAPI and a RabbitMQ-fed CPU worker (rembg, SegFormer), plus a self-serve background removal API.
 
 ## Polar-Image-Inspector
 - Desktop app that opens WaMoS II polar radar images (.pol), shows their metadata and renders them as cartesian images.
 - Handles 16-bit data, with a standalone Python parser that saves images with their metadata.
 - Built for my Master's capstone, which predicts ocean wave height with a hybrid CNN and MLP.
+
+## py-auto-digitize
+<!-- title: InstaEmbroid | live: https://instaembroid.com | language: Python -->
+- Turns a PNG or JPG into a machine embroidery file: JEF for Janome machines, plus PES, DST, EXP, VP3 and XXX.
+- Digitizing engine modelled on Ink/Stitch: CIELAB colour segmentation, tatami fills, satin columns and bean stitches, with lock stitches and trims.
+- Guided React studio with a realistic stitch-out preview, real thread charts and hoop presets, on a FastAPI backend.
 
 # Skills
 <!-- help: tools and stacks -->

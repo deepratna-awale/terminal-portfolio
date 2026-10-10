@@ -472,7 +472,10 @@ ABOUT.md: `about` (`**Label:** value` lines become facts), `experience`
 (`**Degree**  School, year`, then a `Certifications` line and indented
 certificates), `contact` (`label     value` rows), `projects` (live from GitHub;
 the body is the intro line on `/gui`, then a `## <repository>` heading with
-`- bullets` for each featured repository; without one, its GitHub description), `now` (an `Updated: <when>` line and
+`- bullets` for each featured repository; without one, its GitHub description. An
+optional `<!-- title: Name | live: https://... | language: Python -->` line under
+the heading sets a display name and live link; a private repository is shown only
+when it has a `live` link, which its card uses in place of the code), `now` (an `Updated: <when>` line and
 bullets) and `guestbook`. Any other heading renders as plain markdown.
 
 **Links and icons.** Every dock icon, desktop icon and new-tab shortcut is an
