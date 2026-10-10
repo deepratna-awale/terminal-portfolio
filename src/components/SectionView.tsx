@@ -177,15 +177,15 @@ export function ProjectCards({ projects, detailed = false, renderLink }: { proje
         <article key={project.name} className="project-card">
           {project.image && <a className="project-thumb" href={project.url} target="_blank" rel="noopener noreferrer" tabIndex={-1} aria-hidden="true"><img src={project.image} alt="" width={1280} height={640} loading="lazy" decoding="async" /></a>}
           <header className="project-head">
-            <span className="project-name">{renderLink({ href: `cmd:${encodeURIComponent(`cat projects/${project.name}`)}`, children: project.name })}</span>
+            <span className="project-name">{renderLink({ href: `cmd:${encodeURIComponent(`cat projects/${project.name}`)}`, children: project.title ?? project.name })}</span>
             {project.stars > 0 && <span className="project-stars">★ {project.stars}</span>}
           </header>
           <ul className="role-bullets">{(project.bullets.length ? project.bullets : [project.description || 'No description yet.']).map((bullet) => <li key={bullet}>{bullet}</li>)}</ul>
           <footer className="project-foot">
             {project.language && <span className="project-lang"><span className="lang-dot" style={{ background: languageColors[project.language] ?? 'var(--accent-2)' }} />{project.language}</span>}
-            {detailed && <span className="project-pushed">pushed {new Date(project.pushedAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</span>}
+            {detailed && project.pushedAt && <span className="project-pushed">pushed {new Date(project.pushedAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</span>}
             <span className="project-links">
-              {renderLink({ href: project.url, children: 'github' })}
+              {!project.private && renderLink({ href: project.url, children: 'github' })}
               {project.homepage && renderLink({ href: project.homepage, children: 'live' })}
               {renderLink({ href: `cmd:${encodeURIComponent(`view screenshots/${project.name}`)}`, children: 'preview' })}
             </span>

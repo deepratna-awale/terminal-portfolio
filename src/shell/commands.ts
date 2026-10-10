@@ -115,9 +115,9 @@ export function openExternal(url: string) {
 
 export function formatProject(project: Project, detailed = false): string {
   const meta = [project.language, project.stars ? `★ ${project.stars}` : null].filter(Boolean).join('  ')
-  const links = [`[github](${project.url})`, project.homepage ? `[live](${project.homepage})` : null, cmd('screenshot', `view screenshots/${project.name}`)].filter(Boolean).join('  ')
+  const links = [project.private ? null : `[github](${project.url})`, project.homepage ? `[live](${project.homepage})` : null, cmd('screenshot', `view screenshots/${project.name}`)].filter(Boolean).join('  ')
   const bullets = project.bullets.length ? project.bullets : [project.description || 'No description yet.']
-  return [`## ${project.name}${meta ? `  *${meta}*` : ''}`, ...bullets.map((bullet) => `- ${bullet}`), detailed ? `\nLast pushed ${new Date(project.pushedAt).toDateString()}` : '', `\n${links}`].filter(Boolean).join('\n')
+  return [`## ${project.title ?? project.name}${meta ? `  *${meta}*` : ''}`, ...bullets.map((bullet) => `- ${bullet}`), detailed && project.pushedAt ? `\nLast pushed ${new Date(project.pushedAt).toDateString()}` : '', `\n${links}`].filter(Boolean).join('\n')
 }
 
 async function showProjects(ctx: ShellContext, name?: string) {
@@ -125,13 +125,14 @@ async function showProjects(ctx: ShellContext, name?: string) {
   try {
     const projects = await ctx.projects()
     if (name) {
-      const project = projects.find((item) => item.name.toLowerCase() === name.toLowerCase().replace(/\.md$/, ''))
+      const wanted = name.toLowerCase().replace(/\.md$/, '')
+      const project = projects.find((item) => item.name.toLowerCase() === wanted || item.title?.toLowerCase() === wanted)
       if (project) { ctx.print([{ type: 'projects', text: formatProject(project, true), projects: [project], detailed: true }]); return }
       const guess = closest(name, projects.map((item) => item.name))
       ctx.print([err(`cat: projects/${name}: No such file or directory`), ...didYouMean(guess, `cat projects/${guess}`)])
       return
     }
-    ctx.print([{ type: 'projects', text: projects.map((project) => formatProject(project)).join('\n\n'), projects }, muted(`Top ${projects.length} of my public repositories. See the rest on GitHub: [${linkLabel(profile.github)}](${profile.github}). Try \`cat projects/<name>\` or \`open <name>\`.`)])
+    ctx.print([{ type: 'projects', text: projects.map((project) => formatProject(project)).join('\n\n'), projects }, muted(`Top ${projects.length} of my repositories. See the rest on GitHub: [${linkLabel(profile.github)}](${profile.github}). Try \`cat projects/<name>\` or \`open <name>\`.`)])
   } catch (error) {
     ctx.print([err(`projects: ${error instanceof Error ? error.message : 'GitHub is unreachable right now'}`), muted(`Browse them directly at ${profile.github}`)])
   }
@@ -215,7 +216,7 @@ async function now(ctx: ShellContext) {
   const live = activity?.repo ? [`Recently contributing to [${activity.repo}](${activity.url})${activity.at ? ` *(${relative(activity.at)})*` : ''}`] : []
   ctx.print([{ type: 'success', text: `What I'm doing now (updated ${nowItems.updated})` }, out([...nowItems.items, ...live].map((item) => `- ${item}`).join('\n'))])
   try {
-    const recent = [...await ctx.projects()].sort((a, b) => Date.parse(b.pushedAt) - Date.parse(a.pushedAt)).slice(0, 3)
+    const recent = (await ctx.projects()).filter((project) => project.pushedAt).sort((a, b) => Date.parse(b.pushedAt) - Date.parse(a.pushedAt)).slice(0, 3)
     if (recent.length) ctx.print([out(`**Recently pushed**\n${recent.map((project) => `- ${cmd(project.name, `cat projects/${project.name}`)}  *${relative(project.pushedAt)}*`).join('\n')}`)])
   } catch { /* projects are a bonus here */ }
   await contributions(ctx, true)

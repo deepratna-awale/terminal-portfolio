@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assistantFacts, parseAboutMarkdown, parseFrontmatter, projectBullets, siteProfile } from '../../shared/about.js'
+import { assistantFacts, parseAboutMarkdown, parseFrontmatter, projectBullets, projectNotes, siteProfile } from '../../shared/about.js'
 import { links, linksFor, sectionList } from '../content'
 import { commands, directories } from './commands'
 import { complete } from './completion'
@@ -82,5 +82,12 @@ describe('links from ABOUT.md', () => {
     const bullets = projectBullets(sections)
     expect([...bullets.keys()]).toEqual(['my-repo'])
     expect(bullets.get('my-repo')).toEqual(['First, with a comma.', 'Second.'])
+  })
+
+  it('reads an optional title, live link and language line under a project heading', () => {
+    const { sections } = parseAboutMarkdown('# Projects\n## private-repo\n<!-- title: Shiny | live: https://shiny.example | language: Python -->\n- Does a thing.\n\n## plain\n- Only bullets.\n')
+    const notes = projectNotes(sections)
+    expect(notes.get('private-repo')).toEqual({ bullets: ['Does a thing.'], title: 'Shiny', live: 'https://shiny.example', language: 'Python' })
+    expect(notes.get('plain')).toEqual({ bullets: ['Only bullets.'], title: null, live: null, language: null })
   })
 })

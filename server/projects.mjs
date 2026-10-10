@@ -1,6 +1,6 @@
-// Public GitHub repositories listed under `featured` in ABOUT.md, with the
-// bullets written for them there. No model calls: the list is cached for 6 hours.
-import { featured, featuredBullets, profile } from './about.mjs'
+// Repositories listed under `featured` in ABOUT.md, with the bullets written
+// for them there. No model calls: the list is cached for 6 hours.
+import { featured, featuredNotes, profile } from './about.mjs'
 
 const owner = process.env.GITHUB_OWNER ?? profile.githubUser
 // Only the repositories listed under `featured` in ABOUT.md appear, in that
@@ -24,29 +24,26 @@ function fallbackBullets(repo) {
 
 // Bullets are written by hand in ABOUT.md; without them, the description.
 function bulletsFor(repo) {
-  const written = featuredBullets.get(repo.name.toLowerCase())
+  const written = featuredNotes.get(repo.name.toLowerCase())?.bullets
   return written?.length ? written : fallbackBullets(repo)
 }
 
 async function refresh() {
   const response = await fetch(`https://api.github.com/users/${owner}/repos?per_page=100&sort=pushed`, { headers: githubHeaders(), signal: AbortSignal.timeout(10_000) })
   if (!response.ok) throw new Error(`GitHub returned ${response.status}`)
-  const repos = (await response.json())
-    .filter((repo) => !repo.private && rank.has(repo.name.toLowerCase()))
-    .sort((a, b) => rank.get(a.name.toLowerCase()) - rank.get(b.name.toLowerCase()))
+  const repos = (await response.json()).filter((repo) => !repo.private && rank.has(repo.name.toLowerCase()))
+  const listed = new Map(repos.map((repo) => [repo.name.toLowerCase(), repo]))
   cache = {
     fetchedAt: Date.now(),
-    projects: repos.map((repo) => ({
-      name: repo.name,
-      description: repo.description ?? '',
-      language: repo.language,
-      stars: repo.stargazers_count,
-      url: repo.html_url,
-      homepage: repo.homepage || null,
-      image: `/media/projects/${featured[rank.get(repo.name.toLowerCase())]}.jpg`,
-      pushedAt: repo.pushed_at,
-      bullets: bulletsFor(repo),
-    })),
+    projects: featured.map((name) => {
+      const repo = listed.get(name.toLowerCase())
+      const note = featuredNotes.get(name.toLowerCase())
+      const image = `/media/projects/${name}.jpg`
+      if (repo) return { name: repo.name, title: note?.title ?? null, description: repo.description ?? '', language: repo.language, stars: repo.stargazers_count, url: repo.html_url, homepage: repo.homepage || note?.live || null, image, pushedAt: repo.pushed_at, bullets: bulletsFor(repo) }
+      // A private repository: shown from its ABOUT.md notes, linking to the live site instead of the code.
+      if (note?.live) return { name, title: note.title, description: '', language: note.language, stars: 0, url: note.live, homepage: note.live, image, pushedAt: '', bullets: note.bullets, private: true }
+      return null
+    }).filter(Boolean),
   }
   return cache.projects
 }
@@ -60,5 +57,5 @@ export async function getProjects() {
 }
 
 export function projectDigest() {
-  return (cache.projects ?? []).map((project) => `- ${project.name} (${project.language ?? 'n/a'}, ${project.stars} stars): ${project.bullets.join(' ') || project.description}`).join('\n')
+  return (cache.projects ?? []).map((project) => `- ${project.title ? `${project.title} (${project.name})` : project.name} (${project.language ?? 'n/a'}, ${project.private ? `private code, live at ${project.homepage}` : `${project.stars} stars`}): ${project.bullets.join(' ') || project.description}`).join('\n')
 }

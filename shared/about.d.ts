@@ -24,4 +24,6 @@ export function parseFrontmatter(text: string): Record<string, FrontmatterValue>
 export function parseAboutMarkdown(source: string): AboutData
 export function siteProfile(meta: Record<string, FrontmatterValue>): SiteProfile
 export function assistantFacts(about: AboutData): string
+export type ProjectNote = { bullets: string[]; title: string | null; live: string | null; language: string | null }
+export function projectNotes(sections: AboutSection[]): Map<string, ProjectNote>
 export function projectBullets(sections: AboutSection[]): Map<string, string[]>

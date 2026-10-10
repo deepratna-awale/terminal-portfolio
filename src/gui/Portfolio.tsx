@@ -104,7 +104,7 @@ function ProjectCard({ project }: { project: Project }) {
         </a>
       )}
       <div className="pf-project-body">
-        <h3><a href={project.url} {...linkAttrs(project.url)}>{project.name}</a></h3>
+        <h3><a href={project.url} {...linkAttrs(project.url)}>{project.title ?? project.name}</a></h3>
         <p className="pf-project-meta">
           {project.language && <span className="pf-lang"><span className="pf-lang-dot" aria-hidden="true" />{project.language}</span>}
           {project.stars > 0 && <span><Star size={13} aria-hidden="true" /> {project.stars}</span>}
@@ -112,7 +112,7 @@ function ProjectCard({ project }: { project: Project }) {
         </p>
         <ul className="pf-bullets">{bullets.slice(0, 3).map((bullet) => <li key={bullet}><Md inline>{bullet}</Md></li>)}</ul>
         <div className="pf-card-links">
-          <a href={project.url} {...linkAttrs(project.url)}><GitHubIcon /> Code</a>
+          {!project.private && <a href={project.url} {...linkAttrs(project.url)}><GitHubIcon /> Code</a>}
           {project.homepage && <a href={project.homepage} {...linkAttrs(project.homepage)}><ArrowUpRight size={15} aria-hidden="true" /> Live</a>}
         </div>
       </div>

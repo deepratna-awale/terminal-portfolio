@@ -124,16 +124,25 @@ export function parseAboutMarkdown(source) {
 
 // "## <repository>" headings under # Projects, each followed by "- bullet"
 // lines, replace the generated summary for that featured repository.
-export function projectBullets(sections) {
+// Notes for featured repositories under `# Projects`: a `## <repo>` heading, an
+// optional `<!-- title: X | live: https://... | language: Y -->` line and `- bullets`.
+// Keyed by lowercase repository name.
+export function projectNotes(sections) {
   const lines = sections.find((section) => section.id === 'projects')?.lines ?? []
-  const bullets = new Map()
+  const notes = new Map()
   let current = null
   for (const line of lines) {
     const heading = /^## (.+?)\s*$/.exec(line)
-    if (heading) bullets.set(current = heading[1].toLowerCase(), [])
-    else if (current && line.startsWith('- ')) bullets.get(current).push(line.slice(2).trim())
+    const meta = current && !current.bullets.length ? options(line) : null
+    if (heading) notes.set(heading[1].toLowerCase(), current = { bullets: [], title: null, live: null, language: null })
+    else if (meta) Object.assign(current, { title: meta.title || null, live: /^https?:\/\//.test(meta.live ?? '') ? meta.live : null, language: meta.language || null })
+    else if (current && line.startsWith('- ')) current.bullets.push(line.slice(2).trim())
   }
-  return bullets
+  return notes
+}
+
+export function projectBullets(sections) {
+  return new Map([...projectNotes(sections)].map(([name, note]) => [name, note.bullets]))
 }
 
 // Values every consumer needs, with the derived ones filled in.

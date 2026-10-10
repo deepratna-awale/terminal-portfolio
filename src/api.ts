@@ -8,6 +8,10 @@ export type Project = {
   image: string | null
   pushedAt: string
   bullets: string[]
+  // Display name from ABOUT.md, when it differs from the repository name.
+  title?: string | null
+  // A private repository: `url` is its live site and there is no code link.
+  private?: boolean
 }
 
 export type ChatTurn = { role: 'user' | 'assistant'; content: string }
