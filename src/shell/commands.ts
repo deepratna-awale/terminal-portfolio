@@ -256,6 +256,27 @@ export function fakeIp(host: string) {
 }
 const bar = (percent: number) => `[${'█'.repeat(Math.round(percent / 5))}${'░'.repeat(20 - Math.round(percent / 5))}] ${String(percent).padStart(3)}%`
 
+const alarms = [
+  'HONEYPOT DETECTED',
+  'TRACE ACTIVE: reverse trace locked on to your connection',
+  'REVERSE TRACE: they are 3 hops from your router',
+  'INTRUSION DETECTION: your packets were fingerprinted',
+  'CANARY TOKEN TRIGGERED: someone just got an email about you',
+  'BLUE TEAM ONLINE: a SOC analyst put down their coffee',
+  'TARPIT ENGAGED: the server is answering suspiciously slowly',
+  'FAKE CREDENTIALS: hunter2 was bait',
+  'GEOFENCE ALERT: your VPN just leaked your timezone',
+  'SANDBOX DETECTED: this whole box is a decoy',
+  'FIREWALL REBOUND: the double rot13 was single rot26',
+  "ADMIN ONLINE: someone just typed 'who' on the target",
+]
+// Two different alarms per run, so the getaway never reads the same twice.
+export function hackAlarms(random = Math.random) {
+  const first = Math.floor(random() * alarms.length)
+  const second = (first + 1 + Math.floor(random() * (alarms.length - 1))) % alarms.length
+  return [alarms[first]!, alarms[second]!]
+}
+
 async function hack(args: string[], ctx: ShellContext) {
   const host = hackTarget(args[0])
   if (!args[0]) { ctx.print([err('usage: hack <website>')]); return }
@@ -280,10 +301,7 @@ async function hack(args: string[], ctx: ShellContext) {
     [`[*] escalating privileges  ${bar(87)}`, 900],
   ]
   for (const [text, ms] of steps) { ctx.print([{ type: 'ascii', text }]); await pause(ms) }
-  ctx.print([err('!! HONEYPOT DETECTED')])
-  await pause(400)
-  ctx.print([err('!! TRACE ACTIVE: reverse trace locked on to your connection')])
-  await pause(400)
+  for (const alarm of hackAlarms()) { ctx.print([err(`!! ${alarm}`)]); await pause(400) }
   ctx.print([err('!! Terminating operation. Wiping logs ... done.')])
   await pause(700)
   ctx.print([err('We almost got caught, best not do that again.')])
