@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { initialCommand } from './deeplink'
 import { profile, sshHost } from '../content'
-import { fakeIp, hackTarget, isOwnTarget, isRootWipe, parseSign, readFile, sshHint } from './commands'
+import { fakeIp, hackAlarms, hackTarget, isOwnTarget, isRootWipe, parseSign, readFile, sshHint } from './commands'
 import { renderHeatmap } from './heatmap'
 import { filters, grepLines, toPlainText } from './pipes'
 import { closest, looksLikeCommand } from './typo'
@@ -109,6 +109,16 @@ describe('hack', () => {
     for (const target of [profile.host, `https://www.${profile.host}/gui`, `ssh.${profile.host}`, `github.com/${profile.handle}`, 'localhost', '127.0.0.1:8787']) expect(isOwnTarget(target)).toBe(true)
     if (sshHost) expect(isOwnTarget(sshHost)).toBe(true)
     for (const target of ['github.com', 'example.com', '8.8.8.8']) expect(isOwnTarget(target)).toBe(false)
+  })
+
+  it('picks two different alarms', () => {
+    for (const value of [0, 0.5, 0.999]) {
+      const [first, second] = hackAlarms(() => value)
+      expect(first).toBeTruthy()
+      expect(second).toBeTruthy()
+      expect(first).not.toBe(second)
+    }
+    expect(new Set(Array.from({ length: 50 }, () => hackAlarms()[0])).size).toBeGreaterThan(3)
   })
 
   it('makes up a stable public-looking address', () => {
