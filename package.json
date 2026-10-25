@@ -14,7 +14,7 @@
     "ssh": "node ssh/dist/main.js"
   },
   "dependencies": {
-    "lucide-react": "^1.57.0",
+    "lucide-react": "^1.61.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-markdown": "^10.1.0",
@@ -31,10 +31,10 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.2",
     "jsdom": "^30.1.3",
-    "oxlint": "^1.88.0",
+    "oxlint": "^1.89.0",
     "sharp": "^0.35.5",
     "typescript": "~7.0.2",
     "vite": "^8.3.5",
-    "vitest": "^5.0.4"
+    "vitest": "^5.0.5"
   }
 }
