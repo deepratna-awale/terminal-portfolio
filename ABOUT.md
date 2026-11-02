@@ -160,36 +160,36 @@ Product: [Verafin Agentic AI Workforce](https://verafin.com/product/agentic-ai-w
 Pulled live from GitHub. Each card links to the code and, where there is one, a live demo.
 
 ## terminal-portfolio
-- This site: a zsh-style terminal on a macOS-style desktop, a standard /gui page, and an SSH edition with inline images.
-- Questions go to Claude Haiku on Amazon Bedrock behind a Guardrail; also a guestbook, live GitHub data and drop-in themes.
-- One ABOUT.md drives all content; Terraform runs it on AWS Lightsail, deployed by GitHub Actions through OIDC.
+- This site: a zsh-style terminal with tab completion, history, vim, pipes, themes and games, plus a standard /gui page and an SSH edition with inline images.
+- Anything that isn't a command is answered by Claude Haiku 4.5 on Amazon Bedrock behind a Guardrail; also live GitHub data, a contributions graph and a guestbook.
+- One ABOUT.md drives all content; one Docker container on AWS Lightsail, provisioned with Terraform and deployed by GitHub Actions through OIDC.
 
 ## open-wallpaper-engine-mac
-- Free, open-source macOS player for Wallpaper Engine scene, video and web wallpapers.
-- Native Metal renderer with effects, particles, 3D models, lighting, SceneScript and audio-reactive visuals.
-- Translates Wallpaper Engine's GLSL shaders to Metal on the fly and browses the Steam Workshop through SteamCMD.
+- Free, open-source macOS app that plays and edits Wallpaper Engine scene, video and web wallpapers, with the Steam Workshop built in.
+- Native Metal renderer that runs each wallpaper's own shaders, translated to Metal, with effects, particles, 3D models, lighting, SceneScript and audio-reactive visuals.
+- The only macOS Wallpaper Engine scene editor; also a fully live screen saver, Live Photo and Android export, playlists, multi-display profiles and an MCP server.
 
 ## AutoExpress
-- Generates 28 facial expressions from one image through the Automatic1111 Stable Diffusion WebUI API.
-- Inpaints each face with the After Detailer extension, for anime and realistic styles.
-- Ships as pre-built releases and a Docker image.
+- One character image in, 28 facial expressions out: repaints only the face and keeps pose, outfit, background and art style.
+- Runs inside AUTOMATIC1111, Forge, SD.Next, ComfyUI and InvokeAI, or as a standalone app, with prompts tuned per model family and expression LoRAs.
+- Made for SillyTavern sprites and visual novels: face inpainting or Qwen-Image-Edit, animated sprites with Wan 2.2, and a SillyTavern extension.
 
 ## image-tools
 <!-- live: https://imagetools.top | language: TypeScript -->
-- Free image tools in the browser: background removal and replacement, sky swap, resize and convert, passport photos, watermarks and images to PDF.
+- Free image tools in the browser with no sign-up or watermarks: background removal, sky swap, upscaling, watermark removal, outpainting, resize and convert, passport photos and images to PDF.
 - Prompt Reader shows the settings saved in Stable Diffusion images; AI Shield cloaks art against img2img mimicry and tags it as not for AI training.
-- Next.js frontend, FastAPI and a RabbitMQ-fed CPU worker (rembg, SegFormer), plus a self-serve background removal API.
+- Next.js frontend, FastAPI and a RabbitMQ-fed CPU worker (rembg, SegFormer, Real-ESRGAN, FLUX.1 Kontext), plus a free developer API.
 
 ## Polar-Image-Inspector
-- Desktop app that opens WaMoS II polar radar images (.pol), shows their metadata and renders them as cartesian images.
+- Desktop app that opens WaMoS II polar radar images (.pol), shows their metadata and renders them as cartesian images, with a dark mode.
 - Handles 16-bit data, with a standalone Python parser that saves images with their metadata.
-- Built for my Master's capstone, which predicts ocean wave height with a hybrid CNN and MLP.
+- A byproduct of my Master's capstone, which predicts ocean wave height with a hybrid CNN and MLP network.
 
 ## py-auto-digitize
 <!-- title: InstaEmbroid | live: https://instaembroid.com | language: Python -->
-- Turns a PNG or JPG into a machine embroidery file: JEF for Janome machines, plus PES, DST, EXP, VP3 and XXX.
-- Digitizing engine modelled on Ink/Stitch: CIELAB colour segmentation, tatami fills, satin columns and bean stitches, with lock stitches and trims.
-- Guided React studio with a realistic stitch-out preview, real thread charts and hoop presets, on a FastAPI backend.
+- Turns a PNG or JPG into a machine embroidery file: JEF (Janome, Elna), PES, VP3, EXP, XXX or DST.
+- Digitizing engine modelled on Ink/Stitch: CIELAB colour segmentation, tatami fills, satin columns and bean stitches, with lock stitches and trims; a 100 mm design takes about a second.
+- Four-step React studio with a realistic stitch-out preview, real thread charts and hoop presets, on a FastAPI backend; also a CLI and Python API.
 
 # Skills
 <!-- help: tools and stacks -->
