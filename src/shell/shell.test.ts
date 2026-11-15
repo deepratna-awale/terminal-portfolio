@@ -47,7 +47,7 @@ describe('completion', () => {
   it('completes commands and directories', () => {
     expect(complete('proj', '~', [], []).candidates).toEqual(['projects'])
     expect(complete('cd ex', '~', [], []).candidates).toEqual(['experience/'])
-    expect(complete('cat projects/Auto', '~', ['AutoExpress', 'sd-parsers'], []).candidates).toEqual(['AutoExpress'])
+    expect(complete('cat projects/Emo', '~', ['Emotica', 'sd-parsers'], []).candidates).toEqual(['Emotica'])
   })
 
   it('finds a common prefix', () => {
