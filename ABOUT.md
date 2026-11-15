@@ -105,7 +105,7 @@ contact_note: Email is the fastest way to reach me.
 featured:
   - terminal-portfolio
   - open-wallpaper-engine-mac
-  - AutoExpress
+  - Emotica
   - image-tools
   - Polar-Image-Inspector
   - py-auto-digitize
@@ -169,10 +169,10 @@ Pulled live from GitHub. Each card links to the code and, where there is one, a 
 - Native Metal renderer that runs each wallpaper's own shaders, translated to Metal, with effects, particles, 3D models, lighting, SceneScript and audio-reactive visuals.
 - The only macOS Wallpaper Engine scene editor; also a fully live screen saver, Live Photo and Android export, playlists, multi-display profiles and an MCP server.
 
-## AutoExpress
-- One character image in, 28 facial expressions out: repaints only the face and keeps pose, outfit, background and art style.
+## Emotica
+- One character image in, 28 facial expressions out: repaints only the face and keeps pose, outfit, background and art style. Formerly AutoExpress.
 - Runs inside AUTOMATIC1111, Forge, SD.Next, ComfyUI and InvokeAI, or as a standalone app, with prompts tuned per model family and expression LoRAs.
-- Made for SillyTavern sprites and visual novels: face inpainting or Qwen-Image-Edit, animated sprites with Wan 2.2, and a SillyTavern extension.
+- Made for SillyTavern sprites and visual novels: looping animated sprites with Wan 2.2, Qwen-Image-Edit for photos, and ready-to-play Live2D puppets.
 
 ## image-tools
 <!-- live: https://imagetools.top | language: TypeScript -->
